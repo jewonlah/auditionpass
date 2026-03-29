@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.local
+crawler/.env
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# PWA
+public/sw.js
+public/workbox-*.js
+public/swe-worker-*.js

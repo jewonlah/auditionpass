@@ -1,0 +1,33 @@
+name: Daily Audition Crawler
+
+on:
+  schedule:
+    - cron: "0 18 * * *"  # UTC 18:00 = KST 03:00
+  workflow_dispatch:       # 수동 실행 가능
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: crawler/requirements.txt
+
+      - name: 의존성 설치
+        run: |
+          pip install -r crawler/requirements.txt
+          playwright install chromium --with-deps
+
+      - name: 크롤러 실행
+        working-directory: crawler
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python main.py

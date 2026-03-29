@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(rm -rf frontend)",
+      "Bash(printf NnNn)",
+      "Bash(npm install:*)",
+      "Bash(cd:*)",
+      "Bash(npx next:*)",
+      "Bash(node -e \"const l = require\\(''lucide-react''\\); const y = Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\(''yout''\\)\\); console.log\\(y\\)\")",
+      "Bash(node -e \"const l = require\\(''lucide-react''\\); console.log\\(''Instagram'' in l, ''Video'' in l, ''Save'' in l\\)\")",
+      "Bash(node -e \"const l = require\\(''lucide-react''\\); const r = Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\(''inst''\\)\\); console.log\\(r\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m playwright install chromium)",
+      "Bash(python -c \":*)"
+    ]
+  }
+}
