@@ -5,12 +5,15 @@
 
 import sys
 import logging
+from datetime import date
 from pathlib import Path
 from dotenv import load_dotenv
 from scrapers.plfil import PlfilScraper
 from scrapers.megaphone import MegaphoneScraper
 from scrapers.otr import OtrScraper
 from scrapers.vaudition import VauditionScraper
+from scrapers.castlink import CastlinkScraper
+from scrapers.filmmakers import FilmmakersScraper
 from utils.supabase_client import upsert_auditions, deactivate_expired
 from utils.refine_description import refine_description
 
@@ -25,6 +28,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def filter_expired(auditions, source_name: str):
+    """마감된 공고 제외 (deadline이 오늘 이전이면 스킵, deadline 없으면 포함)"""
+    today = date.today()
+    filtered = []
+    skipped = 0
+    for a in auditions:
+        if a.deadline and a.deadline < today:
+            skipped += 1
+            continue
+        filtered.append(a)
+    if skipped:
+        logger.info(f"[{source_name}] 마감 공고 {skipped}건 제외")
+    return filtered
+
+
 def main():
     logger.info("========== 크롤러 시작 ==========")
 
@@ -33,6 +51,8 @@ def main():
         MegaphoneScraper(),      # 2. megaphonekorea.com — SSR
         OtrScraper(),            # 3. otr.co.kr — Playwright
         VauditionScraper(),      # 4. vaudition.com — Playwright
+        CastlinkScraper(),       # 5. castlink.co.kr — Playwright
+        FilmmakersScraper(),     # 6. filmmakers.co.kr — SSR
     ]
 
     total_collected = 0
@@ -46,6 +66,9 @@ def main():
             collected = len(auditions)
             total_collected += collected
             logger.info(f"[{scraper.source_name}] {collected}건 수집")
+
+            # 마감된 공고 필터링
+            auditions = filter_expired(auditions, scraper.source_name)
 
             # Claude API로 description 정제
             for audition in auditions:
