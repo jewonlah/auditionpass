@@ -15,6 +15,10 @@ export interface Profile {
   youtube_url: string | null;
   other_url: string | null;
   genre: string[];
+  activity_field: string[];
+  agency: string | null;
+  specialty: string[];
+  career: string | null;
   created_at: string;
   updated_at: string;
 }
