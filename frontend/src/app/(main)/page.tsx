@@ -25,7 +25,11 @@ export default function HomePage() {
         .order("deadline", { ascending: true, nullsFirst: false });
 
       if (!error && data) {
-        setAuditions(data);
+        // 클라이언트 측 이중 필터: 마감된 공고 확실히 제외
+        const active = data.filter(
+          (a) => !a.deadline || a.deadline >= today
+        );
+        setAuditions(active);
       }
       setLoading(false);
     }
