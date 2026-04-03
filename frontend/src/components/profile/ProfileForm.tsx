@@ -37,6 +37,7 @@ const profileSchema = z.object({
   other_url: z.string().url("올바른 URL을 입력해주세요").nullable().optional().or(z.literal("")),
   genre: z.array(z.string()).min(1, "장르를 하나 이상 선택해주세요"),
   activity_field: z.array(z.string()).min(1, "활동 분야를 하나 이상 선택해주세요"),
+  phone: z.string().max(20, "20자 이내로 입력해주세요").nullable().optional(),
   agency: z.string().max(50, "50자 이내로 입력해주세요").nullable().optional(),
   specialty: z.array(z.string()).max(3, "특기는 최대 3개까지 입력 가능합니다"),
   career: z.string().max(500, "500자 이내로 입력해주세요").nullable().optional(),
@@ -80,6 +81,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       other_url: initialData?.other_url ?? "",
       genre: initialData?.genre ?? [],
       activity_field: initialData?.activity_field ?? [],
+      phone: initialData?.phone ?? "",
       agency: initialData?.agency ?? "",
       specialty: initialData?.specialty ?? [],
       career: initialData?.career ?? "",
@@ -139,6 +141,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       instagram_url: data.instagram_url || null,
       youtube_url: data.youtube_url || null,
       other_url: data.other_url || null,
+      phone: data.phone || null,
       agency: data.agency || null,
       career: data.career || null,
       photo_urls: photos,
@@ -243,6 +246,14 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             })}
           />
         </div>
+
+        <Input
+          label="연락처"
+          type="tel"
+          placeholder="010-0000-0000"
+          error={errors.phone?.message}
+          {...register("phone")}
+        />
       </div>
 
       {/* 한 줄 소개 */}

@@ -58,6 +58,7 @@ export async function sendApplicationEmail({
       applicantHeight: profile.height,
       applicantWeight: profile.weight,
       applicantBio: profile.bio,
+      applicantPhone: profile.phone,
       instagramUrl: profile.instagram_url,
       youtubeUrl: profile.youtube_url,
       otherUrl: profile.other_url,
@@ -65,10 +66,14 @@ export async function sendApplicationEmail({
     })
   );
 
+  const subjectParts = [profile.name, profile.gender, `${profile.age}세`];
+  if (profile.phone) subjectParts.push(profile.phone);
+  const subject = `[오디션 지원] ${subjectParts.join(" / ")}`;
+
   const { data, error } = await resend.emails.send({
     from: `오디션패스 <${FROM_EMAIL}>`,
     to: audition.apply_email,
-    subject: `[오디션 지원] ${profile.name} / ${profile.gender} / ${profile.age}세`,
+    subject,
     html: emailHtml,
   });
 

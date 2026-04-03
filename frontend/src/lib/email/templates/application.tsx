@@ -19,6 +19,7 @@ interface ApplicationEmailProps {
   applicantHeight?: number | null;
   applicantWeight?: number | null;
   applicantBio?: string | null;
+  applicantPhone?: string | null;
   instagramUrl?: string | null;
   youtubeUrl?: string | null;
   otherUrl?: string | null;
@@ -33,6 +34,7 @@ export function ApplicationEmail({
   applicantHeight,
   applicantWeight,
   applicantBio,
+  applicantPhone,
   instagramUrl,
   youtubeUrl,
   otherUrl,
@@ -79,6 +81,12 @@ export function ApplicationEmail({
             <Row style={tableRow}>
               <Column style={labelCell}>몸무게</Column>
               <Column style={valueCell}>{applicantWeight}kg</Column>
+            </Row>
+          )}
+          {applicantPhone && (
+            <Row style={{ ...tableRow, backgroundColor: "#f9fafb" }}>
+              <Column style={labelCell}>연락처</Column>
+              <Column style={valueCell}>{applicantPhone}</Column>
             </Row>
           )}
 
