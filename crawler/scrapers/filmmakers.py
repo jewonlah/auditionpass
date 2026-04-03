@@ -1,7 +1,7 @@
 """
 필메코 (filmmakers.co.kr) 크롤러
 서버사이드 렌더링 (Rhymix CMS) — requests + BeautifulSoup
-카테고리: /actorCasting (배우), /performerCasting (모델/퍼포머)
+카테고리: /actorCasting (배우), /performerCasting (모델/퍼포머), /actorPartTimeJob (단기/알바)
 """
 
 import time
@@ -27,6 +27,7 @@ _HEADERS = {
 _CATEGORIES = [
     ("https://www.filmmakers.co.kr/actorCasting", "배우"),
     ("https://www.filmmakers.co.kr/performerCasting", "모델"),
+    ("https://www.filmmakers.co.kr/actorPartTimeJob", "기타"),
 ]
 
 _MAX_PAGES = 2
@@ -63,10 +64,16 @@ class FilmmakersScraper(BaseScraper):
         soup = BeautifulSoup(resp.text, "lxml")
 
         # 각 공고 카드: div with onclick="location.href='/actorCasting/{id}'"
-        cards = soup.select("div[onclick*='actorCasting'], div[onclick*='performerCasting']")
+        cards = soup.select(
+            "div[onclick*='actorCasting'], div[onclick*='performerCasting'], "
+            "div[onclick*='actorPartTimeJob']"
+        )
         if not cards:
             # 폴백: h2 > a 링크로 탐색
-            cards = soup.select("h2 a[href*='actorCasting'], h2 a[href*='performerCasting']")
+            cards = soup.select(
+                "h2 a[href*='actorCasting'], h2 a[href*='performerCasting'], "
+                "h2 a[href*='actorPartTimeJob']"
+            )
 
         logger.info(f"[{self.source_name}] {list_url} 에서 {len(cards)}개 항목 발견")
 
