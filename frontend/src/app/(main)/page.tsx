@@ -73,34 +73,41 @@ export default function HomePage() {
           placeholder="오디션 검색 (제목, 주최사)"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-xl border border-gray-100 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-shadow"
         />
       </div>
 
       {/* 장르 필터 */}
       <AuditionFilter selected={selectedFilter} onSelect={setSelectedFilter} />
 
+      {/* 결과 카운트 */}
+      {!loading && filteredAuditions.length > 0 && (
+        <p className="text-xs text-gray-400 mb-3">
+          {filteredAuditions.length}개의 오디션
+        </p>
+      )}
+
       {/* 로딩 */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 size={32} className="animate-spin text-primary" />
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={28} className="animate-spin text-primary" />
         </div>
       ) : filteredAuditions.length > 0 ? (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filteredAuditions.map((audition) => (
             <AuditionCard key={audition.id} audition={audition} />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-          <Search size={40} className="mb-3 opacity-50" />
-          <p className="text-sm">검색 결과가 없습니다</p>
-          <p className="text-xs mt-1">다른 키워드로 검색해보세요</p>
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <Search size={36} className="mb-3 opacity-40" />
+          <p className="text-sm font-medium">검색 결과가 없습니다</p>
+          <p className="text-xs mt-1 text-gray-300">다른 키워드로 검색해보세요</p>
         </div>
       )}
 
       {/* 리스트 하단 안내 */}
-      <p className="mt-6 pb-4 text-center text-xs text-gray-300">
+      <p className="mt-8 pb-4 text-center text-xs text-gray-300">
         매일 새로운 오디션 공고가 업데이트됩니다
       </p>
     </div>
