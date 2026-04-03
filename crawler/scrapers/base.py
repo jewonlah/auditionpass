@@ -57,7 +57,7 @@ class BaseScraper(ABC):
             return None
         email = match.group()
         # 노이즈 이메일 제외
-        noise = ("example.com", "test.com", "noreply", "no-reply")
+        noise = ("example.com", "test.com", "noreply", "no-reply", "otr@otr.co.kr")
         if any(n in email.lower() for n in noise):
             return None
         return email

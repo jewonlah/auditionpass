@@ -51,14 +51,14 @@ def main():
 
     scrapers = [
         PlfilScraper(),          # 1. plfil.com — SSR
-        MegaphoneScraper(),      # 2. megaphonekorea.com — SSR
-        OtrScraper(),            # 3. otr.co.kr — Playwright
-        VauditionScraper(),      # 4. vaudition.com — Playwright
-        CastlinkScraper(),       # 5. castlink.co.kr — Playwright
-        FilmmakersScraper(),     # 6. filmmakers.co.kr — SSR
-        Casting114Scraper(),     # 7. casting114.com — JSON API
-        CastingnaraScraper(),    # 8. castingnara.com — SSR (PHP)
-        CastikScraper(),         # 9. castik.co.kr — Playwright
+        # MegaphoneScraper(),    # 비활성화: SSL 인증서 만료 (2026-04-03 확인)
+        OtrScraper(),            # 2. otr.co.kr — Playwright
+        VauditionScraper(),      # 3. vaudition.com — Playwright
+        CastlinkScraper(),       # 4. castlink.co.kr — Playwright
+        # FilmmakersScraper(),   # 비활성화: 사이트 접속 타임아웃 (2026-04-03 확인)
+        Casting114Scraper(),     # 5. casting114.com — JSON API
+        CastingnaraScraper(),    # 6. castingnara.com — SSR (PHP)
+        CastikScraper(),         # 7. castik.co.kr — Playwright
     ]
 
     total_collected = 0

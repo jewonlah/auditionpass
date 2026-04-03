@@ -44,12 +44,10 @@ class OtrScraper(BaseScraper):
             html = page.content()
             soup = BeautifulSoup(html, "lxml")
 
-            cards = soup.select(
-                ".audition-item, .audition-card, .list-item, "
-                ".board-list tr, article, [class*='audition']"
-            )
-            if not cards:
-                cards = soup.select("a[href*='audition']")
+            # OTR은 게시판 형태 — 데이터 행만 선택 (헤더 제외)
+            cards = soup.select(".board-list tr")
+            # 헤더 행(th 포함) 제외, 실제 데이터 행만 남기기
+            cards = [tr for tr in cards if tr.select("td") and not tr.select("th")]
             logger.info(f"[{self.source_name}] 목록에서 {len(cards)}개 항목 발견")
 
             for card in cards:
@@ -67,29 +65,20 @@ class OtrScraper(BaseScraper):
         return results
 
     def _parse_card(self, card, page) -> AuditionData | None:
-        link_el = card if card.name == "a" else card.select_one("a[href]")
+        # 상세 링크: ?vid= 파라미터가 있는 링크만 유효
+        link_el = card.select_one("a[href*='vid=']")
         if not link_el or not link_el.get("href"):
             return None
 
         href = link_el["href"]
-        if href.startswith("javascript:") or href == "#":
-            return None
         if not href.startswith("http"):
             href = self.base_url + ("" if href.startswith("/") else "/") + href
 
-        # 목록/멤버 페이지 등 비상세 URL 스킵
-        if any(p in href for p in (
-            "?mode=list", "/members/", "/login", "/register",
-        )):
-            return None
-        # /audition/ 정확히 일치 (뒤에 쿼리나 ID 없음)는 목록 페이지
-        if href.rstrip("/").endswith("/audition"):
-            return None
-
-        title_el = card.select_one(
-            ".title, .audition-title, h3, h4, strong, td:nth-child(2)"
-        )
-        title = title_el.get_text(strip=True) if title_el else card.get_text(strip=True)
+        # 제목: 링크 텍스트 또는 td:nth-child(2)
+        title = link_el.get_text(strip=True)
+        tds = card.select("td")
+        if not title and len(tds) >= 2:
+            title = tds[1].get_text(strip=True)
         if not title or len(title) < 3:
             return None
 
@@ -98,11 +87,11 @@ class OtrScraper(BaseScraper):
             logger.debug(f"  스킵 (공지): {title[:40]}")
             return None
 
-        company_el = card.select_one(".company, .producer, td:nth-child(3)")
-        company = company_el.get_text(strip=True) if company_el else None
+        # 작성자 (3번째 td)
+        company = tds[2].get_text(strip=True) if len(tds) >= 3 else None
 
-        deadline_el = card.select_one(".deadline, .date, td:last-child, time")
-        deadline_text = deadline_el.get_text(strip=True) if deadline_el else ""
+        # 마감날짜 (5번째 td: 페이 다음)
+        deadline_text = tds[4].get_text(strip=True) if len(tds) >= 5 else ""
         deadline = self.parse_deadline(deadline_text)
 
         detail = self._fetch_detail(page, href)
