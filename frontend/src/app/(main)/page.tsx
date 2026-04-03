@@ -16,10 +16,12 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchAuditions() {
+      const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("auditions")
         .select("*")
         .eq("is_active", true)
+        .or(`deadline.gte.${today},deadline.is.null`)
         .order("deadline", { ascending: true, nullsFirst: false });
 
       if (!error && data) {
