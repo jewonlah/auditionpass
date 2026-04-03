@@ -47,6 +47,7 @@ def upsert_auditions(auditions: list) -> int:
             "requirements": audition.requirements,
             "source_url": audition.source_url,
             "source_name": audition.source_name,
+            "apply_type": "email" if audition.apply_email else "external",
             "is_active": True,
         }
 

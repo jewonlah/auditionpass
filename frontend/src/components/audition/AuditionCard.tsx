@@ -28,6 +28,11 @@ export function AuditionCard({ audition }: AuditionCardProps) {
       </div>
       <div className="mt-2 flex items-center gap-2">
         <Badge>{audition.genre}</Badge>
+        {audition.apply_type === "email" ? (
+          <Badge variant="success">원클릭 지원</Badge>
+        ) : (
+          <Badge className="bg-gray-100 text-gray-500">사이트 지원</Badge>
+        )}
         {audition.source_name && (
           <span className="text-xs text-gray-400">{audition.source_name}</span>
         )}

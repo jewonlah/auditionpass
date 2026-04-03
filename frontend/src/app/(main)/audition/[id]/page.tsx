@@ -239,6 +239,16 @@ export default function AuditionDetailPage({
             <div className="rounded-lg bg-gray-100 py-3 text-center text-sm font-semibold text-gray-400">
               마감된 오디션입니다
             </div>
+          ) : audition.apply_type === "external" && audition.source_url ? (
+            <a
+              href={audition.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
+            >
+              지원하러 가기
+              <ExternalLink size={16} />
+            </a>
           ) : (
             <ApplyButton
               auditionId={audition.id}

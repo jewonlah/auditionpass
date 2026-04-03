@@ -34,6 +34,7 @@ export interface Audition {
   requirements: string | null;
   source_url: string | null;
   source_name: string | null;
+  apply_type: 'email' | 'external';
   is_active: boolean;
   crawled_at: string;
   created_at: string;
