@@ -33,9 +33,6 @@ export function AuditionCard({ audition }: AuditionCardProps) {
         ) : (
           <Badge className="bg-gray-100 text-gray-500">사이트 지원</Badge>
         )}
-        {audition.source_name && (
-          <span className="text-xs text-gray-400">{audition.source_name}</span>
-        )}
       </div>
     </Link>
   );

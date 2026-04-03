@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { AuditionCard } from "@/components/audition/AuditionCard";
 import { AuditionFilter } from "@/components/audition/AuditionFilter";
 import { Search, Loader2 } from "lucide-react";
@@ -9,57 +10,125 @@ import type { Audition } from "@/types";
 
 const PAGE_SIZE = 20;
 
-export default function HomePage() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const initialFilter = searchParams.get("filter") || "전체";
+  const initialSearch = searchParams.get("q") || "";
+
   const [auditions, setAuditions] = useState<Audition[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState("전체");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState(initialFilter);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const supabase = createClient();
   const observerRef = useRef<HTMLDivElement | null>(null);
   const pageRef = useRef(0);
 
   const today = new Date().toISOString().split("T")[0];
 
+  // URL 쿼리 파라미터 동기화
+  const updateURL = useCallback(
+    (filter: string, search: string) => {
+      const params = new URLSearchParams();
+      if (filter !== "전체") params.set("filter", filter);
+      if (search.trim()) params.set("q", search.trim());
+      const qs = params.toString();
+      router.replace(qs ? `?${qs}` : "/", { scroll: false });
+    },
+    [router]
+  );
+
   const fetchPage = useCallback(
-    async (page: number) => {
+    async (page: number, filter: string, search: string) => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("auditions")
         .select("*")
         .eq("is_active", true)
-        .or(`deadline.gte.${today},deadline.is.null`)
+        .or(`deadline.gte.${today},deadline.is.null`);
+
+      // 필터를 DB 쿼리에 적용
+      if (filter === "원클릭지원") {
+        query = query.eq("apply_type", "email");
+      } else if (filter === "사이트지원") {
+        query = query.eq("apply_type", "external");
+      } else if (filter !== "전체") {
+        query = query.eq("genre", filter);
+      }
+
+      // 검색어 적용
+      if (search.trim()) {
+        const q = search.trim();
+        query = query.or(`title.ilike.%${q}%,company.ilike.%${q}%`);
+      }
+
+      const { data, error } = await query
         .order("deadline", { ascending: true, nullsFirst: false })
         .range(from, to);
 
       if (error || !data) return [];
-
       return data.filter((a) => !a.deadline || a.deadline >= today);
     },
     [supabase, today]
   );
 
-  // 초기 로드
-  useEffect(() => {
-    async function init() {
-      const data = await fetchPage(0);
+  // 필터/검색 변경 시 데이터 초기화 후 첫 페이지만 로드
+  const resetAndFetch = useCallback(
+    async (filter: string, search: string) => {
+      setLoading(true);
+      setAuditions([]);
+      setHasMore(true);
+      pageRef.current = 0;
+
+      const data = await fetchPage(0, filter, search);
       setAuditions(data);
       setHasMore(data.length >= PAGE_SIZE);
-      pageRef.current = 0;
       setLoading(false);
-    }
-    init();
-  }, [fetchPage]);
+    },
+    [fetchPage]
+  );
+
+  // 초기 로드
+  useEffect(() => {
+    resetAndFetch(initialFilter, initialSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 필터 변경 핸들러
+  const handleFilterChange = useCallback(
+    (filter: string) => {
+      setSelectedFilter(filter);
+      updateURL(filter, searchQuery);
+      resetAndFetch(filter, searchQuery);
+    },
+    [searchQuery, updateURL, resetAndFetch]
+  );
+
+  // 검색어 변경 핸들러 (디바운스)
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = setTimeout(() => {
+        updateURL(selectedFilter, value);
+        resetAndFetch(selectedFilter, value);
+      }, 300);
+    },
+    [selectedFilter, updateURL, resetAndFetch]
+  );
 
   // 추가 로드
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const nextPage = pageRef.current + 1;
-    const data = await fetchPage(nextPage);
+    const data = await fetchPage(nextPage, selectedFilter, searchQuery);
     if (data.length > 0) {
       setAuditions((prev) => [...prev, ...data]);
       pageRef.current = nextPage;
@@ -68,7 +137,7 @@ export default function HomePage() {
       setHasMore(false);
     }
     setLoadingMore(false);
-  }, [loadingMore, hasMore, fetchPage]);
+  }, [loadingMore, hasMore, fetchPage, selectedFilter, searchQuery]);
 
   // IntersectionObserver로 무한스크롤
   useEffect(() => {
@@ -88,29 +157,6 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const filteredAuditions = useMemo(() => {
-    let filtered = auditions;
-
-    if (selectedFilter === "원클릭지원") {
-      filtered = filtered.filter((a) => a.apply_type === "email");
-    } else if (selectedFilter === "사이트지원") {
-      filtered = filtered.filter((a) => a.apply_type === "external");
-    } else if (selectedFilter !== "전체") {
-      filtered = filtered.filter((a) => a.genre === selectedFilter);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.trim().toLowerCase();
-      filtered = filtered.filter(
-        (a) =>
-          a.title.toLowerCase().includes(query) ||
-          a.company?.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  }, [auditions, selectedFilter, searchQuery]);
-
   return (
     <div>
       {/* 검색 바 */}
@@ -123,22 +169,22 @@ export default function HomePage() {
           type="text"
           placeholder="오디션 검색 (제목, 주최사)"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
       {/* 장르 필터 */}
-      <AuditionFilter selected={selectedFilter} onSelect={setSelectedFilter} />
+      <AuditionFilter selected={selectedFilter} onSelect={handleFilterChange} />
 
       {/* 로딩 */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 size={32} className="animate-spin text-primary" />
         </div>
-      ) : filteredAuditions.length > 0 ? (
+      ) : auditions.length > 0 ? (
         <div className="space-y-4">
-          {filteredAuditions.map((audition) => (
+          {auditions.map((audition) => (
             <AuditionCard key={audition.id} audition={audition} />
           ))}
         </div>
@@ -167,5 +213,19 @@ export default function HomePage() {
         </p>
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-16">
+          <Loader2 size={32} className="animate-spin text-primary" />
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
