@@ -9,8 +9,9 @@ import {
   ExternalLink,
   Tag,
   Loader2,
+  Clock,
+  Send,
 } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { ApplyButton } from "@/components/audition/ApplyButton";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDday, getDday, formatDate } from "@/lib/utils";
@@ -43,6 +44,12 @@ const DEFAULT_STATUS: ApplyStatus = {
   loading: true,
 };
 
+const GENRE_COLORS: Record<string, string> = {
+  배우: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+  모델: "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200",
+  기타: "bg-slate-100 text-slate-600 border border-slate-200",
+};
+
 export default function AuditionDetailPage({
   params,
 }: {
@@ -56,7 +63,6 @@ export default function AuditionDetailPage({
   const [applyStatus, setApplyStatus] = useState<ApplyStatus>(DEFAULT_STATUS);
   const supabase = createClient();
 
-  // Supabase에서 오디션 데이터 fetch
   useEffect(() => {
     async function fetchAudition() {
       const { data, error } = await supabase
@@ -74,7 +80,6 @@ export default function AuditionDetailPage({
     fetchAudition();
   }, [id, supabase]);
 
-  // 로그인 상태일 때 지원 가능 여부 확인
   useEffect(() => {
     if (authLoading) return;
 
@@ -118,7 +123,6 @@ export default function AuditionDetailPage({
     []
   );
 
-  // 로딩 중
   if (auditionLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -127,7 +131,6 @@ export default function AuditionDetailPage({
     );
   }
 
-  // 오디션 없음
   if (!audition) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -144,56 +147,79 @@ export default function AuditionDetailPage({
 
   const dday = getDday(audition.deadline);
   const isExpired = dday !== null && dday < 0;
-  const ddayVariant =
-    isExpired
-      ? "default"
-      : dday !== null && dday <= 3
-        ? "danger"
-        : dday !== null && dday <= 7
-          ? "warning"
-          : "default";
+  const isUrgent = dday !== null && dday >= 0 && dday <= 3;
+  const isWarning = dday !== null && dday >= 0 && dday <= 7;
 
   return (
     <div className="pb-28">
       {/* 뒤로가기 */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 -ml-1"
+        className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4 -ml-1 transition-colors"
       >
         <ArrowLeft size={18} />
         <span>뒤로가기</span>
       </button>
 
-      {/* 헤더 영역 */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <Badge variant={ddayVariant} className="shrink-0">
-            {isExpired ? "마감" : formatDday(audition.deadline)}
-          </Badge>
-          <Badge>{audition.genre}</Badge>
+      {/* 헤더 카드 */}
+      <div className="rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(99,102,241,0.06)]">
+        {/* 배지 영역 */}
+        <div className="flex items-center gap-2 mb-3">
+          <span
+            className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold ${GENRE_COLORS[audition.genre] ?? GENRE_COLORS["기타"]}`}
+          >
+            {audition.genre}
+          </span>
+          {audition.apply_type === "email" ? (
+            <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-200">
+              원클릭 지원
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-400 border border-gray-200">
+              사이트 지원
+            </span>
+          )}
         </div>
 
-        <h1 className="text-xl font-bold leading-tight mb-2">
+        {/* 제목 */}
+        <h1 className="text-xl font-bold leading-tight text-gray-900 mb-4">
           {audition.title}
         </h1>
 
-        <div className="space-y-1.5 text-sm text-gray-500">
+        {/* 메타 정보 */}
+        <div className="space-y-2">
           {audition.company && (
-            <div className="flex items-center gap-2">
-              <Building2 size={15} className="shrink-0" />
+            <div className="flex items-center gap-2.5 text-sm text-gray-500">
+              <Building2 size={15} className="shrink-0 text-gray-400" />
               <span>{audition.company}</span>
             </div>
           )}
           {audition.deadline && (
-            <div className="flex items-center gap-2">
-              <Calendar size={15} className="shrink-0" />
-              <span>마감일: {formatDate(audition.deadline)}</span>
+            <div className="flex items-center gap-2.5 text-sm">
+              <Calendar size={15} className="shrink-0 text-gray-400" />
+              <span className="text-gray-500">
+                {formatDate(audition.deadline)}
+              </span>
+              <span
+                className={`ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-bold ${
+                  isExpired
+                    ? "bg-gray-100 text-gray-400"
+                    : isUrgent
+                      ? "bg-red-50 text-red-600"
+                      : isWarning
+                        ? "bg-amber-50 text-amber-600"
+                        : "bg-indigo-50 text-indigo-600"
+                }`}
+              >
+                <Clock size={11} />
+                {isExpired ? "마감" : formatDday(audition.deadline)}
+              </span>
             </div>
           )}
           {audition.source_name && (
-            <div className="flex items-center gap-2">
-              <Tag size={15} className="shrink-0" />
-              <span>출처: {audition.source_name}</span>
+            <div className="flex items-center gap-2.5 text-sm text-gray-500">
+              <Tag size={15} className="shrink-0 text-gray-400" />
+              <span>{audition.source_name}</span>
             </div>
           )}
         </div>
@@ -201,13 +227,12 @@ export default function AuditionDetailPage({
 
       {/* 상세 정보 */}
       {audition.description && (
-        <section className="mt-4 rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="text-base font-bold mb-3">상세 정보</h2>
-          <div className="text-sm text-gray-600 leading-relaxed space-y-1">
+        <section className="mt-3 rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(99,102,241,0.06)]">
+          <h2 className="text-base font-bold text-gray-900 mb-3">상세 정보</h2>
+          <div className="text-[14px] text-gray-600 leading-[1.8] space-y-0.5">
             {audition.description.split("\n").map((line, i) => {
               const trimmed = line.trim();
-              if (!trimmed) return <div key={i} className="h-2" />;
-              // bullet point 라인 (•, -, *, ·)
+              if (!trimmed) return <div key={i} className="h-3" />;
               const isBullet = /^[•\-\*·▸▹►]/.test(trimmed);
               return (
                 <p key={i} className={isBullet ? "pl-1" : ""}>
@@ -225,10 +250,10 @@ export default function AuditionDetailPage({
           href={audition.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-white p-4 shadow-sm text-sm text-primary font-semibold hover:bg-primary/5 transition-colors"
+          className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-sm text-primary font-semibold hover:bg-indigo-50 transition-colors"
         >
           원문 공고 보기
-          <ExternalLink size={16} />
+          <ExternalLink size={15} />
         </a>
       )}
 
@@ -236,7 +261,7 @@ export default function AuditionDetailPage({
       <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 py-3">
         <div className="mx-auto max-w-md">
           {isExpired ? (
-            <div className="rounded-lg bg-gray-100 py-3 text-center text-sm font-semibold text-gray-400">
+            <div className="rounded-xl bg-gray-100 py-3.5 text-center text-sm font-semibold text-gray-400">
               마감된 오디션입니다
             </div>
           ) : audition.apply_type === "external" && audition.source_url ? (
@@ -244,10 +269,10 @@ export default function AuditionDetailPage({
               href={audition.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-[15px] font-bold text-white hover:bg-primary-hover transition-colors shadow-[0_4px_12px_rgba(99,102,241,0.3)]"
             >
+              <Send size={17} />
               지원하러 가기
-              <ExternalLink size={16} />
             </a>
           ) : (
             <ApplyButton

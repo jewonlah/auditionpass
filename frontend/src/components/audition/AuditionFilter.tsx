@@ -2,13 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-const FILTERS = [
-  { key: "전체", label: "전체" },
-  { key: "원클릭지원", label: "원클릭지원" },
-  { key: "사이트지원", label: "사이트지원" },
-  { key: "배우", label: "배우" },
-  { key: "모델", label: "모델" },
-] as const;
+const FILTERS = ["전체", "원클릭지원", "사이트지원", "배우", "모델"] as const;
 
 interface AuditionFilterProps {
   selected: string;
@@ -17,19 +11,19 @@ interface AuditionFilterProps {
 
 export function AuditionFilter({ selected, onSelect }: AuditionFilterProps) {
   return (
-    <div className="flex gap-1.5 mb-5 overflow-x-auto scrollbar-hide pb-0.5">
-      {FILTERS.map(({ key, label }) => (
+    <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+      {FILTERS.map((filter) => (
         <button
-          key={key}
-          onClick={() => onSelect(key)}
+          key={filter}
+          onClick={() => onSelect(filter)}
           className={cn(
-            "shrink-0 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-200",
-            selected === key
-              ? "bg-primary text-white shadow-[0_2px_8px_rgba(99,102,241,0.35)]"
-              : "bg-white text-gray-500 hover:bg-indigo-50 hover:text-primary border border-gray-100"
+            "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+            selected === filter
+              ? "bg-primary text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           )}
         >
-          {label}
+          {filter}
         </button>
       ))}
     </div>
