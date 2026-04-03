@@ -13,6 +13,7 @@ import {
   Send,
 } from "lucide-react";
 import { ApplyButton } from "@/components/audition/ApplyButton";
+import { DescriptionRenderer } from "@/components/audition/DescriptionRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDday, getDday, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -229,18 +230,7 @@ export default function AuditionDetailPage({
       {audition.description && (
         <section className="mt-3 rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(99,102,241,0.06)]">
           <h2 className="text-base font-bold text-gray-900 mb-3">상세 정보</h2>
-          <div className="text-[14px] text-gray-600 leading-[1.8] space-y-0.5">
-            {audition.description.split("\n").map((line, i) => {
-              const trimmed = line.trim();
-              if (!trimmed) return <div key={i} className="h-3" />;
-              const isBullet = /^[•\-\*·▸▹►]/.test(trimmed);
-              return (
-                <p key={i} className={isBullet ? "pl-1" : ""}>
-                  {trimmed}
-                </p>
-              );
-            })}
-          </div>
+          <DescriptionRenderer text={audition.description} />
         </section>
       )}
 
