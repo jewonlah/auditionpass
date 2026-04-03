@@ -1,41 +1,92 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { AuditionCard } from "@/components/audition/AuditionCard";
 import { AuditionFilter } from "@/components/audition/AuditionFilter";
 import { Search, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Audition } from "@/types";
 
+const PAGE_SIZE = 20;
+
 export default function HomePage() {
   const [auditions, setAuditions] = useState<Audition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const pageRef = useRef(0);
 
-  useEffect(() => {
-    async function fetchAuditions() {
-      const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split("T")[0];
+
+  const fetchPage = useCallback(
+    async (page: number) => {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       const { data, error } = await supabase
         .from("auditions")
         .select("*")
         .eq("is_active", true)
         .or(`deadline.gte.${today},deadline.is.null`)
-        .order("deadline", { ascending: true, nullsFirst: false });
+        .order("deadline", { ascending: true, nullsFirst: false })
+        .range(from, to);
 
-      if (!error && data) {
-        // 클라이언트 측 이중 필터: 마감된 공고 확실히 제외
-        const active = data.filter(
-          (a) => !a.deadline || a.deadline >= today
-        );
-        setAuditions(active);
-      }
+      if (error || !data) return [];
+
+      return data.filter((a) => !a.deadline || a.deadline >= today);
+    },
+    [supabase, today]
+  );
+
+  // 초기 로드
+  useEffect(() => {
+    async function init() {
+      const data = await fetchPage(0);
+      setAuditions(data);
+      setHasMore(data.length >= PAGE_SIZE);
+      pageRef.current = 0;
       setLoading(false);
     }
+    init();
+  }, [fetchPage]);
 
-    fetchAuditions();
-  }, [supabase]);
+  // 추가 로드
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = pageRef.current + 1;
+    const data = await fetchPage(nextPage);
+    if (data.length > 0) {
+      setAuditions((prev) => [...prev, ...data]);
+      pageRef.current = nextPage;
+    }
+    if (data.length < PAGE_SIZE) {
+      setHasMore(false);
+    }
+    setLoadingMore(false);
+  }, [loadingMore, hasMore, fetchPage]);
+
+  // IntersectionObserver로 무한스크롤
+  useEffect(() => {
+    const el = observerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const filteredAuditions = useMemo(() => {
     let filtered = auditions;
@@ -86,7 +137,7 @@ export default function HomePage() {
           <Loader2 size={32} className="animate-spin text-primary" />
         </div>
       ) : filteredAuditions.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredAuditions.map((audition) => (
             <AuditionCard key={audition.id} audition={audition} />
           ))}
@@ -99,10 +150,22 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* 무한스크롤 감지 영역 */}
+      <div ref={observerRef} className="h-4" />
+
+      {/* 추가 로딩 스피너 */}
+      {loadingMore && (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 size={24} className="animate-spin text-primary" />
+        </div>
+      )}
+
       {/* 리스트 하단 안내 */}
-      <p className="mt-6 pb-4 text-center text-xs text-gray-300">
-        매일 새로운 오디션 공고가 업데이트됩니다
-      </p>
+      {!hasMore && auditions.length > 0 && (
+        <p className="mt-4 pb-4 text-center text-xs text-gray-300">
+          모든 오디션을 불러왔습니다
+        </p>
+      )}
     </div>
   );
 }

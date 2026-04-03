@@ -17,6 +17,7 @@ from scrapers.filmmakers import FilmmakersScraper
 from scrapers.casting114 import Casting114Scraper
 from scrapers.castingnara import CastingnaraScraper
 from scrapers.castingchatgo import CastingchatgoScraper
+from scrapers.castik import CastikScraper
 from utils.supabase_client import upsert_auditions, deactivate_expired
 from utils.refine_description import refine_description
 
@@ -59,6 +60,7 @@ def main():
         Casting114Scraper(),     # 7. casting114.com — JSON API
         CastingnaraScraper(),    # 8. castingnara.com — SSR (PHP)
         CastingchatgoScraper(),  # 9. castingchatgo.com — JSON API
+        CastikScraper(),         # 10. castik.co.kr — Playwright
     ]
 
     total_collected = 0
