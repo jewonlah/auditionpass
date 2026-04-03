@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-const GENRES = ["전체", "배우", "모델"] as const;
+const FILTERS = ["전체", "원클릭지원", "사이트지원", "배우", "모델"] as const;
 
 interface AuditionFilterProps {
   selected: string;
@@ -11,19 +11,19 @@ interface AuditionFilterProps {
 
 export function AuditionFilter({ selected, onSelect }: AuditionFilterProps) {
   return (
-    <div className="flex gap-2 mb-4">
-      {GENRES.map((genre) => (
+    <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+      {FILTERS.map((filter) => (
         <button
-          key={genre}
-          onClick={() => onSelect(genre)}
+          key={filter}
+          onClick={() => onSelect(filter)}
           className={cn(
-            "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            selected === genre
+            "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+            selected === filter
               ? "bg-primary text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           )}
         >
-          {genre}
+          {filter}
         </button>
       ))}
     </div>

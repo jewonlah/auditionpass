@@ -10,7 +10,7 @@ import type { Audition } from "@/types";
 export default function HomePage() {
   const [auditions, setAuditions] = useState<Audition[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGenre, setSelectedGenre] = useState("전체");
+  const [selectedFilter, setSelectedFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
 
@@ -40,8 +40,12 @@ export default function HomePage() {
   const filteredAuditions = useMemo(() => {
     let filtered = auditions;
 
-    if (selectedGenre !== "전체") {
-      filtered = filtered.filter((a) => a.genre === selectedGenre);
+    if (selectedFilter === "원클릭지원") {
+      filtered = filtered.filter((a) => a.apply_type === "email");
+    } else if (selectedFilter === "사이트지원") {
+      filtered = filtered.filter((a) => a.apply_type === "external");
+    } else if (selectedFilter !== "전체") {
+      filtered = filtered.filter((a) => a.genre === selectedFilter);
     }
 
     if (searchQuery.trim()) {
@@ -54,7 +58,7 @@ export default function HomePage() {
     }
 
     return filtered;
-  }, [auditions, selectedGenre, searchQuery]);
+  }, [auditions, selectedFilter, searchQuery]);
 
   return (
     <div>
@@ -74,7 +78,7 @@ export default function HomePage() {
       </div>
 
       {/* 장르 필터 */}
-      <AuditionFilter selected={selectedGenre} onSelect={setSelectedGenre} />
+      <AuditionFilter selected={selectedFilter} onSelect={setSelectedFilter} />
 
       {/* 로딩 */}
       {loading ? (
