@@ -18,7 +18,6 @@ from scrapers.casting114 import Casting114Scraper
 from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from utils.supabase_client import upsert_auditions, deactivate_expired
-from utils.refine_description import refine_description
 
 # crawler/.env 로드
 load_dotenv(Path(__file__).parent / ".env")
@@ -75,13 +74,6 @@ def main():
 
             # 마감된 공고 필터링
             auditions = filter_expired(auditions, scraper.source_name)
-
-            # Claude API로 description 정제
-            for audition in auditions:
-                if audition.description:
-                    audition.description = refine_description(
-                        audition.description, audition.title
-                    )
 
             if auditions:
                 saved = upsert_auditions(auditions)

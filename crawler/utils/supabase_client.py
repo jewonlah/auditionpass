@@ -1,9 +1,9 @@
 import os
 import logging
 from datetime import date
-from typing import Optional
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from utils.refine_description import refine_description
 
 load_dotenv()
 
@@ -13,6 +13,13 @@ supabase: Client = create_client(
     os.environ["SUPABASE_URL"],
     os.environ["SUPABASE_SERVICE_ROLE_KEY"],
 )
+
+
+def _refine_if_needed(description: str | None, title: str) -> str | None:
+    """description이 있으면 Claude API로 정제"""
+    if description and len(description.strip()) >= 10:
+        return refine_description(description, title)
+    return description
 
 
 def _is_more_detailed(new: dict, existing: dict) -> bool:
@@ -68,6 +75,7 @@ def upsert_auditions(auditions: list) -> int:
                 # source_url이 다르지만 같은 공고 → 더 상세한 데이터만 업데이트
                 if existing["source_url"] != data["source_url"]:
                     if _is_more_detailed(data, existing):
+                        data["description"] = _refine_if_needed(data["description"], audition.title)
                         supabase.table("auditions").update(data).eq(
                             "id", existing["id"]
                         ).execute()
@@ -77,7 +85,19 @@ def upsert_auditions(auditions: list) -> int:
                         logger.info(f"  중복 공고 스킵 (기존이 더 상세): {data['title']}")
                     continue
 
-            # 2) source_url 기준 upsert
+            # 2) source_url 기준 — 기존에 있으면 스킵, 없으면 신규 저장
+            existing_by_url = (
+                supabase.table("auditions")
+                .select("id")
+                .eq("source_url", data["source_url"])
+                .execute()
+            )
+            if existing_by_url.data:
+                continue  # 이미 존재 → API 호출 없이 스킵
+
+            # 신규 데이터만 description 정제 (Claude API 호출)
+            data["description"] = _refine_if_needed(data["description"], audition.title)
+
             result = (
                 supabase.table("auditions")
                 .upsert(data, on_conflict="source_url")
