@@ -17,11 +17,15 @@
 ```
 auditionpass/
 ├── CLAUDE.md                  # 총괄 PM 에이전트 (현재 파일)
+├── CLAUDE.ops.md              # 운영 에이전트 (총괄 승인 권한)
+├── CLAUDE.marketing.md        # 마케팅 에이전트 (매출/트래픽)
+├── CLAUDE.design.md           # 디자인 에이전트 (비주얼/브랜딩)
 ├── frontend/
 │   ├── CLAUDE.md              # 프론트엔드 에이전트
 │   └── (Next.js 프로젝트)
 ├── crawler/
 │   ├── CLAUDE.md              # 크롤러 에이전트
+│   ├── instagram/             # 인스타 콘텐츠 자동 생성
 │   └── (Python 크롤러)
 ├── database/
 │   ├── CLAUDE.md              # DB 에이전트
@@ -31,6 +35,23 @@ auditionpass/
 └── email/
     └── CLAUDE.md              # 메일 발송 에이전트
 ```
+
+## 에이전트 승인 체계
+```
+                    [총괄 PM]
+                       │
+              ┌────────┼────────┐
+              ▼        ▼        ▼
+         [운영(Ops)]  [개발]   [기타]
+          승인 권한    자율     자율
+           │
+     ┌─────┼─────┐
+     ▼           ▼
+ [마케팅]    [디자인]
+  매출/트래픽  비주얼/브랜드
+```
+- 마케팅/디자인 에이전트는 스킬 설치·외부 연동 시 운영 에이전트 승인 필요
+- 개발 에이전트(frontend, backend, crawler, database)는 자율 실행
 
 ## 개발 우선순위 (MVP 기준)
 
