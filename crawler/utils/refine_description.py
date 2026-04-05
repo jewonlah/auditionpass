@@ -22,21 +22,7 @@ def _get_client():
     return _client
 
 
-SYSTEM_PROMPT = """당신은 오디션 공고 정보를 정리하는 어시스턴트입니다.
-주어진 원본 텍스트에서 오디션 관련 핵심 정보만 추출하여 bullet point로 정리하세요.
-
-규칙:
-- 300자 이내로 작성
-- 아래 항목 중 존재하는 것만 포함:
-  • 모집분야/배역
-  • 지원자격 (나이, 성별, 경력 등)
-  • 일정 (오디션일, 촬영일, 공연일 등)
-  • 장소
-  • 페이/출연료
-  • 지원방법
-- 불필요한 인사말, 사이트 안내, 광고 문구 제거
-- 정보가 없으면 "상세 정보 없음"으로 반환
-- 한국어로 작성"""
+SYSTEM_PROMPT = "오디션 공고 핵심만 300자 이내 bullet로 정리. 항목: 배역/자격/일정/장소/페이/지원방법. 없는 항목 생략. 인사말·광고 제거. 한국어."
 
 
 def refine_description(raw_text: str, title: str) -> str:
@@ -48,13 +34,13 @@ def refine_description(raw_text: str, title: str) -> str:
     if client is None:
         return raw_text
 
-    # 토큰 절약: 입력을 2000자로 제한
-    truncated = raw_text[:2000]
+    # 토큰 절약: 입력을 1000자로 제한 (실측 99%가 1000자 이내)
+    truncated = raw_text[:1000]
 
     try:
         message = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=400,
+            max_tokens=250,
             system=SYSTEM_PROMPT,
             messages=[
                 {

@@ -50,11 +50,11 @@ def main():
 
     scrapers = [
         PlfilScraper(),          # 1. plfil.com — SSR
-        # MegaphoneScraper(),    # 비활성화: SSL 인증서 만료 (2026-04-03 확인)
+        MegaphoneScraper(),      # 2. megaphonekorea.com — SSR (HTTP)
         OtrScraper(),            # 2. otr.co.kr — Playwright
         VauditionScraper(),      # 3. vaudition.com — Playwright
         CastlinkScraper(),       # 4. castlink.co.kr — Playwright
-        # FilmmakersScraper(),   # 비활성화: 사이트 접속 타임아웃 (2026-04-03 확인)
+        FilmmakersScraper(),     # 6. filmmakers.co.kr — SSR (재시도 로직 추가)
         Casting114Scraper(),     # 5. casting114.com — JSON API
         CastingnaraScraper(),    # 6. castingnara.com — SSR (PHP)
         CastikScraper(),         # 7. castik.co.kr — Playwright

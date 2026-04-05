@@ -24,8 +24,8 @@ _HEADERS = {
 
 class MegaphoneScraper(BaseScraper):
     source_name = "메가폰코리아"
-    base_url = "https://megaphonekorea.com"
-    list_url = "https://megaphonekorea.com/audition/variety"
+    base_url = "http://megaphonekorea.com"
+    list_url = "http://megaphonekorea.com/audition/variety"
 
     def scrape(self) -> list[AuditionData]:
         results: list[AuditionData] = []

@@ -54,11 +54,20 @@ class FilmmakersScraper(BaseScraper):
     def _scrape_list(self, list_url: str, default_genre: str) -> list[AuditionData]:
         results: list[AuditionData] = []
 
-        try:
-            resp = requests.get(list_url, timeout=30, headers=_HEADERS)
-            resp.raise_for_status()
-        except requests.RequestException as e:
-            logger.error(f"[{self.source_name}] 목록 요청 실패 ({list_url}): {e}")
+        resp = None
+        for attempt in range(3):
+            try:
+                resp = requests.get(list_url, timeout=30, headers=_HEADERS)
+                resp.raise_for_status()
+                break
+            except requests.RequestException as e:
+                if attempt < 2:
+                    logger.warning(f"[{self.source_name}] 목록 요청 재시도 {attempt+1}/3 ({list_url})")
+                    time.sleep(3)
+                else:
+                    logger.error(f"[{self.source_name}] 목록 요청 실패 ({list_url}): {e}")
+                    return results
+        if resp is None:
             return results
 
         soup = BeautifulSoup(resp.text, "lxml")
