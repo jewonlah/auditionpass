@@ -6,7 +6,7 @@ import { Home, User, Clock, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/", icon: Home, label: "홈" },
+  { href: "/auditions", icon: Home, label: "홈" },
   { href: "/profile", icon: User, label: "프로필" },
   { href: "/history", icon: Clock, label: "지원이력" },
   { href: "/pricing", icon: CreditCard, label: "구독" },

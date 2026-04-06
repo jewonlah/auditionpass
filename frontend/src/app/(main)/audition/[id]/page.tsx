@@ -137,7 +137,7 @@ export default function AuditionDetailPage({
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-gray-500 mb-4">오디션 정보를 찾을 수 없습니다.</p>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/auditions")}
           className="text-primary font-semibold hover:underline"
         >
           홈으로 돌아가기

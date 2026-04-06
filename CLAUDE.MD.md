@@ -102,6 +102,18 @@ TOSS_SECRET_KEY=
 NEXT_PUBLIC_ADSENSE_CLIENT_ID=
 ```
 
+## CLI 도구 사용 가이드 (MCP 대체)
+
+이 프로젝트에서는 토큰 낭비를 방지하고 안정성을 높이기 위해 MCP 서버 대신 다음과 같은 CLI(커맨드 라인 인터페이스) 도구들을 사용하여 작업합니다.
+
+작업 시 아래 명시된 CLI 도구들을 우선적으로 활용해 주시고, 명령어 사용법을 모를 경우 `--help` 옵션을 사용하여 직접 확인한 후 실행해 주세요.
+
+### 사용 가능한 주요 CLI 도구 및 용도
+* **GitHub 작업**: `gh` (예: `gh pr list`, `gh issue create`, `gh api` 등)
+* **HTTP/API 요청 및 데이터 추출**: `curl`과 `jq` 조합
+* **컨테이너 관리**: `docker` CLI
+* **디자인/이미지 작업**: CLI 기반 (HTML/CSS → Live Preview, Pillow, Sharp 등)
+
 ## 작업 지시 방법
 각 도메인별 작업 시 해당 서브 에이전트 CLAUDE.md를 참조하도록 지시.
 예: "database/CLAUDE.md를 참조해서 스키마를 생성해줘"

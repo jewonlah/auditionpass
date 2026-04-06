@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오디션패스 — 당신의 다음 무대</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #6366F1;
+      --primary-dark: #4F46E5;
+      --primary-light: #A5B4FC;
+      --accent: #EC4899;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-500: #6B7280;
+      --gray-900: #111827;
+      --white: #FFFFFF;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+      color: var(--gray-900);
+      background: var(--white);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+    .nav-cta {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .nav-cta:hover { background: var(--primary-dark); }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 140px 24px 80px;
+      text-align: center;
+      background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 50%, #FDF2F8 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 50%, rgba(236,72,153,0.06) 0%, transparent 50%);
+      animation: float 20s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-20px, -20px); }
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-block;
+      background: var(--white);
+      color: var(--primary);
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      border: 1px solid var(--primary-light);
+    }
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 18px;
+      color: var(--gray-500);
+      margin-bottom: 36px;
+      line-height: 1.7;
+    }
+    .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 16px 36px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 25px rgba(99,102,241,0.4); }
+    .btn-secondary {
+      background: var(--white);
+      color: var(--gray-900);
+      border: 1px solid var(--gray-100);
+      padding: 16px 36px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid rgba(99,102,241,0.15);
+    }
+    .stat-item { text-align: center; }
+    .stat-number { font-size: 32px; font-weight: 800; color: var(--primary); }
+    .stat-label { font-size: 14px; color: var(--gray-500); margin-top: 4px; }
+
+    /* ===== SECTION COMMON ===== */
+    section { padding: 100px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-tag {
+      display: inline-block;
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .section-desc {
+      font-size: 16px;
+      color: var(--gray-500);
+      max-width: 550px;
+      line-height: 1.7;
+    }
+
+    /* ===== PAIN POINT ===== */
+    .pain { background: var(--gray-50); }
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .pain-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px 28px;
+      border: 1px solid var(--gray-100);
+      transition: all 0.2s;
+    }
+    .pain-card:hover { border-color: var(--primary-light); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.06); }
+    .pain-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .pain-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .pain-card p { font-size: 14px; color: var(--gray-500); line-height: 1.7; }
+    .pain-icon.red { background: #FEE2E2; }
+    .pain-icon.yellow { background: #FEF3C7; }
+    .pain-icon.gray { background: var(--gray-100); }
+
+    /* ===== FEATURES ===== */
+    .features { background: var(--white); }
+    .feature-list { margin-top: 48px; display: flex; flex-direction: column; gap: 32px; }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      padding: 40px;
+      border-radius: 20px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      transition: all 0.2s;
+    }
+    .feature-item:hover { border-color: var(--primary-light); }
+    .feature-num {
+      font-size: 56px;
+      font-weight: 900;
+      color: var(--primary-light);
+      min-width: 80px;
+      text-align: center;
+    }
+    .feature-text h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .feature-text p { font-size: 15px; color: var(--gray-500); line-height: 1.7; }
+    .feature-badge {
+      display: inline-block;
+      background: #ECFDF5;
+      color: var(--success);
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    /* ===== HOW IT WORKS ===== */
+    .how { background: var(--gray-50); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .step {
+      text-align: center;
+      padding: 32px 20px;
+      position: relative;
+    }
+    .step-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 24px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: var(--gray-500); line-height: 1.6; }
+    .step-arrow {
+      position: absolute;
+      right: -16px;
+      top: 50px;
+      color: var(--primary-light);
+      font-size: 24px;
+    }
+
+    /* ===== PRICING ===== */
+    .pricing { background: var(--white); }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .price-card {
+      border: 1px solid var(--gray-100);
+      border-radius: 20px;
+      padding: 36px 28px;
+      text-align: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .price-card.popular {
+      border-color: var(--primary);
+      box-shadow: 0 8px 40px rgba(99,102,241,0.15);
+      transform: scale(1.03);
+    }
+    .popular-tag {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: white;
+      padding: 6px 20px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .price-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .price-amount { font-size: 40px; font-weight: 800; color: var(--primary); margin: 16px 0; }
+    .price-amount span { font-size: 16px; font-weight: 500; color: var(--gray-500); }
+    .price-card ul { list-style: none; margin: 24px 0; text-align: left; }
+    .price-card li {
+      padding: 10px 0;
+      font-size: 14px;
+      color: var(--gray-500);
+      border-bottom: 1px solid var(--gray-50);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .check { color: var(--success); font-weight: 700; }
+    .price-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .price-btn.primary { background: var(--primary); color: white; }
+    .price-btn.primary:hover { background: var(--primary-dark); }
+    .price-btn.outline { background: white; color: var(--gray-900); border: 1px solid var(--gray-100); }
+    .price-btn.outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ===== FREE BANNER ===== */
+    .free-banner {
+      margin-top: 48px;
+      background: linear-gradient(135deg, #EEF2FF, #F5F3FF, #FDF2F8);
+      border: 2px solid var(--primary-light);
+      border-radius: 24px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .free-badge-large {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      padding: 8px 24px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+    .free-banner h3 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .free-banner > p { font-size: 15px; color: var(--gray-500); margin-bottom: 28px; }
+    .free-feature-list {
+      list-style: none;
+      text-align: left;
+      max-width: 320px;
+      margin: 0 auto 32px;
+    }
+    .free-feature-list li {
+      padding: 10px 0;
+      font-size: 15px;
+      color: var(--gray-900);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(99,102,241,0.1);
+    }
+
+    /* ===== FINAL CTA ===== */
+    .final-cta {
+      background: linear-gradient(135deg, var(--primary-dark), #7C3AED);
+      color: white;
+      text-align: center;
+      padding: 100px 24px;
+    }
+    .final-cta h2 {
+      font-size: 40px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .final-cta p {
+      font-size: 18px;
+      opacity: 0.85;
+      margin-bottom: 36px;
+    }
+    .btn-white {
+      background: white;
+      color: var(--primary-dark);
+      border: none;
+      padding: 16px 40px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(0,0,0,0.2); }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--gray-900);
+      color: var(--gray-500);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .footer-brand { font-size: 18px; font-weight: 800; color: white; margin-bottom: 8px; }
+    footer p { font-size: 13px; line-height: 1.8; }
+    footer a { color: var(--primary-light); text-decoration: none; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 16px; }
+      .hero-stats { gap: 24px; }
+      .stat-number { font-size: 24px; }
+      .pain-grid { grid-template-columns: 1fr; }
+      .feature-item { flex-direction: column; gap: 20px; padding: 28px; text-align: center; }
+      .feature-num { font-size: 40px; }
+      .steps { grid-template-columns: repeat(2, 1fr); }
+      .step-arrow { display: none; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .price-card.popular { transform: scale(1); }
+      .section-title { font-size: 28px; }
+      .final-cta h2 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">AUDITION<span>PASS</span></div>
+      <button class="nav-cta">무료로 시작하기</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">배우 & 모델을 위한 오디션 플랫폼</div>
+      <h1>
+        오디션 정보,<br>
+        <span class="highlight">한 곳에서 끝내세요</span>
+      </h1>
+      <p>
+        흩어진 오디션 공고를 매일 자동으로 모아드립니다.<br>
+        프로필 한 번 등록하면, 원클릭으로 지원 완료.
+      </p>
+      <div class="hero-buttons">
+        <button class="btn-primary">지금 무료로 시작하기</button>
+        <button class="btn-secondary">오디션 둘러보기</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-number">500+</div>
+          <div class="stat-label">등록된 오디션</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">10+</div>
+          <div class="stat-label">크롤링 사이트</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">24h</div>
+          <div class="stat-label">자동 업데이트</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAIN POINT -->
+  <section class="pain">
+    <div class="section-inner">
+      <div class="section-tag">Problem</div>
+      <h2 class="section-title">오디션 준비, 이런 고민 있으셨죠?</h2>
+      <p class="section-desc">많은 배우/모델 지망생들이 겪는 공통적인 문제입니다.</p>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-icon red">😩</div>
+          <h3>정보가 너무 흩어져 있어요</h3>
+          <p>카페, 블로그, 인스타, 사이트... 오디션 공고를 찾으려면 최소 5곳 이상을 매일 확인해야 합니다.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon yellow">⏰</div>
+          <h3>마감일을 놓쳐요</h3>
+          <p>좋은 오디션을 발견해도 이미 마감. 실시간으로 알려주는 곳이 없어서 기회를 놓치게 됩니다.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon gray">📝</div>
+          <h3>지원할 때마다 똑같은 반복</h3>
+          <p>이름, 나이, 사진... 매번 같은 정보를 다시 입력하는 건 시간 낭비입니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="section-inner">
+      <div class="section-tag">Solution</div>
+      <h2 class="section-title">오디션패스가 해결합니다</h2>
+      <p class="section-desc">더 이상 오디션 정보를 찾아 헤매지 마세요.</p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-num">01</div>
+          <div class="feature-text">
+            <h3>매일 자동으로 오디션 수집</h3>
+            <p>10개 이상의 캐스팅 사이트에서 오디션 공고를 자동으로 크롤링합니다. 더 이상 여러 사이트를 돌아다닐 필요 없어요.</p>
+            <span class="feature-badge">매일 업데이트</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">02</div>
+          <div class="feature-text">
+            <h3>원클릭 지원</h3>
+            <p>프로필을 한 번만 등록하세요. 이후에는 버튼 한 번으로 오디션 지원이 완료됩니다. 반복 입력은 이제 그만.</p>
+            <span class="feature-badge">3초 만에 지원</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">03</div>
+          <div class="feature-text">
+            <h3>마감 임박 알림</h3>
+            <p>관심 있는 오디션의 마감일이 다가오면 알려드립니다. 다시는 좋은 기회를 놓치지 마세요.</p>
+            <span class="feature-badge">D-3 자동 알림</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <div class="section-inner">
+      <div class="section-tag">How it works</div>
+      <h2 class="section-title">시작은 간단합니다</h2>
+      <p class="section-desc">4단계로 오디션 지원을 시작하세요.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-circle">1</div>
+          <h3>회원가입</h3>
+          <p>이메일로 30초 만에 가입</p>
+          <span class="step-arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-circle">2</div>
+          <h3>프로필 등록</h3>
+          <p>사진, 신체 정보, 경력을 한 번 입력</p>
+          <span class="step-arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-circle">3</div>
+          <h3>오디션 탐색</h3>
+          <p>장르, 마감일로 필터링</p>
+          <span class="step-arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-circle">4</div>
+          <h3>원클릭 지원</h3>
+          <p>버튼 하나로 지원 완료</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing">
+    <div class="section-inner">
+      <div class="section-tag">Pricing</div>
+      <h2 class="section-title">지금은 모든 기능이 무료!</h2>
+      <p class="section-desc">오디션패스는 현재 오픈 기념으로 모든 기능을 무료로 제공하고 있습니다.</p>
+      <div class="free-banner">
+        <div class="free-badge-large">OPEN EVENT</div>
+        <h3>전 기능 무료 이용</h3>
+        <p>가입만 하면 아래 모든 기능을 무료로 사용할 수 있어요</p>
+        <ul class="free-feature-list">
+          <li><span class="check">&#10003;</span> 오디션 공고 무제한 열람</li>
+          <li><span class="check">&#10003;</span> 원클릭 지원 무제한</li>
+          <li><span class="check">&#10003;</span> 프로필 등록 및 관리</li>
+          <li><span class="check">&#10003;</span> 마감 임박 알림</li>
+          <li><span class="check">&#10003;</span> 지원 이력 관리</li>
+          <li><span class="check">&#10003;</span> 매일 신규 공고 업데이트</li>
+        </ul>
+        <button class="btn-primary" onclick="location.href='/signup'">무료로 시작하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final-cta">
+    <h2>당신의 다음 무대,<br>오디션패스에서 시작하세요</h2>
+    <p>지금 가입하면 무료로 오디션 공고를 확인할 수 있습니다.</p>
+    <button class="btn-white">무료로 시작하기</button>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">AUDITIONPASS</div>
+    <p>
+      당신의 다음 무대, 오디션패스<br>
+      <a href="https://instagram.com/auditionpass.kr">@auditionpass.kr</a><br><br>
+      &copy; 2026 AUDITIONPASS. All rights reserved.
+    </p>
+  </footer>
+
+</body>
+</html>
