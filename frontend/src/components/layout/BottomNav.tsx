@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Clock, CreditCard } from "lucide-react";
+import { Home, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/auditions", icon: Home, label: "홈" },
-  { href: "/profile", icon: User, label: "프로필" },
-  { href: "/history", icon: Clock, label: "지원이력" },
-  { href: "/pricing", icon: CreditCard, label: "구독" },
+  { href: "/community", icon: MessageSquare, label: "커뮤니티" },
+  { href: "/my", icon: User, label: "MY" },
 ] as const;
 
 export function BottomNav() {

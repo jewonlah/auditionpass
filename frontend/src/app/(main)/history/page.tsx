@@ -169,7 +169,7 @@ function EmptyState() {
       <p className="text-sm font-medium mb-1">아직 지원한 오디션이 없습니다</p>
       <p className="text-xs mb-4">홈에서 오디션을 찾아 지원해보세요</p>
       <Link
-        href="/"
+        href="/auditions"
         className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
       >
         오디션 둘러보기

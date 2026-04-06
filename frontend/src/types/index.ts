@@ -69,3 +69,43 @@ export interface DailyApplyCount {
   count: number;
   ad_bonus: number;
 }
+
+// ============================================
+// 커뮤니티
+// ============================================
+
+export type CommunityCategory = '자유' | '꿀팁' | '후기' | '질문' | '구인';
+
+export interface CommunityPost {
+  id: string;
+  user_id: string;
+  category: CommunityCategory;
+  title: string;
+  content: string;
+  likes_count: number;
+  comments_count: number;
+  views_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // joined
+  author_name?: string;
+  author_photo?: string;
+  has_liked?: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  likes_count: number;
+  is_active: boolean;
+  created_at: string;
+  // joined
+  author_name?: string;
+  author_photo?: string;
+  has_liked?: boolean;
+  replies?: CommunityComment[];
+}
