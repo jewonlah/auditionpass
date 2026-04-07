@@ -14,7 +14,7 @@ export async function GET(
 
   const { data: post, error } = await supabase
     .from("community_posts")
-    .select("*, profiles!community_posts_user_id_fkey(name, photo_urls)")
+    .select("*, profiles!community_posts_user_id_profiles_fkey(name, photo_urls)")
     .eq("id", id)
     .eq("is_active", true)
     .single();
@@ -53,6 +53,51 @@ export async function GET(
       has_liked: hasLiked,
     },
   });
+}
+
+// PATCH: 게시글 수정
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { category, title, content } = body;
+
+  if (!category || !title?.trim() || !content?.trim()) {
+    return NextResponse.json(
+      { error: "카테고리, 제목, 내용을 모두 입력해주세요" },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("community_posts")
+    .update({
+      category,
+      title: title.trim(),
+      content: content.trim(),
+    })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ post: data });
 }
 
 // DELETE: 게시글 삭제 (soft delete)

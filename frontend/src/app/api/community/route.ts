@@ -11,10 +11,24 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "0");
   const limit = 20;
 
+  const isMy = searchParams.get("my") === "true";
+
   let query = supabase
     .from("community_posts")
-    .select("*, profiles!community_posts_user_id_fkey(name, photo_urls)")
+    .select("*, profiles!community_posts_user_id_profiles_fkey(name, photo_urls)")
     .eq("is_active", true);
+
+  // 내가 쓴 글 필터
+  if (isMy) {
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+    }
+    query = query.eq("user_id", currentUser.id);
+  }
 
   if (category && category !== "전체") {
     query = query.eq("category", category);

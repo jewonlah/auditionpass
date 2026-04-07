@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Mail,
   Loader2,
+  PenSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -86,6 +87,12 @@ export default function MyPage() {
       icon: Clock,
       label: "지원 이력",
       desc: "지원한 오디션 확인",
+    },
+    {
+      href: "/my/posts",
+      icon: PenSquare,
+      label: "내가 쓴 글",
+      desc: "커뮤니티 작성글 관리",
     },
     {
       href: "/my/notifications",

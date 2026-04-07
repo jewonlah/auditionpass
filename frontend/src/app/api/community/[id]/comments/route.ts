@@ -11,7 +11,7 @@ export async function GET(
 
   const { data: comments, error } = await supabase
     .from("community_comments")
-    .select("*, profiles!community_comments_user_id_fkey(name, photo_urls)")
+    .select("*, profiles!community_comments_user_id_profiles_fkey(name, photo_urls)")
     .eq("post_id", postId)
     .eq("is_active", true)
     .order("created_at", { ascending: true });
