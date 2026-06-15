@@ -59,6 +59,9 @@ export async function sendApplicationEmail({
       applicantWeight: profile.weight,
       applicantBio: profile.bio,
       applicantPhone: profile.phone,
+      applicantAgency: profile.agency,
+      applicantSpecialty: profile.specialty,
+      applicantCareer: profile.career,
       instagramUrl: profile.instagram_url,
       youtubeUrl: profile.youtube_url,
       otherUrl: profile.other_url,
@@ -66,9 +69,14 @@ export async function sendApplicationEmail({
     })
   );
 
-  const subjectParts = [profile.name, profile.gender, `${profile.age}세`];
-  if (profile.phone) subjectParts.push(profile.phone);
-  const subject = `[오디션 지원] ${subjectParts.join(" / ")}`;
+  // 제목: 캐스팅 담당자가 한눈에 스캔할 수 있도록 핵심 정보 우선 배치
+  const genreLabel = profile.genre?.[0];
+  const descriptor = [
+    `${profile.gender}`,
+    `${profile.age}세`,
+    ...(genreLabel ? [genreLabel] : []),
+  ].join("/");
+  const subject = `[오디션 지원] ${profile.name} (${descriptor})`;
 
   const { data, error } = await resend.emails.send({
     from: `오디션패스 <${FROM_EMAIL}>`,
