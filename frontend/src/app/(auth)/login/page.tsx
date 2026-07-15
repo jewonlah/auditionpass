@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { resolveReturnTo, withReturnTo } from "@/lib/utils";
+import { Mail, Eye, EyeOff } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("올바른 이메일을 입력해주세요"),
@@ -18,11 +19,16 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  // F3: returnTo 소비 — 내부 경로만 허용, 폴백 /home
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo = resolveReturnTo(rawReturnTo, "/home");
 
   const {
     register,
@@ -51,7 +57,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/auditions");
+    router.push(returnTo);
     router.refresh();
   }
 
@@ -113,11 +119,11 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {/* 회원가입 링크 */}
+        {/* 회원가입 링크 — returnTo 릴레이 */}
         <p className="mt-6 text-center text-sm text-gray-500">
           아직 계정이 없으신가요?{" "}
           <Link
-            href="/signup"
+            href={rawReturnTo ? withReturnTo("/signup", returnTo) : "/signup"}
             className="font-semibold text-primary hover:underline"
           >
             회원가입
@@ -125,5 +131,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

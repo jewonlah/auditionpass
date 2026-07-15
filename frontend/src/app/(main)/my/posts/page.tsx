@@ -56,9 +56,11 @@ export default function MyPostsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push("/login");
+      router.push("/login?returnTo=%2Fmy%2Fposts");
       return;
     }
+    // TODO(R1.2 F12): 캐시 도입 시 effect 페칭 제거
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMyPosts();
   }, [user, authLoading, router, fetchMyPosts]);
 

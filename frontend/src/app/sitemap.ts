@@ -30,12 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
-    {
-      url: `${BASE_URL}/pricing`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.6,
-    },
+    // /pricing은 301 → `/` 처리 후 sitemap에서 제거 (F11 — 라우트 변경 시 301 + sitemap 동시 갱신)
   ];
 
   // 동적 페이지: 활성 오디션 상세 페이지

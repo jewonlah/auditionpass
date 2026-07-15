@@ -107,6 +107,8 @@ export default function CommunityPage() {
   );
 
   useEffect(() => {
+    // TODO(R1.2 F7/F12): React Query 등 캐시 도입 시 effect 페칭 제거
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     resetAndFetch(selectedCategory);
   }, [selectedCategory, resetAndFetch]);
 

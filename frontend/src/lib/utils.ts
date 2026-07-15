@@ -35,3 +35,25 @@ export function formatDate(dateStr: string): string {
 export function cn(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }
+
+/**
+ * returnTo 검증·소비 (F3)
+ * 동일 오리진 상대 경로만 허용 — `/`로 시작, `//`·`/\`·절대 URL 거부 (오픈 리다이렉트 방어).
+ * 검증 실패/부재 시 fallback 반환.
+ */
+export function resolveReturnTo(
+  raw: string | null | undefined,
+  fallback: string
+): string {
+  if (!raw) return fallback;
+  if (!raw.startsWith("/")) return fallback;
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return fallback;
+  return raw;
+}
+
+/**
+ * 현재 경로(+쿼리)를 returnTo 쿼리로 부착한 로그인 경로 생성
+ */
+export function withReturnTo(basePath: string, returnTo: string): string {
+  return `${basePath}?returnTo=${encodeURIComponent(returnTo)}`;
+}

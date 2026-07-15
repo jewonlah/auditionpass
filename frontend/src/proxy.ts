@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PROTECTED_ROUTES = ["/profile", "/history", "/my"];
+// Next.js 16: middleware 컨벤션이 proxy로 개명됨 (기능 동일)
+const PROTECTED_ROUTES = ["/home", "/applications", "/profile", "/my"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   const supabase = createServerClient(
@@ -33,12 +34,23 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isProtected && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // F3: 게이트 진입 시 원경로(+쿼리)를 returnTo로 부착 — 로그인 후 복귀
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set(
+      "returnTo",
+      request.nextUrl.pathname + request.nextUrl.search
+    );
+    return NextResponse.redirect(loginUrl);
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/history/:path*", "/my/:path*"],
+  matcher: [
+    "/home/:path*",
+    "/applications/:path*",
+    "/profile/:path*",
+    "/my/:path*",
+  ],
 };

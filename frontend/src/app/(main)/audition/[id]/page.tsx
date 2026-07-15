@@ -85,6 +85,8 @@ export default function AuditionDetailPage({
     if (authLoading) return;
 
     if (!user) {
+      // TODO(R1.1 F5/F7): 지원 플로우 재작성 시 데이터 페칭 구조로 정리
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setApplyStatus((prev) => ({ ...prev, loading: false }));
       return;
     }

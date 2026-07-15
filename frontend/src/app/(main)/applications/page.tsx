@@ -33,7 +33,7 @@ interface ApplicationRecord {
   audition: ApplicationAudition;
 }
 
-export default function HistoryPage() {
+export default function ApplicationsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
@@ -44,7 +44,7 @@ export default function HistoryPage() {
     if (authLoading) return;
 
     if (!user) {
-      router.push("/login");
+      router.push("/login?returnTo=%2Fapplications");
       return;
     }
 
@@ -86,9 +86,9 @@ export default function HistoryPage() {
 
   return (
     <div className="pb-4">
-      <h1 className="text-lg font-bold mb-1">지원 이력</h1>
+      <h1 className="text-lg font-bold mb-1">지원</h1>
       <p className="text-sm text-gray-500 mb-6">
-        총 {applications.length}건의 지원 이력
+        지원한 오디션 {applications.length}건
       </p>
 
       {applications.length === 0 ? (
@@ -167,7 +167,7 @@ function EmptyState() {
     <div className="flex flex-col items-center justify-center py-16 text-gray-400">
       <Inbox size={48} className="mb-3 opacity-50" />
       <p className="text-sm font-medium mb-1">아직 지원한 오디션이 없습니다</p>
-      <p className="text-xs mb-4">홈에서 오디션을 찾아 지원해보세요</p>
+      <p className="text-xs mb-4">탐색 탭에서 오디션을 찾아 첫 지원을 시작해보세요</p>
       <Link
         href="/auditions"
         className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"

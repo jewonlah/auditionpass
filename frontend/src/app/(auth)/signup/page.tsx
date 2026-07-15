@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Mail, Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { resolveReturnTo, withReturnTo } from "@/lib/utils";
+import { Mail, Eye, EyeOff, CheckCircle } from "lucide-react";
 
 const signupSchema = z
   .object({
@@ -23,11 +25,16 @@ const signupSchema = z
 
 type SignupForm = z.infer<typeof signupSchema>;
 
-export default function SignupPage() {
+function SignupContent() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+
+  // F3: 이메일 인증 왕복에도 returnTo 유지 — 콜백 URL에 릴레이
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo = resolveReturnTo(rawReturnTo, "/home");
 
   const {
     register,
@@ -44,7 +51,9 @@ export default function SignupPage() {
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: rawReturnTo
+          ? `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`
+          : `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -78,7 +87,7 @@ export default function SignupPage() {
             메일이 오지 않았다면 스팸함도 확인해보세요.
           </p>
           <Link
-            href="/login"
+            href={rawReturnTo ? withReturnTo("/login", returnTo) : "/login"}
             className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-2.5 font-semibold text-white hover:bg-primary-hover transition-colors"
           >
             로그인 페이지로 이동
@@ -156,11 +165,11 @@ export default function SignupPage() {
           </Button>
         </form>
 
-        {/* 로그인 링크 */}
+        {/* 로그인 링크 — returnTo 릴레이 */}
         <p className="mt-6 text-center text-sm text-gray-500">
           이미 계정이 있으신가요?{" "}
           <Link
-            href="/login"
+            href={rawReturnTo ? withReturnTo("/login", returnTo) : "/login"}
             className="font-semibold text-primary hover:underline"
           >
             로그인
@@ -168,5 +177,13 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupContent />
+    </Suspense>
   );
 }

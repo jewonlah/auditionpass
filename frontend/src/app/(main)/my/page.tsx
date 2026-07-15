@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   User,
-  Clock,
-  Bell,
   Shield,
   FileText,
   HelpCircle,
@@ -40,7 +38,7 @@ export default function MyPage() {
     if (authLoading) return;
 
     if (!user) {
-      router.push("/login");
+      router.push("/login?returnTo=%2Fmy");
       return;
     }
 
@@ -82,23 +80,13 @@ export default function MyPage() {
       label: "프로필 관리",
       desc: profile ? "프로필 수정" : "프로필 등록하기",
     },
-    {
-      href: "/history",
-      icon: Clock,
-      label: "지원 이력",
-      desc: "지원한 오디션 확인",
-    },
+    // 지원 이력은 바텀 탭(/applications)으로 1급 승격 — 메뉴 제거 (F6)
+    // 알림 설정은 실기능 출시 전까지 메뉴 숨김 (F11, /my/notifications → 301 /my)
     {
       href: "/my/posts",
       icon: PenSquare,
       label: "내가 쓴 글",
       desc: "커뮤니티 작성글 관리",
-    },
-    {
-      href: "/my/notifications",
-      icon: Bell,
-      label: "알림 설정",
-      desc: "마감 임박 알림 등",
     },
   ];
 

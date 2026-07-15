@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "오디션패스 | 배우·모델 오디션 정보를 한 곳에서",
@@ -40,7 +42,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // F2: 로그인 세션이면 랜딩 대신 앱 홈으로 (서버 리다이렉트 — 랜딩 플래시 없음)
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) redirect("/home");
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* NAV */}

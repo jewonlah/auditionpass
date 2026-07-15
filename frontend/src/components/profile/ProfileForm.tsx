@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhotoUpload } from "@/components/profile/PhotoUpload";
-import { cn } from "@/lib/utils";
+import { cn, resolveReturnTo } from "@/lib/utils";
 import type { Profile } from "@/types";
 import {
   Save,
@@ -55,6 +55,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ initialData }: ProfileFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [photos, setPhotos] = useState<string[]>(initialData?.photo_urls ?? []);
   const [serverError, setServerError] = useState("");
   const [specialtyInput, setSpecialtyInput] = useState("");
@@ -66,9 +67,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema) as any,
+    resolver: zodResolver(profileSchema) as Resolver<ProfileFormData>,
     defaultValues: {
       name: initialData?.name ?? "",
       age: initialData?.age ?? (undefined as unknown as number),
@@ -160,7 +160,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       return;
     }
 
-    router.push("/");
+    // F3: 저장 후 원래 맥락으로 복귀 (랜딩 추방 버그 A6 해소), 폴백 /my
+    router.push(resolveReturnTo(searchParams.get("returnTo"), "/my"));
     router.refresh();
   }
 

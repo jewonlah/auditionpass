@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileForm } from "@/components/profile/ProfileForm";
@@ -17,7 +17,7 @@ export default function ProfilePage() {
     if (authLoading) return;
 
     if (!user) {
-      router.push("/login");
+      router.push("/login?returnTo=%2Fprofile");
       return;
     }
 
@@ -49,7 +49,9 @@ export default function ProfilePage() {
           ? "정보를 수정하고 저장하세요."
           : "오디션 지원에 사용할 프로필을 등록하세요."}
       </p>
-      <ProfileForm initialData={profile} />
+      <Suspense fallback={null}>
+        <ProfileForm initialData={profile} />
+      </Suspense>
     </div>
   );
 }

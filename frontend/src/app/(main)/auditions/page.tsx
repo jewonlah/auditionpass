@@ -36,7 +36,8 @@ function HomeContent() {
       if (filter !== "전체") params.set("filter", filter);
       if (search.trim()) params.set("q", search.trim());
       const qs = params.toString();
-      router.replace(qs ? `?${qs}` : "/", { scroll: false });
+      // B3 버그 수정: 쿼리 빈 값이어도 /auditions 유지 (랜딩/홈 이탈 금지)
+      router.replace(qs ? `/auditions?${qs}` : "/auditions", { scroll: false });
     },
     [router]
   );
