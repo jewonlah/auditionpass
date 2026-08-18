@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오디션패스 — 배우·모델 오디션 공고, 매일 한 장의 콜 시트로</title>
+<meta name="description" content="필름메이커스·캐스팅114 등 캐스팅 사이트 10곳의 오디션 공고를 매일 모아 출처와 함께 싣고, 지원은 버튼 하나로 끝냅니다. 배우·모델·뮤지컬·키즈까지 14개 카테고리.">
+<link rel="canonical" href="https://auditionpass.co.kr/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="오디션패스">
+<meta property="og:title" content="오디션패스 — 당신의 다음 무대, 이미 올라와 있습니다">
+<meta property="og:description" content="캐스팅 사이트 10곳의 오디션 공고를 매일 한 장의 콜 시트로. 검증하고, 정리하고, 버튼 하나로 지원까지.">
+<meta property="og:url" content="https://auditionpass.co.kr/">
+<meta property="og:image" content="https://auditionpass.co.kr/opengraph-image">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://auditionpass.co.kr/#org",
+      "name": "오디션패스",
+      "alternateName": "AuditionPass",
+      "url": "https://auditionpass.co.kr/",
+      "logo": "https://auditionpass.co.kr/logo.png",
+      "description": "흩어진 오디션 공고를 한곳에 모으고, 검증하고, 에이전시급 서류로 지원하게 하는 배우·모델 커리어 플랫폼"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://auditionpass.co.kr/#website",
+      "name": "오디션패스",
+      "url": "https://auditionpass.co.kr/",
+      "publisher": { "@id": "https://auditionpass.co.kr/#org" },
+      "inLanguage": "ko",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": { "@type": "EntryPoint", "urlTemplate": "https://auditionpass.co.kr/auditions?q={search_term_string}" },
+        "query-input": "required name=search_term_string"
+      }
+    }
+  ]
+}
+</script>
+<style>
+/* ============ 토큰 (20_design-language 준수) ============ */
+:root{
+  --paper:#FAFAF7;
+  --surface:#FFFFFF;
+  --ink:#141414;
+  --ink-70:#4A4A48;
+  --ink-40:#8A8A86;
+  --line:#E7E5E0;
+  --primary:#4F46E5;
+  --primary-ink:#3730A3;
+  --success:#10B981;
+  --warning:#F59E0B;
+  --danger:#EF4444;
+  --ink-inverse:#FAFAF7;
+  --dark:#161615;
+  --shadow:0 1px 2px rgba(20,20,20,.04), 0 8px 24px rgba(20,20,20,.08);
+  --ease:cubic-bezier(0.22, 1, 0.36, 1);
+  --fast:150ms; --base:250ms; --slow:400ms;
+  --font:"Pretendard Variable", Pretendard, -apple-system, "Malgun Gothic", sans-serif;
+  --mono:ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);
+  background:var(--paper);
+  color:var(--ink);
+  font-size:17px; line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+ul,ol{list-style:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:2px}
+::selection{background:var(--primary);color:#fff}
+
+/* ============ 공통 ============ */
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+@media(min-width:768px){.wrap{padding:0 40px}}
+.label{
+  font-family:var(--mono);
+  font-size:11px; font-weight:500;
+  letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-40);
+}
+.num{font-variant-numeric:tabular-nums}
+.h-section{
+  font-size:clamp(28px,4vw,44px);
+  font-weight:800; letter-spacing:-0.02em; line-height:1.25;
+}
+.hairline-t{border-top:1px solid var(--line)}
+.skip{
+  position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--ink-inverse);
+  padding:10px 16px;z-index:100;font-size:14px;
+}
+.skip:focus{left:12px;top:12px}
+
+/* 세로 컨테이너 가이드라인 (에디토리얼 괘선) */
+@media(min-width:1240px){
+  .rails{position:relative}
+  .rails::before,.rails::after{
+    content:"";position:absolute;top:0;bottom:0;width:1px;background:var(--line);
+  }
+  .rails::before{left:calc(50% - 620px)}
+  .rails::after{right:calc(50% - 620px)}
+}
+
+/* 버튼 — radius 8px, 프레스 scale */
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 24px;border-radius:8px;
+  font-size:16px;font-weight:600;line-height:1.2;
+  transition:transform 100ms var(--ease), background-color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#4338CA}
+.btn-ghost{border:1px solid var(--ink);color:var(--ink);background:transparent}
+.btn-ghost:hover{background:rgba(20,20,20,.04)}
+.btn-ink{background:var(--ink);color:var(--ink-inverse)}
+.btn-ink:hover{background:#2A2A28}
+.btn-inverse{background:var(--ink-inverse);color:var(--ink)}
+.btn-inverse:hover{background:#fff}
+.btn .arr{transition:transform var(--fast) var(--ease)}
+.btn:hover .arr{transform:translateX(3px)}
+
+/* 배지 */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:999px;
+  font-size:12px;font-weight:600;line-height:1.5;
+}
+.badge-oneclick{background:var(--success);color:#fff}
+.badge-site{background:#F0F0EE;color:var(--ink-70)}
+.dday{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.dday.warn{color:var(--warning)}
+.dday.hot{color:var(--danger)}
+.dday.calm{color:var(--ink-40)}
+
+/* ============ 스크롤 리빌 ============ */
+[data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .6s var(--ease),transform .6s var(--ease);transition-delay:var(--d,0ms)}
+[data-reveal].is-in{opacity:1;transform:none}
+
+/* ============ 헤더 ============ */
+.header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(250,250,247,.88);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.header-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:18px;letter-spacing:-0.02em}
+.logo svg{flex:none}
+.header-nav{display:flex;align-items:center;gap:8px}
+.header-nav .login{font-size:15px;font-weight:500;color:var(--ink-70);padding:8px 12px;border-radius:8px;transition:color var(--fast) var(--ease)}
+.header-nav .login:hover{color:var(--ink)}
+.btn-sm{padding:9px 18px;font-size:14px}
+
+/* ============ 히어로 ============ */
+.hero{padding:56px 0 64px}
+@media(min-width:960px){.hero{padding:88px 0 96px}}
+.hero-grid{display:grid;gap:48px}
+@media(min-width:960px){
+  .hero-grid{grid-template-columns:repeat(12,1fr);gap:32px;align-items:center}
+  .hero-copy{grid-column:1 / span 6}
+  .hero-sheet{grid-column:8 / span 5}
+}
+.hero-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.hero-eyebrow .tick{width:28px;height:1px;background:var(--ink-40)}
+.hero h1{
+  font-size:clamp(40px,7vw,76px);
+  font-weight:800;letter-spacing:-0.03em;line-height:1.12;
+  margin-bottom:24px;
+}
+.hero h1 .w{display:inline-block;opacity:0;transform:translateY(.55em);transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:calc(var(--i) * 70ms)}
+.hero h1.is-loaded .w{opacity:1;transform:none}
+.hero-sub{max-width:34em;color:var(--ink-70);margin-bottom:34px}
+.hero-sub strong{color:var(--ink);font-weight:600}
+.hero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:16px}
+.hero-note{font-size:13px;color:var(--ink-40)}
+.hero-note .sep{margin:0 6px;color:var(--line)}
+
+/* 오늘의 콜 시트 카드 */
+.sheet-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--ink)}
+.sheet-head .label{color:var(--ink)}
+.cs-stack{display:flex;flex-direction:column;gap:14px}
+@media(min-width:960px){
+  .cs-stack{gap:0}
+  .cs-wrap{will-change:transform}
+  .cs-wrap:nth-child(2){margin-top:-10px;transform-origin:center}
+  .cs-wrap:nth-child(2) .cs-card{margin-left:28px;margin-right:-8px}
+  .cs-wrap:nth-child(3){margin-top:-10px}
+  .cs-wrap:nth-child(3) .cs-card{margin-right:20px}
+}
+.cs-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:18px 20px;
+  box-shadow:var(--shadow);
+}
+.cs-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cs-title{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.4;margin-bottom:4px}
+.cs-meta{font-size:13px;color:var(--ink-70);margin-bottom:12px}
+.cs-meta .dot{margin:0 6px;color:var(--line)}
+.cs-bot{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--line)}
+.cs-src{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-40)}
+.sheet-foot{margin-top:16px;font-size:13px;color:var(--ink-40)}
+@media(min-width:960px){.sheet-foot{margin-top:22px}}
+
+/* ============ 신뢰 스트립 (마퀴) ============ */
+.sources{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0;overflow:hidden}
+.sources-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.sources-head .rule{flex:1;height:1px;background:var(--line)}
+.marquee{overflow:hidden;position:relative;
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent);
+  mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent);}
+.marquee-track{display:flex;width:max-content;animation:marquee 36s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.marquee-set{display:flex;align-items:center;flex:none}
+.src-item{
+  display:inline-flex;align-items:center;gap:26px;
+  padding:0 26px;
+  font-size:19px;font-weight:600;letter-spacing:-0.01em;color:var(--ink-70);
+  white-space:nowrap;
+}
+.src-item::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--line)}
+.sources-note{margin-top:14px;font-size:13px;color:var(--ink-40)}
+
+/* ============ 3축 가치 (에디토리얼 원장) ============ */
+.value{padding:88px 0 0}
+@media(min-width:960px){.value{padding:128px 0 0}}
+.value-head{max-width:22em;margin-bottom:56px}
+.value-head .label{display:block;margin-bottom:14px}
+@media(min-width:960px){.value-head{margin-bottom:80px}}
+.axis{border-top:1px solid var(--line);padding:40px 0 48px;display:grid;gap:24px}
+.axis:last-of-type{border-bottom:1px solid var(--line)}
+@media(min-width:960px){
+  .axis{grid-template-columns:repeat(12,1fr);gap:32px;padding:56px 0 64px}
+  .axis-id{grid-column:1 / span 3}
+  .axis-body{grid-column:4 / span 6}
+  .axis-proof{grid-column:10 / span 3}
+  .axis:nth-child(odd) .axis-body{grid-column:4 / span 7}
+}
+.axis-no{
+  font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--ink-40);
+  display:block;margin-bottom:8px;font-variant-numeric:tabular-nums;
+}
+.axis-name{font-size:15px;font-weight:700;letter-spacing:-0.01em}
+.axis-claim{font-size:clamp(22px,2.8vw,30px);font-weight:800;letter-spacing:-0.02em;line-height:1.35;margin-bottom:16px}
+.axis-desc{color:var(--ink-70);max-width:32em}
+.axis-proof{display:flex;flex-direction:column;gap:0;align-self:start}
+.proof-item{padding:12px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6;color:var(--ink-70)}
+.proof-item:first-child{border-top:0;padding-top:0}
+@media(min-width:960px){.proof-item:first-child{border-top:1px solid var(--line);padding-top:12px}}
+.proof-item b{display:block;font-weight:700;color:var(--ink);font-size:14px}
+
+/* ============ How it works ============ */
+.how{padding:88px 0}
+@media(min-width:960px){.how{padding:128px 0}}
+.how-head{margin-bottom:48px;max-width:24em}
+.how-head .label{display:block;margin-bottom:14px}
+@media(min-width:960px){.how-head{margin-bottom:72px}}
+.how-grid{display:grid;gap:56px}
+@media(min-width:960px){
+  .how-grid{grid-template-columns:repeat(12,1fr);gap:32px;align-items:start}
+  .how-steps{grid-column:1 / span 5}
+  .how-mail{grid-column:7 / span 6}
+}
+.step{display:grid;grid-template-columns:auto 1fr;gap:18px;padding:26px 0;border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step-no{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink-40);padding-top:5px;font-variant-numeric:tabular-nums}
+.step h3{font-size:19px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px}
+.step p{font-size:15px;color:var(--ink-70)}
+.how-steps .how-cta{margin-top:28px}
+
+/* 지원 메일 미리보기 목업 */
+.mail{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.mail-hd{padding:16px 22px;border-bottom:1px solid var(--line);display:grid;gap:6px}
+.mail-row{display:grid;grid-template-columns:64px 1fr;gap:10px;font-size:13px;align-items:baseline}
+.mail-row .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-40);text-transform:uppercase}
+.mail-row .v{color:var(--ink-70)}
+.mail-row .v.subject{color:var(--ink);font-weight:600;font-size:14px}
+.mail-bd{padding:22px}
+.mail-profile{display:grid;grid-template-columns:96px 1fr;gap:18px;margin-bottom:18px}
+.mail-photo{
+  width:96px;height:120px;border-radius:6px;background:#EDEDEA;
+  display:flex;align-items:flex-end;justify-content:center;overflow:hidden;
+  border:1px solid var(--line);
+}
+.mail-photo svg{width:72px;height:88px;color:#C9C8C3}
+.mail-name{font-size:18px;font-weight:700;letter-spacing:-0.01em;line-height:1.3}
+.mail-cat{font-size:13px;color:var(--ink-40);margin-bottom:10px}
+.mail-specs{display:grid;gap:0;font-size:13px}
+.spec{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:6px 0;border-top:1px solid #F0F0EE}
+.spec .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-40);padding-top:2px}
+.spec .v{color:var(--ink-70)}
+.mail-msg{font-size:14px;color:var(--ink-70);line-height:1.75;padding:16px 0;border-top:1px solid var(--line)}
+.mail-attach{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:8px;
+  padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink-70);
+  background:var(--paper);
+}
+.mail-attach svg{color:var(--ink-40)}
+.mail-ft{padding:12px 22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.mail-caption{margin-top:14px;font-size:13px;color:var(--ink-40)}
+
+/* ============ 다크 섹션 ============ */
+.stagelight{background:var(--dark);color:var(--ink-inverse);padding:96px 0}
+@media(min-width:960px){.stagelight{padding:136px 0}}
+.stagelight .label{color:#7A7A76}
+.stage-grid{display:grid;gap:56px}
+@media(min-width:960px){
+  .stage-grid{grid-template-columns:repeat(12,1fr);gap:32px;align-items:center}
+  .stage-copy{grid-column:1 / span 6}
+  .stage-card{grid-column:8 / span 5}
+}
+.stage-copy .label{display:block;margin-bottom:18px}
+.stage-copy h2{margin-bottom:22px}
+.stage-copy p{color:#B9B8B3;max-width:30em;margin-bottom:14px}
+.stage-copy p strong{color:var(--ink-inverse);font-weight:600}
+.stage-cta{margin-top:32px}
+/* 컴프카드 티저 */
+.comp{
+  background:var(--surface);color:var(--ink);
+  border-radius:12px;padding:22px;
+  box-shadow:0 1px 2px rgba(0,0,0,.2), 0 16px 48px rgba(0,0,0,.35);
+  max-width:400px;
+}
+.comp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.comp-photo{
+  height:230px;border-radius:8px;background:#EDEDEA;border:1px solid var(--line);
+  display:flex;align-items:flex-end;justify-content:center;overflow:hidden;margin-bottom:16px;
+}
+.comp-photo svg{width:150px;height:180px;color:#C9C8C3}
+.comp-name{font-size:20px;font-weight:800;letter-spacing:-0.02em}
+.comp-role{font-size:13px;color:var(--ink-40);margin-bottom:14px}
+.comp-info{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.comp-cell{padding:10px 0;border-bottom:1px solid var(--line)}
+.comp-cell .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-40);text-transform:uppercase;display:block;margin-bottom:2px}
+.comp-cell .v{font-size:14px;font-weight:600}
+.comp-soon{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  color:var(--ink-40);border:1px solid var(--line);border-radius:999px;padding:4px 12px;
+}
+
+/* ============ 카테고리 인덱스 ============ */
+.cats{padding:88px 0}
+@media(min-width:960px){.cats{padding:128px 0}}
+.cats-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:40px}
+.cats-head .label{display:block;margin-bottom:14px}
+.cats-count{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-40)}
+.cat-grid{
+  display:grid;grid-template-columns:1fr;
+  gap:1px;background:var(--line);
+  border:1px solid var(--line);
+}
+@media(min-width:600px){.cat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:960px){.cat-grid{grid-template-columns:repeat(4,1fr)}}
+.cat{
+  background:var(--paper);
+  padding:20px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  transition:background-color var(--fast) var(--ease);
+}
+.cat:hover{background:var(--surface)}
+.cat .cat-l{display:flex;align-items:baseline;gap:12px}
+.cat .idx{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-40);font-variant-numeric:tabular-nums}
+.cat .name{font-size:15px;font-weight:600;letter-spacing:-0.01em}
+.cat svg{color:var(--ink-40);flex:none;transition:transform var(--fast) var(--ease),color var(--fast) var(--ease)}
+.cat:hover svg{transform:translateX(3px);color:var(--ink)}
+
+/* ============ FAQ ============ */
+.faq-sec{padding:0 0 96px}
+@media(min-width:960px){.faq-sec{padding:0 0 136px}}
+.faq-grid{display:grid;gap:32px}
+@media(min-width:960px){
+  .faq-grid{grid-template-columns:repeat(12,1fr)}
+  .faq-head{grid-column:1 / span 4}
+  .faq-list{grid-column:5 / span 8}
+}
+.faq-head .label{display:block;margin-bottom:14px}
+.faq{border-top:1px solid var(--line)}
+.faq:last-child{border-bottom:1px solid var(--line)}
+.faq summary{
+  list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:22px 0;cursor:pointer;
+  font-size:17px;font-weight:600;letter-spacing:-0.01em;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .ic{flex:none;color:var(--ink-40);transition:transform var(--base) var(--ease)}
+.faq[open] summary .ic{transform:rotate(45deg)}
+.faq-body{overflow:hidden;height:0;transition:height var(--base) var(--ease)}
+.faq-inner{padding:0 0 24px;color:var(--ink-70);font-size:15px;max-width:38em}
+
+/* ============ 최종 CTA ============ */
+.final{border-top:1px solid var(--line);padding:96px 0;text-align:left}
+@media(min-width:960px){.final{padding:136px 0}}
+.final .label{display:block;margin-bottom:16px}
+.final h2{font-size:clamp(32px,5vw,56px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:20px;max-width:16em}
+.final p{color:var(--ink-70);max-width:30em;margin-bottom:34px}
+.final-cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.final-note{margin-top:16px;font-size:13px;color:var(--ink-40)}
+
+/* ============ 푸터 ============ */
+.footer{border-top:1px solid var(--line);padding:48px 0 40px;background:var(--paper)}
+.footer-grid{display:grid;gap:32px}
+@media(min-width:768px){.footer-grid{grid-template-columns:2fr 1fr 1fr;gap:24px}}
+.footer .logo{margin-bottom:10px}
+.footer-tag{font-size:14px;color:var(--ink-40);max-width:22em}
+.footer h4{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-40);margin-bottom:14px}
+.footer li{margin-bottom:9px}
+.footer li a{font-size:14px;color:var(--ink-70);transition:color var(--fast) var(--ease)}
+.footer li a:hover{color:var(--ink)}
+.footer-bot{
+  margin-top:44px;padding-top:20px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;
+  font-size:12px;color:var(--ink-40);
+}
+.footer-bot .legal{display:flex;gap:16px}
+.footer-bot .legal a:hover{color:var(--ink)}
+
+/* ============ 모션 무효화 ============ */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  [data-reveal]{opacity:1 !important;transform:none !important}
+  .hero h1 .w{opacity:1 !important;transform:none !important}
+  .marquee-track{animation:none !important;flex-wrap:wrap;width:auto}
+  .marquee{mask-image:none;-webkit-mask-image:none}
+  .faq-body{height:auto !important}
+  .faq:not([open]) .faq-body{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<!-- ============ 헤더 ============ -->
+<header class="header">
+  <div class="wrap header-in">
+    <a class="logo" href="/" aria-label="오디션패스 홈">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="2" y="2" width="18" height="18" rx="2.5"/>
+        <path d="M2 7.5h18"/>
+        <path d="M6.5 2l3 5.5M12 2l3 5.5"/>
+        <path d="M6 13.5h7M6 17h10"/>
+      </svg>
+      오디션패스
+    </a>
+    <nav class="header-nav" aria-label="주 메뉴">
+      <a class="login" href="/login">로그인</a>
+      <a class="btn btn-ink btn-sm" href="/auditions">시작하기</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ 히어로 ============ -->
+  <section class="hero rails" aria-labelledby="hero-h">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="hero-eyebrow"><span class="tick" aria-hidden="true"></span><span class="label">Call Sheet — 매일 아침 갱신</span></p>
+        <h1 id="hero-h" aria-label="당신의 다음 무대, 이미 올라와 있습니다">
+          <span aria-hidden="true">
+            <span class="w" style="--i:0">당신의</span> <span class="w" style="--i:1">다음</span> <span class="w" style="--i:2">무대,</span><br>
+            <span class="w" style="--i:3">이미</span> <span class="w" style="--i:4">올라와</span> <span class="w" style="--i:5">있습니다</span>
+          </span>
+        </h1>
+        <p class="hero-sub">필름메이커스, 캐스팅114… 캐스팅 사이트 <strong>10곳에 흩어진 공고</strong>를 매일 한 장의 콜 시트로 정리합니다. 모으고, 확인하고, <strong>원클릭으로 지원까지</strong> — 당신은 연기만 준비하세요.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/auditions">오늘 올라온 공고 보기 <svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a>
+          <a class="btn btn-ghost" href="#how">작동 방식 보기</a>
+        </div>
+        <p class="hero-note">가입 없이 둘러볼 수 있습니다<span class="sep" aria-hidden="true">|</span>원클릭 지원, 횟수 제한 없음</p>
+      </div>
+
+      <div class="hero-sheet" aria-label="오늘의 콜 시트 예시">
+        <div class="sheet-head">
+          <span class="label">Today’s Call Sheet</span>
+          <span class="label num">2026.07.15</span>
+        </div>
+        <div class="cs-stack">
+          <div class="cs-wrap" data-plx="0.030">
+            <article class="cs-card" data-reveal>
+              <div class="cs-top">
+                <span class="label">Category — 영화</span>
+                <span class="dday warn num">D-6</span>
+              </div>
+              <h3 class="cs-title">독립장편 〈유월〉 주연 ‘수린’ 역</h3>
+              <p class="cs-meta">20대 여성<span class="dot" aria-hidden="true">·</span>서울<span class="dot" aria-hidden="true">·</span>페이 협의</p>
+              <div class="cs-bot">
+                <span class="cs-src">출처 — 필름메이커스</span>
+                <span class="badge badge-oneclick">원클릭 지원</span>
+              </div>
+            </article>
+          </div>
+          <div class="cs-wrap" data-plx="0.060">
+            <article class="cs-card" data-reveal style="--d:100ms">
+              <div class="cs-top">
+                <span class="label">Category — 뮤지컬</span>
+                <span class="dday calm num">D-12</span>
+              </div>
+              <h3 class="cs-title">창작 뮤지컬 남녀 앙상블 모집</h3>
+              <p class="cs-meta">20~30대<span class="dot" aria-hidden="true">·</span>대학로<span class="dot" aria-hidden="true">·</span>회차 페이</p>
+              <div class="cs-bot">
+                <span class="cs-src">출처 — 플레이DB</span>
+                <span class="badge badge-oneclick">원클릭 지원</span>
+              </div>
+            </article>
+          </div>
+          <div class="cs-wrap" data-plx="0.095">
+            <article class="cs-card" data-reveal style="--d:200ms">
+              <div class="cs-top">
+                <span class="label">Category — 키즈</span>
+                <span class="dday hot num">D-3</span>
+              </div>
+              <h3 class="cs-title">SS 시즌 카탈로그 키즈모델 촬영</h3>
+              <p class="cs-meta">5~9세<span class="dot" aria-hidden="true">·</span>성수동<span class="dot" aria-hidden="true">·</span>페이 명시</p>
+              <div class="cs-bot">
+                <span class="cs-src">출처 — 캐스팅114</span>
+                <span class="badge badge-site">사이트 지원</span>
+              </div>
+            </article>
+          </div>
+        </div>
+        <p class="sheet-foot" data-reveal style="--d:300ms">모든 공고는 수집 출처와 원문 링크를 함께 싣습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 신뢰 스트립 ============ -->
+  <section class="sources" aria-labelledby="src-h">
+    <div class="wrap">
+      <div class="sources-head">
+        <h2 class="label" id="src-h">Sources — 매일 수집하는 곳 10곳</h2>
+        <span class="rule" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="marquee" data-reveal>
+      <div class="marquee-track">
+        <div class="marquee-set">
+          <span class="src-item">필름메이커스</span><span class="src-item">캐스팅114</span><span class="src-item">캐스팅나라</span><span class="src-item">플필</span><span class="src-item">브이오디션</span><span class="src-item">캐스틱</span><span class="src-item">스타렛</span><span class="src-item">메가폰</span><span class="src-item">캐스트링크</span><span class="src-item">OTR</span>
+        </div>
+        <div class="marquee-set" aria-hidden="true">
+          <span class="src-item">필름메이커스</span><span class="src-item">캐스팅114</span><span class="src-item">캐스팅나라</span><span class="src-item">플필</span><span class="src-item">브이오디션</span><span class="src-item">캐스틱</span><span class="src-item">스타렛</span><span class="src-item">메가폰</span><span class="src-item">캐스트링크</span><span class="src-item">OTR</span>
+        </div>
+      </div>
+    </div>
+    <div class="wrap"><p class="sources-note">공고는 요약과 출처, 원문 링크로 싣습니다. 원문이 먼저입니다.</p></div>
+  </section>
+
+  <!-- ============ 3축 가치 ============ -->
+  <section class="value rails" aria-labelledby="value-h">
+    <div class="wrap">
+      <div class="value-head" data-reveal>
+        <span class="label">Why AuditionPass</span>
+        <h2 class="h-section" id="value-h">무대에 서는 일 말고는,<br>전부 저희가 합니다</h2>
+      </div>
+
+      <div class="axis" data-reveal>
+        <div class="axis-id">
+          <span class="axis-no">01 / 커버리지</span>
+          <span class="axis-name">전부 모아서</span>
+        </div>
+        <div class="axis-body">
+          <h3 class="axis-claim">10곳을 돌던 아침이<br>5분으로 줄어듭니다</h3>
+          <p class="axis-desc">공고를 찾는 것도 일이었습니다. 사이트 10곳을 매일 수집해 영화·드라마부터 연극·뮤지컬·키즈까지, 시장에 나온 공고를 한 장의 콜 시트로 만듭니다.</p>
+        </div>
+        <div class="axis-proof">
+          <div class="proof-item"><b>수집 소스 10곳</b>필름메이커스·캐스팅114 등, 매일 갱신</div>
+          <div class="proof-item"><b>카테고리 14개</b>연극·뮤지컬·성우까지 커버</div>
+          <div class="proof-item"><b>마감일 순 정렬</b>D-day 표기로 놓칠 일이 없게</div>
+        </div>
+      </div>
+
+      <div class="axis" data-reveal>
+        <div class="axis-id">
+          <span class="axis-no">02 / 신뢰</span>
+          <span class="axis-name">걸러서</span>
+        </div>
+        <div class="axis-body">
+          <h3 class="axis-claim">출처 없는 공고는<br>싣지 않습니다</h3>
+          <p class="axis-desc">이 바닥에 이상한 공고가 많다는 것, 저희도 압니다. 그래서 모든 공고에 어디서 가져왔는지와 원문 링크를 붙이고, 이상 신호가 있는 공고는 걸러냅니다.</p>
+        </div>
+        <div class="axis-proof">
+          <div class="proof-item"><b>출처·원문 링크 표시</b>모든 공고에 예외 없이</div>
+          <div class="proof-item"><b>이상 신호 점검</b>선입금·과도한 개인정보 요구 키워드 플래그</div>
+          <div class="proof-item"><b>신고 즉시 검토</b>확인되면 바로 내립니다</div>
+        </div>
+      </div>
+
+      <div class="axis" data-reveal>
+        <div class="axis-id">
+          <span class="axis-no">03 / 전달물</span>
+          <span class="axis-name">제대로 보내서</span>
+        </div>
+        <div class="axis-body">
+          <h3 class="axis-claim">당신의 지원 서류가<br>에이전시가 보낸 것처럼 도착합니다</h3>
+          <p class="axis-desc">급하게 쓴 자기소개와 사진 링크 하나로는 아깝습니다. 프로필을 한 번만 만들면, 사진·경력·특기가 정돈된 지원 메일로 담당자의 진짜 메일함에 도착합니다.</p>
+        </div>
+        <div class="axis-proof">
+          <div class="proof-item"><b>원클릭 지원</b>버튼 하나로, 사진·프로필·경력이 정돈된 메일 발송</div>
+          <div class="proof-item"><b>담당자 메일함 직행</b>플랫폼 안 쪽지가 아니라</div>
+          <div class="proof-item"><b>지원 이력 자동 기록</b>어디에 언제 냈는지 한눈에</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ How it works ============ -->
+  <section class="how rails" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="how-head" data-reveal>
+        <span class="label">How It Works</span>
+        <h2 class="h-section" id="how-h">확인부터 지원까지,<br>세 걸음이면 됩니다</h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-steps" data-reveal>
+          <div class="step">
+            <span class="step-no">Step 01</span>
+            <div>
+              <h3>오늘의 공고를 확인합니다</h3>
+              <p>매일 갱신되는 콜 시트에서 내 분야·지역에 맞는 공고를 고르세요. 가입 전에도 전부 볼 수 있습니다.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-no">Step 02</span>
+            <div>
+              <h3>프로필은 3분이면 충분합니다</h3>
+              <p>사진 한 장과 기본 정보로 시작하세요. 한 번 만들면, 같은 서류를 다시 쓸 일이 없습니다.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-no">Step 03</span>
+            <div>
+              <h3>원클릭으로 지원합니다</h3>
+              <p>버튼 하나로 정리된 지원 메일이 담당자 메일함에 바로 발송되고, 지원 이력은 자동으로 남습니다.</p>
+            </div>
+          </div>
+          <div class="how-cta">
+            <a class="btn btn-ink" href="/signup">3분 만에 프로필 만들기 <svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a>
+          </div>
+        </div>
+
+        <div class="how-mail" data-reveal style="--d:120ms">
+          <figure class="mail" role="img" aria-label="오디션패스가 자동으로 구성한 지원 메일 미리보기">
+            <div class="mail-hd">
+              <div class="mail-row"><span class="k">To</span><span class="v">독립장편 〈유월〉 캐스팅팀</span></div>
+              <div class="mail-row"><span class="k">From</span><span class="v">김지현 님의 오디션패스 프로필</span></div>
+              <div class="mail-row"><span class="k">Subject</span><span class="v subject">[오디션 지원] 〈유월〉 주연 ‘수린’ 역 — 김지현</span></div>
+            </div>
+            <div class="mail-bd">
+              <div class="mail-profile">
+                <div class="mail-photo" aria-hidden="true">
+                  <svg viewBox="0 0 72 88" fill="currentColor" aria-hidden="true">
+                    <circle cx="36" cy="28" r="16"/>
+                    <path d="M8 88c0-18 12-30 28-30s28 12 28 30z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="mail-name">김지현</p>
+                  <p class="mail-cat">배우 (영화·드라마) · 만 24세</p>
+                  <div class="mail-specs">
+                    <div class="spec"><span class="k">키</span><span class="v num">165cm</span></div>
+                    <div class="spec"><span class="k">특기</span><span class="v">판소리, 검도, 부산 사투리</span></div>
+                    <div class="spec"><span class="k">경력</span><span class="v">단편 〈겨울잠〉 주연 (2025) 외 2편</span></div>
+                  </div>
+                </div>
+              </div>
+              <p class="mail-msg">안녕하세요, 배우 김지현입니다. 〈유월〉의 ‘수린’ 역에 지원합니다. 프로필과 연기 영상 링크를 함께 보내드립니다. 검토 부탁드립니다.</p>
+              <span class="mail-attach">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M12 6.5L7.2 11.3a3.2 3.2 0 01-4.5-4.5L7.5 2a2.1 2.1 0 013 3L5.8 9.7a1 1 0 01-1.5-1.5L8.5 4"/></svg>
+                김지현_프로필.pdf
+              </span>
+            </div>
+            <div class="mail-ft">
+              <span class="label">Sent via AuditionPass</span>
+              <span class="label num">07.15 09:12</span>
+            </div>
+          </figure>
+          <p class="mail-caption">실제로 발송되는 지원 메일의 미리보기입니다. 보낸 그대로 지원 탭에 남습니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 다크 섹션 — 열망 + 컴프카드 티저 ============ -->
+  <section class="stagelight" aria-labelledby="stage-h">
+    <div class="wrap stage-grid">
+      <div class="stage-copy" data-reveal>
+        <span class="label">Comp Card</span>
+        <h2 class="h-section" id="stage-h">기회는 늘<br>서류보다 빨리 옵니다</h2>
+        <p>갑자기 잡힌 미팅, 오늘 마감인 공고 앞에서 서류를 새로 만들던 밤 — 먼저 겪어본 사람들이 만들었습니다.</p>
+        <p><strong>프로필이 곧 컴프카드가 됩니다.</strong> 헤드샷·신체 정보·경력이 담긴 업계 표준 한 장이 지원 메일에 자동으로 첨부됩니다. 소속사 있는 배우와의 서류 격차, 여기서 지웁니다.</p>
+        <div class="stage-cta">
+          <a class="btn btn-inverse" href="/signup">내 프로필 준비해 두기 <svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a>
+        </div>
+      </div>
+      <div class="stage-card" data-reveal style="--d:120ms">
+        <div class="comp" role="img" aria-label="컴프카드 미리보기 — 준비 중인 기능">
+          <div class="comp-top">
+            <span class="label">Comp Card — A4</span>
+            <span class="comp-soon">준비 중</span>
+          </div>
+          <div class="comp-photo" aria-hidden="true">
+            <svg viewBox="0 0 150 180" fill="currentColor" aria-hidden="true">
+              <circle cx="75" cy="58" r="33"/>
+              <path d="M15 180c0-37 26-62 60-62s60 25 60 62z"/>
+            </svg>
+          </div>
+          <p class="comp-name">김지현</p>
+          <p class="comp-role">배우 (영화·드라마)</p>
+          <div class="comp-info">
+            <div class="comp-cell"><span class="k">Height</span><span class="v num">165cm</span></div>
+            <div class="comp-cell"><span class="k">Born</span><span class="v num">2002</span></div>
+            <div class="comp-cell"><span class="k">Base</span><span class="v">서울</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 카테고리 인덱스 ============ -->
+  <section class="cats rails" aria-labelledby="cats-h">
+    <div class="wrap">
+      <div class="cats-head" data-reveal>
+        <div>
+          <span class="label">Index</span>
+          <h2 class="h-section" id="cats-h">찾는 무대가 따로 있다면</h2>
+        </div>
+        <span class="cats-count num">14 Categories</span>
+      </div>
+      <nav aria-label="오디션 카테고리">
+        <ul class="cat-grid" data-reveal>
+          <li><a class="cat" href="/auditions/actor"><span class="cat-l"><span class="idx num">01</span><span class="name">배우 (영화·드라마)</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/theater"><span class="cat-l"><span class="idx num">02</span><span class="name">연극</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/musical"><span class="cat-l"><span class="idx num">03</span><span class="name">뮤지컬</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/model"><span class="cat-l"><span class="idx num">04</span><span class="name">모델</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/singer"><span class="cat-l"><span class="idx num">05</span><span class="name">가수·보컬</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/idol"><span class="cat-l"><span class="idx num">06</span><span class="name">아이돌 연습생</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/dance"><span class="cat-l"><span class="idx num">07</span><span class="name">댄서·안무</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/kids"><span class="cat-l"><span class="idx num">08</span><span class="name">아역·키즈</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/extra"><span class="cat-l"><span class="idx num">09</span><span class="name">보조출연·단역</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/mc"><span class="cat-l"><span class="idx num">10</span><span class="name">MC·아나운서</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/voice"><span class="cat-l"><span class="idx num">11</span><span class="name">성우·더빙</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/creator"><span class="cat-l"><span class="idx num">12</span><span class="name">크리에이터·방송</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/ad"><span class="cat-l"><span class="idx num">13</span><span class="name">광고·CF</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+          <li><a class="cat" href="/auditions/agency"><span class="cat-l"><span class="idx num">14</span><span class="name">기획사 공개 오디션</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a></li>
+        </ul>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="faq-sec rails" aria-labelledby="faq-h">
+    <div class="wrap faq-grid">
+      <div class="faq-head" data-reveal>
+        <span class="label">FAQ</span>
+        <h2 class="h-section" id="faq-h">자주 묻는 질문</h2>
+      </div>
+      <div class="faq-list" data-reveal style="--d:100ms">
+        <details class="faq">
+          <summary>정말 무료인가요?
+            <svg class="ic" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg>
+          </summary>
+          <div class="faq-body"><div class="faq-inner">네. 공고 열람과 지원 모두 무료이고, 지원 횟수 제한도 없습니다. 앞으로 유료 기능이 생기더라도 즉시 알림·컴프카드 템플릿 같은 부가 기능에만 적용됩니다. 보고 지원하는 일이 유료가 되는 일은 없습니다.</div></div>
+        </details>
+        <details class="faq">
+          <summary>공고는 어디에서 가져오나요?
+            <svg class="ic" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg>
+          </summary>
+          <div class="faq-body"><div class="faq-inner">필름메이커스, 캐스팅114, 캐스팅나라 등 캐스팅 사이트 10곳에서 매일 수집합니다. 모든 공고에는 수집 출처와 원문 링크가 붙어 있어, 언제든 원문에서 직접 확인할 수 있습니다.</div></div>
+        </details>
+        <details class="faq">
+          <summary>사기 공고가 걱정됩니다.
+            <svg class="ic" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg>
+          </summary>
+          <div class="faq-body"><div class="faq-inner">당연한 걱정입니다. 출처 없는 공고는 싣지 않고, 선입금 요구나 과도한 개인정보 수집 같은 이상 신호가 있는 공고는 걸러냅니다. 그래도 이상하다 싶으면 공고의 신고 버튼을 눌러 주세요. 확인 후 바로 내립니다.</div></div>
+        </details>
+        <details class="faq">
+          <summary>지원하면 담당자에게 어떻게 보이나요?
+            <svg class="ic" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg>
+          </summary>
+          <div class="faq-body"><div class="faq-inner">사진·기본 정보·경력·특기가 정돈된 지원 메일이 담당자의 실제 메일함으로 발송됩니다. 플랫폼 안에서만 보이는 쪽지가 아닙니다. 보낸 내용은 지원 탭에 그대로 남아 언제든 다시 확인할 수 있습니다.</div></div>
+        </details>
+        <details class="faq">
+          <summary>소속사가 없어도 괜찮나요?
+            <svg class="ic" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg>
+          </summary>
+          <div class="faq-body"><div class="faq-inner">오디션패스는 소속사 없는 지망생을 위해 만든 서비스입니다. 프로필 하나로 에이전시급 지원 서류를 갖추는 것 — 그게 저희가 하는 일의 전부입니다.</div></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 최종 CTA ============ -->
+  <section class="final rails" aria-labelledby="final-h">
+    <div class="wrap">
+      <div data-reveal>
+        <span class="label num">Call Sheet — 2026.07.15</span>
+        <h2 id="final-h">오늘의 콜 시트가<br>나와 있습니다</h2>
+        <p>지금 올라와 있는 공고부터 확인해 보세요. 가입은 지원할 때 해도 늦지 않습니다.</p>
+        <div class="final-cta">
+          <a class="btn btn-primary" href="/auditions">오늘의 콜 시트 열기 <svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 3.5L13.5 8 9 12.5"/></svg></a>
+          <a class="btn btn-ghost" href="/signup">3분 만에 프로필 만들기</a>
+        </div>
+        <p class="final-note">매일 아침 갱신 · 캐스팅 사이트 10곳 수집 · 카테고리 14개</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ 푸터 ============ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="logo" href="/" aria-label="오디션패스 홈">
+          <svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <rect x="2" y="2" width="18" height="18" rx="2.5"/>
+            <path d="M2 7.5h18"/>
+            <path d="M6.5 2l3 5.5M12 2l3 5.5"/>
+            <path d="M6 13.5h7M6 17h10"/>
+          </svg>
+          오디션패스
+        </a>
+        <p class="footer-tag">당신의 다음 무대를 찾아주는 곳.<br>흩어진 오디션을 모으고, 확인하고, 에이전시급 서류로 지원합니다.</p>
+      </div>
+      <nav aria-label="서비스">
+        <h4>서비스</h4>
+        <ul>
+          <li><a href="/auditions">오디션 찾기</a></li>
+          <li><a href="/auditions/actor">배우 오디션</a></li>
+          <li><a href="/auditions/model">모델 오디션</a></li>
+          <li><a href="/community">커뮤니티</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="고객 지원">
+        <h4>고객 지원</h4>
+        <ul>
+          <li><a href="mailto:hello@auditionpass.co.kr">문의하기</a></li>
+          <li><a href="/terms">이용약관</a></li>
+          <li><a href="/privacy">개인정보처리방침</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-bot">
+      <span>© 2026 AuditionPass. All rights reserved.</span>
+      <span class="legal"><a href="/terms">약관</a><a href="/privacy">개인정보</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- 히어로 워드 스태거 ---------- */
+  var h1 = document.querySelector('.hero h1');
+  if (h1) {
+    if (RM) { h1.classList.add('is-loaded'); }
+    else {
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        h1.classList.add('is-loaded');
+      });});
+    }
+  }
+
+  /* ---------- 스크롤 리빌 (섹션당 1회) ---------- */
+  var reveals = Array.prototype.slice.call(document.querySelectorAll('[data-reveal]'));
+  if (RM || !('IntersectionObserver' in window)) {
+    reveals.forEach(function(el){ el.classList.add('is-in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) {
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
+    reveals.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---------- 콜시트 카드 미세 패럴랙스 (transform만, rAF 배칭) ---------- */
+  var plxEls = Array.prototype.slice.call(document.querySelectorAll('[data-plx]'));
+  if (!RM && plxEls.length) {
+    var hero = document.querySelector('.hero');
+    var active = false, ticking = false, sy = window.scrollY || 0;
+
+    var render = function(){
+      ticking = false;
+      if (!active) return;
+      plxEls.forEach(function(el){
+        var f = parseFloat(el.getAttribute('data-plx')) || 0;
+        el.style.transform = 'translateY(' + (-sy * f).toFixed(1) + 'px)';
+      });
+    };
+    var onScroll = function(){
+      sy = window.scrollY || 0;
+      if (!ticking) { ticking = true; requestAnimationFrame(render); }
+    };
+    var heroIO = new IntersectionObserver(function(entries){
+      active = entries[0].isIntersecting;
+      if (active) { onScroll(); }
+    }, { threshold: 0 });
+    heroIO.observe(hero);
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  /* ---------- FAQ 부드러운 펼침 ---------- */
+  var faqs = Array.prototype.slice.call(document.querySelectorAll('details.faq'));
+  faqs.forEach(function(d){
+    var summary = d.querySelector('summary');
+    var body = d.querySelector('.faq-body');
+    if (!summary || !body) return;
+
+    if (RM) {
+      body.style.height = 'auto';
+      return; /* 네이티브 details 동작 그대로 */
+    }
+
+    var animating = false;
+    summary.addEventListener('click', function(ev){
+      ev.preventDefault();
+      if (animating) return;
+      animating = true;
+
+      if (d.open) {
+        /* 닫기: 현재 높이 → 0 */
+        body.style.height = body.scrollHeight + 'px';
+        requestAnimationFrame(function(){
+          body.style.height = '0px';
+        });
+        body.addEventListener('transitionend', function h(){
+          body.removeEventListener('transitionend', h);
+          d.open = false;
+          animating = false;
+        });
+      } else {
+        /* 열기: 0 → 콘텐츠 높이 */
+        d.open = true;
+        var target = body.scrollHeight;
+        body.style.height = '0px';
+        requestAnimationFrame(function(){
+          body.style.height = target + 'px';
+        });
+        body.addEventListener('transitionend', function h(){
+          body.removeEventListener('transitionend', h);
+          body.style.height = 'auto';
+          animating = false;
+        });
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

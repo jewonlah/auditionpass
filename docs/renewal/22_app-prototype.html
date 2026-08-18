@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오디션패스 — 앱 프로토타입 (22)</title>
+<style>
+/* ============================================================
+   AUDITIONPASS · APP PROTOTYPE 22 · 「콜 시트」 디자인 언어 v2
+   기준: 20_design-language.md / 23_design-system.md
+   ============================================================ */
+:root{
+  --paper:#FAFAF7;
+  --surface:#FFFFFF;
+  --ink:#141414;
+  --ink-70:#4A4A48;
+  --ink-40:#8A8A86;
+  --line:#E7E5E0;
+  --line-app:#F0F0EE;
+  --primary:#4F46E5;
+  --primary-ink:#3730A3;
+  --success:#10B981;
+  --warning:#F59E0B;
+  --danger:#EF4444;
+  --ink-inverse:#FAFAF7;
+  --dark:#161615;
+  --shadow-raised:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.08);
+  --shadow-overlay:0 -4px 16px rgba(20,20,20,.06),0 -24px 48px rgba(20,20,20,.10);
+  --r-control:12px;
+  --r-sheet:22px;
+  --fill:#F4F4F2;
+  --fill-weak:rgba(20,20,20,.045);
+  --dur-fast:150ms;
+  --dur-base:250ms;
+  --dur-slow:400ms;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-sheet:cubic-bezier(0.32,0.72,0,1);
+  --font-sans:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic",sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--font-sans);
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:-0.01em;
+  overflow:hidden;
+}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input{font-family:inherit}
+ul{list-style:none}
+a{color:inherit;text-decoration:none}
+svg{display:block;flex-shrink:0}
+
+/* ── 유틸리티 ─────────────────────────────── */
+.mono{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-40)}
+.tabular{font-variant-numeric:tabular-nums}
+.pressable{transition:transform 100ms var(--ease-out)}
+.pressable:active{transform:scale(0.98)}
+.hairline{border-bottom:1px solid var(--line-app)}
+
+/* ── 데스크톱 스테이지 ─────────────────────── */
+.stagewrap{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:18px;
+  background:var(--paper);
+}
+.stage-caption{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;
+  color:var(--ink-40);text-transform:uppercase;
+}
+.stage-lines{position:fixed;inset:0;pointer-events:none}
+.stage-lines::before,.stage-lines::after{
+  content:"";position:absolute;top:0;bottom:0;width:1px;background:var(--line);
+}
+.stage-lines::before{left:calc(50% - 290px)}
+.stage-lines::after{left:calc(50% + 289px)}
+
+/* ── 폰 프레임 ────────────────────────────── */
+.phone{
+  position:relative;width:390px;height:844px;max-height:calc(100vh - 70px);
+  background:#0B0B0A;border-radius:52px;
+  box-shadow:0 2px 6px rgba(20,20,20,.10),0 32px 72px rgba(20,20,20,.22);
+  padding:5px;flex-shrink:0;
+}
+.phone-screen{
+  position:relative;width:100%;height:100%;
+  background:var(--surface);border-radius:47px;overflow:hidden;
+}
+.island{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:118px;height:34px;border-radius:18px;background:#0B0B0A;z-index:200;
+}
+.homebar{
+  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  width:132px;height:5px;border-radius:3px;background:var(--ink);opacity:.85;z-index:200;
+  pointer-events:none;
+}
+
+@media (max-width:520px),(max-height:900px) and (max-width:520px){
+  .stagewrap{padding:0}
+  .stage-caption,.stage-lines{display:none}
+  .phone{width:100%;height:100dvh;max-height:none;border-radius:0;padding:0;box-shadow:none}
+  .phone-screen{border-radius:0}
+  .island,.homebar{display:none}
+}
+
+/* ── 앱 셸 ────────────────────────────────── */
+.app{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface)}
+.statusbar{
+  flex-shrink:0;height:54px;display:flex;align-items:flex-end;
+  justify-content:space-between;padding:0 30px 6px;
+  font-size:14px;font-weight:600;position:relative;z-index:150;background:var(--surface);
+}
+.statusbar .sb-icons{display:flex;align-items:center;gap:6px}
+
+#stage{position:relative;flex:1;min-height:0}
+
+/* ── 스크린 공통 ──────────────────────────── */
+.screen{
+  position:absolute;inset:0;background:var(--surface);
+  overflow-y:auto;overscroll-behavior:contain;display:none;
+  scrollbar-width:none;overflow-anchor:none;
+}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{display:block}
+.screen.anim{animation:tab-in 200ms var(--ease-out) both}
+@keyframes tab-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* iOS 네브바: 기본 투명 → 스크롤 시 hairline + blur + 센터 타이틀 등장 */
+.hdr{
+  position:sticky;top:0;z-index:5;height:48px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px;background:transparent;
+  border-bottom:1px solid transparent;
+  transition:background-color 200ms,border-color 200ms;
+}
+.hdr.scrolled{
+  background:rgba(255,255,255,.85);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom-color:var(--line-app);
+}
+.hdr .hdr-side{display:flex;align-items:center;min-width:52px}
+.hdr .hdr-ctitle{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-size:17px;font-weight:600;letter-spacing:-.015em;
+  max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transition:opacity 200ms var(--ease-out);pointer-events:none;
+}
+.hdr.scrolled .hdr-ctitle{opacity:1}
+.lt-wrap{padding:2px 20px 4px}
+.lt-wrap .mono{display:block;margin-bottom:7px}
+.large-title{font-size:31px;font-weight:700;letter-spacing:-.022em;line-height:1.15}
+.icon-btn{
+  width:44px;height:44px;display:grid;place-items:center;
+  color:var(--ink-70);border-radius:var(--r-control);
+}
+.icon-btn:active{transform:scale(0.94)}
+
+.page-pad{padding:0 20px}
+.sect{padding-top:26px}
+.sect-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 20px;margin-bottom:6px}
+.sect-head h2{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:3px}
+.sect-more{font-size:13px;color:var(--ink-40);display:inline-flex;align-items:center;gap:2px;min-height:32px}
+
+/* ── 리스트 로우 (인셋 디바이더) ─────────────── */
+.rows{border-top:none}
+.row{
+  position:relative;padding:14px 20px 13px;
+  cursor:pointer;transition:background-color 120ms,transform 100ms var(--ease-out);
+}
+.row::after{content:"";position:absolute;left:20px;right:0;bottom:0;height:1px;background:var(--line-app)}
+.rows li:last-child.row::after{display:none}
+.row:active{background:rgba(20,20,20,.04);transform:scale(0.99)}
+.row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.row-title{
+  font-size:16px;font-weight:600;line-height:1.35;letter-spacing:-.015em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.dday{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;color:var(--ink-40);flex-shrink:0;padding-top:2px;letter-spacing:.02em}
+.dday.warn{color:var(--warning)}
+.dday.hot{color:var(--danger)}
+.row-org{margin-top:3px;font-size:13px;color:var(--ink-40)}
+.row-meta{margin-top:5px;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:var(--ink-40);font-variant-numeric:tabular-nums}
+.row-badges{margin-top:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.row.closed{opacity:.5}
+
+/* 원클릭 오디션 가로 스냅 캐러셀 (홈 최상단) */
+.carousel{
+  display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;
+  padding:10px 20px 4px;scrollbar-width:none;overscroll-behavior-x:contain;
+}
+.carousel::-webkit-scrollbar{display:none}
+.ccard{
+  scroll-snap-align:start;flex:0 0 288px;cursor:pointer;
+  background:var(--fill);border-radius:16px;padding:16px;
+  transition:transform 100ms var(--ease-out);
+}
+.ccard:active{transform:scale(0.98)}
+.cc-top{display:flex;align-items:center;justify-content:space-between}
+.cc-title{
+  margin-top:11px;font-size:17px;font-weight:600;line-height:1.32;letter-spacing:-.015em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:45px;
+}
+.cc-meta{margin-top:9px;font-size:13px;color:var(--ink-70)}
+.cc-meta2{margin-top:2px;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:var(--ink-40);font-variant-numeric:tabular-nums}
+
+/* 마감 임박 로우 (홈) — 유일한 위계 차등 */
+.row.urgent{display:grid;grid-template-columns:62px 1fr;gap:12px;align-items:start}
+.urgent-d .d-date{white-space:nowrap}
+.urgent-d{padding-top:1px}
+.urgent-d .d-num{font-family:var(--font-mono);font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
+.urgent-d .d-date{margin-top:5px;font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--ink-40)}
+
+/* ── 배지 ─────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;line-height:1.3}
+.badge.oneclick{background:var(--success);color:#fff}
+.badge.site{background:var(--ink-40);color:#fff}
+.badge.genre{background:rgba(20,20,20,.06);color:var(--ink-70)}
+.badge.applied-mark{background:transparent;border:1px solid var(--line);color:var(--ink-40);font-weight:500}
+
+/* 상태 칩 (지원 탭) */
+.stchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ink-70)}
+.stchip .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-40)}
+.stchip.read .dot{background:var(--success)}
+.stchip.closed{color:var(--ink-40)}
+.stchip.closed .dot{background:var(--line)}
+
+/* ── 버튼 ─────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:var(--r-control);font-weight:600;
+  transition:background-color var(--dur-fast) var(--ease-out),transform 100ms var(--ease-out),opacity var(--dur-fast);
+}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:active{background:var(--primary-ink)}
+.btn-secondary{background:var(--fill-weak);color:var(--ink)}
+.btn-secondary:active{background:rgba(20,20,20,.09)}
+.btn-ghost{color:var(--ink-70)}
+.btn-md{height:46px;padding:0 18px;font-size:15px;border-radius:12px}
+.btn-lg{height:52px;padding:0 24px;font-size:17px;width:100%;border-radius:14px}
+.btn-sm{height:36px;padding:0 12px;font-size:13px}
+
+/* ── 칩 ───────────────────────────────────── */
+.chip{
+  display:inline-flex;align-items:center;height:34px;padding:0 14px;flex-shrink:0;
+  border-radius:999px;border:none;
+  background:var(--fill-weak);color:var(--ink-70);font-size:14px;font-weight:500;
+  transition:background-color 150ms,color 150ms,transform 100ms var(--ease-out);
+  cursor:pointer;white-space:nowrap;
+}
+.chip:active{transform:scale(0.96)}
+.chip.on{background:var(--ink);color:var(--ink-inverse);font-weight:600}
+.chip-rack{display:flex;gap:7px;overflow-x:auto;padding:10px 20px;scrollbar-width:none}
+.chip-rack::-webkit-scrollbar{display:none}
+.chip-wrap{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ── 탐색: 검색/필터 바 ────────────────────── */
+.search-bar{display:flex;gap:8px;padding:8px 20px 0}
+.search-field{
+  flex:1;display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;
+  border-radius:12px;background:var(--fill-weak);color:var(--ink-40);
+}
+.search-field input{border:none;outline:none;background:none;flex:1;font-size:16px;color:var(--ink);min-width:0}
+.search-field input::placeholder{color:var(--ink-40)}
+.filter-btn{
+  width:42px;height:42px;display:grid;place-items:center;position:relative;
+  border:none;border-radius:12px;color:var(--ink-70);background:var(--fill-weak);
+}
+.filter-btn .fdot{position:absolute;top:9px;right:9px;width:6px;height:6px;border-radius:50%;background:var(--primary);opacity:0;transition:opacity 150ms}
+.filter-btn.has .fdot{opacity:1}
+
+/* ── 스켈레톤 ─────────────────────────────── */
+.skel{
+  background:linear-gradient(90deg,#F0F0EE 25%,#FAFAF7 50%,#F0F0EE 75%);
+  background-size:200% 100%;animation:shimmer 1.2s ease-in-out infinite;
+  border-radius:6px;
+}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.skel-row{padding:15px 20px 14px;border-bottom:1px solid var(--line-app)}
+.skel-row .l1{height:15px;width:74%}
+.skel-row .l2{height:12px;width:42%;margin-top:9px}
+.skel-row .l3{display:flex;gap:6px;margin-top:11px}
+.skel-row .l3 .skel{height:20px;width:56px;border-radius:999px}
+
+/* ── 스태거 ───────────────────────────────── */
+.stagger-run .stg{opacity:0;animation:row-in var(--dur-base) var(--ease-out) both;animation-delay:calc(var(--i)*35ms)}
+@keyframes row-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ── 상세 (push) ──────────────────────────── */
+.detail{
+  position:absolute;inset:0;z-index:20;background:var(--surface);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);visibility:hidden;
+  transition:transform var(--dur-base) var(--ease-out),visibility 0s var(--dur-base);
+}
+.detail.open{transform:none;visibility:visible;transition:transform var(--dur-base) var(--ease-out)}
+.detail-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.detail-scroll::-webkit-scrollbar{display:none}
+.detail .hdr{position:relative;flex-shrink:0}
+
+.doc-head{padding:22px 20px 4px}
+.doc-no{display:flex;align-items:center;justify-content:space-between}
+.doc-title{margin-top:10px;font-size:22px;font-weight:700;line-height:1.3;letter-spacing:-.02em}
+.doc-org{margin-top:7px;font-size:14px;color:var(--ink-70)}
+.doc-badges{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line-app)}
+
+.field{padding:13px 20px 12px;border-bottom:1px solid var(--line-app)}
+.field-val{margin-top:5px;font-size:15px;color:var(--ink);display:flex;align-items:baseline;gap:8px;line-height:1.5}
+.field-val .sub{font-size:13px;color:var(--ink-40)}
+
+.doc-body{padding:18px 20px 6px}
+.doc-body p{margin-top:6px;font-size:15px;line-height:1.7;color:var(--ink-70)}
+
+.src-row{
+  margin:16px 20px 0;display:flex;align-items:center;gap:10px;
+  background:var(--fill-weak);border-radius:14px;padding:13px 15px;
+  color:var(--ink-70);font-size:13px;cursor:pointer;
+}
+.src-row:active{background:rgba(20,20,20,.08)}
+.src-row .src-host{font-family:var(--font-mono);font-size:12px;letter-spacing:.02em;color:var(--ink)}
+.src-row .go{margin-left:auto;color:var(--ink-40);font-size:12px;display:inline-flex;align-items:center;gap:3px}
+
+.applybar{
+  flex-shrink:0;display:flex;align-items:center;gap:14px;
+  padding:12px 20px 14px;border-top:1px solid var(--line-app);background:var(--surface);
+}
+.applybar .ab-left{min-width:76px}
+.applybar .ab-d{font-family:var(--font-mono);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.applybar .ab-date{margin-top:2px;font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--ink-40)}
+.applybar .btn{flex:1}
+
+/* ── 탭바 ─────────────────────────────────── */
+.tabbar{
+  flex-shrink:0;position:relative;display:flex;background:var(--surface);
+  border-top:1px solid var(--line-app);padding-bottom:16px;z-index:30;
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:9px 0 4px;min-height:52px;color:var(--ink-40);font-size:11px;font-weight:500;
+  transition:color 250ms var(--ease-out);
+}
+.tab:active{transform:scale(0.96)}
+.tab.on{color:var(--primary);font-weight:600}
+.tab-ind{
+  position:absolute;top:-1px;left:0;width:20%;height:2px;
+  transition:transform 250ms var(--ease-out);pointer-events:none;
+}
+.tab-ind::after{content:"";display:block;width:30px;height:2px;background:var(--primary);margin:0 auto}
+
+/* ── 바텀시트 ─────────────────────────────── */
+.sheetwrap{position:absolute;inset:0;z-index:50;visibility:hidden;transition:visibility 0s 260ms}
+.sheetwrap.open{visibility:visible;transition:visibility 0s}
+.dim{position:absolute;inset:0;background:rgba(20,20,20,.44);opacity:0;transition:opacity var(--dur-base) ease-out}
+.sheetwrap.open .dim{opacity:1}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;max-height:86%;
+  background:var(--surface);border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;
+  transform:translateY(104%);transition:transform 240ms ease-in;
+}
+.sheetwrap.open .sheet{transform:none;transition:transform var(--dur-slow) var(--ease-sheet)}
+.sheet-grip{width:36px;height:5px;border-radius:3px;background:rgba(20,20,20,.16);margin:8px auto 0;flex-shrink:0}
+.sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 4px 20px;flex-shrink:0}
+.sheet-hd h2{font-size:16px;font-weight:700}
+.sheet-body{overflow-y:auto;padding:2px 20px 8px;scrollbar-width:none}
+.sheet-body::-webkit-scrollbar{display:none}
+.sheet-ft{padding:12px 20px 30px;flex-shrink:0}
+.sheet-ft.split{display:flex;gap:10px;align-items:center}
+.sheet-ft.split .btn-lg{flex:1;width:auto}
+
+.sheet-view{display:none}
+.sheet-view.on{display:block;animation:tab-in 200ms var(--ease-out) both}
+
+/* 시트 내부 폼 */
+.f-label{display:block;font-size:14px;font-weight:600;color:var(--ink-70);margin:16px 0 7px}
+.f-input{
+  width:100%;height:48px;padding:0 15px;font-size:16px;color:var(--ink);
+  border:1px solid transparent;border-radius:12px;background:var(--fill-weak);outline:none;
+  transition:border-color 150ms;
+}
+.f-input:focus{border-color:var(--primary);background:var(--surface)}
+.seg2{display:flex;gap:8px}
+.seg2 .chip{flex:1;justify-content:center;height:46px;border-radius:12px}
+
+/* 지원 확인 시트 요약 */
+.confirm-doc{background:var(--fill-weak);border-radius:14px;margin-top:14px;overflow:hidden}
+.confirm-line{display:flex;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-app);font-size:13px;align-items:baseline}
+.confirm-line:last-child{border-bottom:none}
+.confirm-line .ck{width:64px;flex-shrink:0}
+.confirm-line .cv{color:var(--ink);line-height:1.5;font-size:13px}
+.profile-strip{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;background:var(--fill-weak);border-radius:14px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--dark);color:var(--ink-inverse);display:grid;place-items:center;font-size:14px;font-weight:700;flex-shrink:0}
+.profile-strip .ps-name{font-size:14px;font-weight:600}
+.profile-strip .ps-meta{margin-top:1px;font-size:12px;color:var(--ink-40)}
+
+/* 완료 뷰 */
+.done-wrap{padding:26px 0 6px;text-align:center}
+.done-ic{
+  width:56px;height:56px;margin:0 auto;border-radius:50%;
+  border:1.5px solid var(--success);color:var(--success);display:grid;place-items:center;
+  animation:pop-in 350ms var(--ease-out) both;
+}
+@keyframes pop-in{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.done-wrap h3{margin-top:16px;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.done-wrap p{margin-top:7px;font-size:14px;line-height:1.6;color:var(--ink-70)}
+
+/* ── 필터 시트 ────────────────────────────── */
+.filter-sect{padding-top:6px}
+.filter-sect .mono{display:block;margin:14px 0 9px}
+
+/* ── 지원 탭: iOS 세그먼티드 컨트롤 ─────────── */
+.segctl{
+  display:flex;margin:10px 20px 2px;padding:2px;border-radius:10px;
+  background:var(--fill-weak);position:relative;
+}
+.segbtn{
+  flex:1;position:relative;z-index:1;height:34px;border-radius:8px;
+  font-size:14px;font-weight:600;color:var(--ink-70);
+  transition:color 200ms,background-color 200ms,box-shadow 200ms;
+}
+.segbtn.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(20,20,20,.10),0 0 1px rgba(20,20,20,.08)}
+.app-row-date{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--ink-40)}
+
+/* ── 엠티 스테이트 ─────────────────────────── */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:64px 32px}
+.empty .e-ic{color:var(--ink-40)}
+.empty h3{margin-top:16px;font-size:17px;font-weight:600;letter-spacing:-.015em}
+.empty p{margin-top:6px;font-size:15px;line-height:1.55;color:var(--ink-70)}
+.empty .btn{margin-top:20px}
+
+/* ── 홈 완성도 카드 / 요약 로우 ─────────────── */
+.notice-card{
+  margin:16px 20px 0;display:flex;align-items:center;gap:14px;
+  background:var(--fill-weak);border-radius:16px;padding:14px 16px;cursor:pointer;
+}
+.notice-card:active{background:rgba(20,20,20,.08)}
+.notice-card .nc-t{font-size:14px;font-weight:600;line-height:1.4}
+.notice-card .nc-s{margin-top:2px;font-size:12px;color:var(--ink-40);line-height:1.5}
+.notice-card .chev{margin-left:auto;color:var(--ink-40)}
+.ring-wrap{position:relative;width:44px;height:44px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-wrap .ring-pct{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:var(--font-mono);font-size:9.5px;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.ring-fg{transition:stroke-dashoffset var(--dur-slow) var(--ease-out)}
+
+/* ── MY ───────────────────────────────────── */
+.my-card{padding:22px 20px 18px;border-bottom:1px solid var(--line-app);display:flex;align-items:center;gap:16px}
+.my-card .avatar{width:52px;height:52px;font-size:18px}
+.my-name{font-size:17px;font-weight:700}
+.my-chips{margin-top:7px;display:flex;gap:5px;flex-wrap:wrap}
+.menu-row{
+  position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:15px 20px;min-height:52px;font-size:16px;color:var(--ink);
+  transition:background-color 120ms,transform 100ms var(--ease-out);
+}
+.menu-row::after{content:"";position:absolute;left:52px;right:0;bottom:0;height:1px;background:var(--line-app)}
+.menu-row:active{background:rgba(20,20,20,.04);transform:scale(0.99)}
+.menu-row .chev{margin-left:auto;color:var(--ink-40)}
+.menu-row .mi{color:var(--ink-40)}
+.switch{
+  margin-left:auto;position:relative;width:44px;height:26px;border-radius:13px;
+  background:var(--line);transition:background-color 200ms;flex-shrink:0;
+}
+.switch::after{
+  content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(20,20,20,.2);transition:transform 200ms var(--ease-out);
+}
+.switch.on{background:var(--success)}
+.switch.on::after{transform:translateX(18px)}
+.logout{display:block;margin:26px auto 40px;font-size:13px;color:var(--ink-40);min-height:44px}
+
+/* ── 온보딩 ───────────────────────────────── */
+.onb{
+  position:absolute;left:0;right:0;top:54px;bottom:0;z-index:40;background:var(--surface);
+  display:flex;flex-direction:column;
+  transform:translateY(14px);opacity:0;visibility:hidden;
+  transition:transform var(--dur-base) var(--ease-out),opacity var(--dur-base) ease-out,visibility 0s var(--dur-base);
+}
+.onb.open{transform:none;opacity:1;visibility:visible;transition:transform var(--dur-base) var(--ease-out),opacity var(--dur-base) ease-out}
+.onb-hd{display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 8px;flex-shrink:0}
+.onb-skip{font-size:13px;color:var(--ink-40);min-height:44px;padding:0 14px}
+.stepper{display:flex;align-items:center;gap:10px;padding:2px 20px 0;flex-shrink:0}
+.stepper .bars{display:flex;flex:1;gap:4px}
+.stepper .bar{height:2px;flex:1;border-radius:1px;background:var(--line);transition:background-color 250ms}
+.stepper .bar.on{background:var(--ink)}
+.onb-body{flex:1;overflow-y:auto;padding:26px 20px 12px;scrollbar-width:none}
+.onb-body::-webkit-scrollbar{display:none}
+.onb-step{display:none}
+.onb-step.on{display:block;animation:tab-in 200ms var(--ease-out) both}
+.onb-title{font-size:22px;font-weight:700;line-height:1.35;letter-spacing:-.02em}
+.onb-sub{margin-top:9px;font-size:14px;line-height:1.65;color:var(--ink-70)}
+.onb-ft{padding:12px 20px 30px;flex-shrink:0}
+.onb-recs{margin:18px -20px 0;border-top:1px solid var(--line-app)}
+.rec-flag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--success)}
+
+/* ── 토스트 ───────────────────────────────── */
+.toast{
+  position:absolute;left:50%;bottom:92px;transform:translate(-50%,10px);
+  z-index:60;display:flex;align-items:center;gap:8px;max-width:330px;
+  background:var(--dark);color:var(--ink-inverse);border-radius:var(--r-control);
+  padding:12px 16px;font-size:14px;box-shadow:var(--shadow-raised);
+  opacity:0;pointer-events:none;transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);
+}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{font-size:14px;font-weight:700;color:#fff;margin-left:4px;white-space:nowrap}
+
+/* ── reduced motion ───────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+  .skel{background:#F0F0EE;animation:none}
+}
+</style>
+</head>
+<body>
+
+<div class="stage-lines" aria-hidden="true"></div>
+<div class="stagewrap">
+  <div class="stage-caption">AUDITIONPASS &middot; APP PROTOTYPE 22 &middot; CALL SHEET UI &middot; 2026.07.15</div>
+
+  <div class="phone">
+    <div class="phone-screen">
+      <div class="island" aria-hidden="true"></div>
+
+      <div class="app" id="app">
+        <!-- 상태바 -->
+        <div class="statusbar" aria-hidden="true">
+          <span class="tabular">9:41</span>
+          <span class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 4a9 9 0 0 1 13 0"/><path d="M4 6.6a5.5 5.5 0 0 1 8 0"/><circle cx="8" cy="9.4" r="1" fill="currentColor" stroke="none"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" opacity=".4"/></svg>
+          </span>
+        </div>
+
+        <!-- 스테이지: 5탭 스크린 + 상세 -->
+        <div id="stage">
+          <section class="screen" id="scr-home" aria-label="홈"></section>
+          <section class="screen" id="scr-explore" aria-label="탐색"></section>
+          <section class="screen" id="scr-apps" aria-label="지원"></section>
+          <section class="screen" id="scr-community" aria-label="커뮤니티"></section>
+          <section class="screen" id="scr-my" aria-label="MY"></section>
+
+          <!-- 오디션 상세 (push) -->
+          <div class="detail" id="detail" aria-label="오디션 상세"></div>
+        </div>
+
+        <!-- 탭바 -->
+        <nav class="tabbar" id="tabbar" aria-label="주요 메뉴">
+          <div class="tab-ind" id="tabInd"></div>
+        </nav>
+
+        <!-- 온보딩 -->
+        <div class="onb" id="onb" role="dialog" aria-label="온보딩"></div>
+
+        <!-- 지원 바텀시트 -->
+        <div class="sheetwrap" id="applyWrap">
+          <div class="dim" data-close="applyWrap"></div>
+          <div class="sheet" role="dialog" aria-modal="true" aria-label="지원하기">
+            <div class="sheet-grip" aria-hidden="true"></div>
+            <div class="sheet-hd">
+              <h2 id="applyTitle">지원하기</h2>
+              <button class="icon-btn" data-close="applyWrap" aria-label="닫기"></button>
+            </div>
+            <div class="sheet-body" id="applyBody"></div>
+            <div class="sheet-ft" id="applyFt"></div>
+          </div>
+        </div>
+
+        <!-- 필터 바텀시트 -->
+        <div class="sheetwrap" id="filterWrap">
+          <div class="dim" data-close="filterWrap"></div>
+          <div class="sheet" role="dialog" aria-modal="true" aria-label="필터">
+            <div class="sheet-grip" aria-hidden="true"></div>
+            <div class="sheet-hd">
+              <h2>필터</h2>
+              <button class="icon-btn" data-close="filterWrap" aria-label="닫기"></button>
+            </div>
+            <div class="sheet-body" id="filterBody"></div>
+            <div class="sheet-ft split">
+              <button class="btn btn-ghost btn-md" id="filterReset" style="flex:0 0 auto">초기화</button>
+              <button class="btn btn-primary btn-lg" id="filterApply">적용</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 토스트 -->
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="homebar" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   아이콘 (인라인 SVG 스트로크 · strokeWidth 1.75 · 이모지 금지)
+   ============================================================ */
+const I = (name, size = 22, sw = 1.75) => {
+  const P = {
+    home:      '<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/>',
+    search:    '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/>',
+    send:      '<path d="M20.5 3.5 10 14M20.5 3.5 14 20.5l-4-6.5-6.5-4Z"/>',
+    chat:      '<path d="M21 12a8 8 0 0 1-8 8H4l1.7-3.4A8 8 0 1 1 21 12Z"/>',
+    user:      '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.2 18.5a6.5 6.5 0 0 1 11.6 0"/>',
+    bell:      '<path d="M18 9a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.3 19.5a2 2 0 0 0 3.4 0"/>',
+    back:      '<path d="m14.5 5.5-6.5 6.5 6.5 6.5"/>',
+    chevR:     '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
+    x:         '<path d="M6 6l12 12M18 6 6 18"/>',
+    sliders:   '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+    bookmark:  '<path d="M6.5 4h11v17L12 17l-5.5 4Z"/>',
+    external:  '<path d="M14 4h6v6M20 4 11.5 12.5"/><path d="M19 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5.5"/>',
+    check:     '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    clock:     '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    inbox:     '<path d="M4 13h4.5l1.5 2.5h4L15.5 13H20"/><path d="M6 5h12l2 8v6H4v-6Z"/>',
+    doc:       '<path d="M6 3h8l4 4v14H6Z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+    star:      '<path d="m12 4 2.3 4.9 5.2.7-3.8 3.7.9 5.2-4.6-2.5-4.6 2.5.9-5.2L4.5 9.6l5.2-.7Z"/>',
+    edit:      '<path d="M15.5 5.5 18.5 8.5 8 19H5v-3Z"/><path d="M13.5 7.5 16.5 10.5"/>',
+    megaphone: '<path d="M4 10v4h3l7 4V6l-7 4Z"/><path d="M18 9a4.5 4.5 0 0 1 0 6"/>',
+    help:      '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3A2.6 2.6 0 0 1 12 7.5c1.4 0 2.5 1 2.5 2.3 0 1.7-2.5 2-2.5 3.7"/><circle cx="12" cy="17" r=".4" fill="currentColor"/>',
+    shield:    '<path d="M12 3 5 5.8v5.4c0 4.5 3 7.6 7 8.8 4-1.2 7-4.3 7-8.8V5.8Z"/>',
+    replay:    '<path d="M4 12a8 8 0 1 0 2.3-5.6L4 8.5"/><path d="M4 4v4.5h4.5"/>',
+    pin:       '<path d="M12 21s-6.5-5.2-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.8 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.2"/>',
+    won:       '<path d="M3.5 7l3 10 2.8-8.5L12 17l2.7-8.5L17.5 17l3-10M4 11.5h16"/>',
+  };
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
+};
+
+/* ============================================================
+   더미 데이터 — 공고 14건 (카테고리·D-day·지역·페이 다양)
+   ============================================================ */
+const TODAY = new Date(2026, 6, 15); // 2026.07.15 (수)
+const CATS = ["배우","뮤지컬","연극","모델","가수·보컬","아이돌","댄서","아역·키즈","보조출연","MC·아나운서","성우","크리에이터","광고·CF","기획사"];
+
+const LISTINGS = [
+  { id:1,  title:"독립 장편영화 〈유월의 밤〉 여자 주연", org:"스튜디오 소년", cat:"배우", region:"서울", pay:"총 300만원", dday:2, oneclick:true, posted:"오늘",
+    role:"주연 '해수' 역 · 20대 중반 여성", schedule:"8월 3주 · 총 12회차 촬영", src:"filmmakers.co.kr",
+    desc:"바다 마을을 배경으로 한 성장 드라마입니다. 감정 신이 많아 롱테이크 연기 경험을 우대합니다. 1차 서류 후 대면 리딩이 있으며, 교통비는 별도 지급됩니다." },
+  { id:2,  title:"OTT 오리지널 시리즈 〈수사반장 1994〉 단역 형사 3", org:"캐스팅온 컴퍼니", cat:"배우", region:"파주·서울", pay:"회당 25만원", dday:5, oneclick:true, posted:"오늘",
+    role:"단역 · 30대 남성 · 대사 6신", schedule:"7월 말 ~ 8월 초 · 4회차", src:"castingon.kr",
+    desc:"90년대 시대극 수사물입니다. 짧은 머리 가능하신 분, 사투리(충청) 가능하시면 우대합니다. 의상은 제작사에서 준비합니다." },
+  { id:3,  title:"뮤지컬 〈빙하기〉 앙상블 남녀 오디션", org:"극단 하늘무대", cat:"뮤지컬", region:"대학로", pay:"회차당 12만원", dday:11, oneclick:false, posted:"어제",
+    role:"앙상블 남 3 · 여 3 · 코러스 필수", schedule:"9~11월 공연 · 주 5회 연습", src:"stagejob.co.kr",
+    desc:"창작 뮤지컬 초연입니다. 자유곡 1곡(MR 지참)과 지정 안무 영상 심사가 있습니다. 성실히 연습 일정에 참여 가능한 분을 찾습니다." },
+  { id:4,  title:"키즈 편집샵 가을 화보 모델 (5~7세)", org:"모먼트 스튜디오", cat:"아역·키즈", region:"성수", pay:"시간당 15만원", dday:9, oneclick:true, posted:"오늘",
+    role:"키즈 모델 · 5~7세 · 성별 무관", schedule:"7월 26일 · 반나절 촬영", src:"kidsmodel.kr",
+    desc:"실내 스튜디오 촬영으로 보호자 동반 필수입니다. 카메라 앞 경험이 없어도 현장 디렉팅으로 진행하니 부담 없이 지원하세요." },
+  { id:5,  title:"정수기 브랜드 TV광고 30대 부부 역", org:"애드리브 프로덕션", cat:"광고·CF", region:"서울", pay:"촬영일 150만원", dday:1, oneclick:false, posted:"2일 전",
+    role:"광고 모델 · 30대 남녀 각 1명", schedule:"7월 21일 · 1일 촬영", src:"admodel.co.kr",
+    desc:"주방 신 중심의 밝은 톤 광고입니다. 자연스러운 생활 연기가 가능한 분을 찾으며, 프로필 사진과 함께 15초 자기소개 영상을 첨부해 주세요." },
+  { id:6,  title:"웹드라마 〈교환일기〉 고등학생 역 4명", org:"플레이리스트 원", cat:"배우", region:"서울", pay:"회당 30만원", dday:14, oneclick:true, posted:"오늘",
+    role:"조연 · 10대 후반~20대 초반", schedule:"8월 한 달 · 회당 반나절", src:"filmmakers.co.kr",
+    desc:"학원물 웹드라마 시즌 2 캐스팅입니다. 신인 배우 환영이며, 교복 핏과 자연스러운 대사 톤을 중점적으로 봅니다." },
+  { id:7,  title:"연극 〈목소리들〉 3인극 배우 모집", org:"프로젝트 무면", cat:"연극", region:"대학로", pay:"출연료 협의", dday:6, oneclick:false, posted:"3일 전",
+    role:"남 1 · 여 2 · 40분 분량 2인 신 중심", schedule:"10월 공연 · 8월부터 연습", src:"theaterin.kr",
+    desc:"소극장 창작극입니다. 지정 대본 리딩 심사로 진행하며, 대본은 지원자에게 개별 발송합니다. 더블 캐스팅 가능성이 있습니다." },
+  { id:8,  title:"게임 캐릭터 보이스 — 저음 남성 성우", org:"사운드포지 스튜디오", cat:"성우", region:"판교 · 원격 가능", pay:"건당 40만원", dday:8, oneclick:true, posted:"어제",
+    role:"메인 빌런 · 대사 약 180라인", schedule:"8월 첫째 주 녹음", src:"voicecasting.kr",
+    desc:"다크 판타지 RPG 신규 캐릭터입니다. 샘플 3라인 녹음본을 첨부해 주세요. 홈레코딩 지원 시 장비 스펙을 함께 적어 주시면 됩니다." },
+  { id:9,  title:"기획사 신인 개발팀 보컬·댄스 공개 오디션", org:"라운드테이블 엔터", cat:"기획사", region:"강남", pay:"무페이 · 연습생 계약", dday:20, oneclick:false, posted:"어제",
+    role:"2007~2012년생 · 보컬 또는 댄스", schedule:"8월 8일 현장 오디션", src:"roundtable-ent.com",
+    desc:"월말 공개 오디션입니다. 자유곡 1분 또는 안무 1분 중 택일이며, 현장 접수도 가능하지만 사전 지원자를 우선 배정합니다." },
+  { id:10, title:"백화점 F/W 카탈로그 피팅 모델", org:"부산 크리에이티브랩", cat:"모델", region:"부산", pay:"일 45만원", dday:4, oneclick:true, posted:"오늘",
+    role:"여성 · 키 168 이상 · 55 사이즈", schedule:"7월 24~25일 · 2일", src:"modelagency.kr",
+    desc:"F/W 시즌 카탈로그 및 온라인몰 상세컷 촬영입니다. 피팅 경험자 우대, 왕복 교통비 별도 지급됩니다." },
+  { id:11, title:"유튜브 예능 〈퇴근길 라이브〉 고정 패널", org:"채널 손수건", cat:"크리에이터", region:"마포", pay:"회당 20만원", dday:12, oneclick:true, posted:"2일 전",
+    role:"20대 · 입담 좋은 분 · 성별 무관", schedule:"주 1회 · 저녁 녹화", src:"creatorjob.kr",
+    desc:"구독자 28만 채널의 신규 코너 고정 패널을 찾습니다. 리액션과 순발력이 중요하며, 1차는 화상 미팅으로 진행합니다." },
+  { id:12, title:"단편영화 〈부표〉 조연 어부 역", org:"통영영화제작소", cat:"배우", region:"통영", pay:"총 60만원 · 숙식 제공", dday:7, oneclick:false, posted:"3일 전",
+    role:"조연 · 50대 남성 · 경상 사투리", schedule:"8월 중순 · 5회차 · 로케이션", src:"filmmakers.co.kr",
+    desc:"바닷가 로케이션 촬영으로 숙식이 제공됩니다. 실제 어촌 생활 경험이 있으시면 지원서에 적어 주세요." },
+  { id:13, title:"뮤직비디오 리드 모델 — 발라드 신곡", org:"비주얼웍스", cat:"모델", region:"서울", pay:"일 50만원", dday:null, oneclick:true, posted:"지난주",
+    role:"남녀 각 1명 · 20대", schedule:"7월 12일 촬영 완료", src:"mvcasting.kr",
+    desc:"이 공고는 마감되었습니다. 비슷한 촬영 공고가 주기적으로 올라오니 아래 추천을 확인해 보세요." },
+  { id:14, title:"사극 대규모 촬영 보조출연 (문경 세트장)", org:"한길 캐스팅", cat:"보조출연", region:"문경", pay:"일 12만원", dday:3, oneclick:true, posted:"오늘",
+    role:"보조출연 · 20~60대 · 대규모 인원", schedule:"7월 22일 · 당일 왕복 버스", src:"extracasting.kr",
+    desc:"서울 출발 왕복 버스가 제공됩니다. 이른 집합(오전 5시)이 가능한 분만 지원해 주세요. 중식 제공, 당일 정산됩니다." },
+];
+
+const POSTS = [
+  { id:1, cat:"후기", title:"OTT 단역 오디션 다녀왔습니다 — 대기 4시간, 그래도 배운 것들", who:"필모채우는중", when:"1시간 전", cmt:12 },
+  { id:2, cat:"질문", title:"첫 프로필 사진, 스냅 컷과 정면 프로필 중 뭐부터 찍는 게 좋을까요", who:"무대는처음이라", when:"2시간 전", cmt:8 },
+  { id:3, cat:"정보", title:"대학로 연습실 평일 오전 셰어하실 분 (시간당 나눠서)", who:"복도끝연습실", when:"4시간 전", cmt:3 },
+  { id:4, cat:"팁", title:"지원 메일 제목을 이렇게 바꿨더니 회신이 오기 시작했어요", who:"슬레이트", when:"6시간 전", cmt:21 },
+  { id:5, cat:"질문", title:"뮤지컬 앙상블 자유곡, 발라드와 업템포 중 어떤 걸 준비하세요?", who:"세번째콜백", when:"9시간 전", cmt:5 },
+  { id:6, cat:"후기", title:"키즈 화보 촬영 보호자 동반 후기 — 준비물 체크리스트 공유", who:"단역전문", when:"어제", cmt:7 },
+];
+
+/* ============================================================
+   앱 상태
+   ============================================================ */
+const state = {
+  tab: "home",
+  hasProfile: false,                    // 데모 토글: 미니 프로필 보유 여부
+  profile: { name: "이도윤", year: "1999", gender: "여성" },
+  interests: new Set(["배우"]),
+  visited: {},                          // 탭별 스켈레톤 1회
+  applied: new Map([[2,"sent"],[12,"read"],[13,"closed"]]),
+  appliedDates: new Map([[2,"07.14"],[12,"07.11"],[13,"07.08"]]),
+  bookmarks: new Set(),
+  filters: { cats:new Set(), method:null, regions:new Set(), pay:null },
+  query: "",
+  appsSeg: "applied",
+  detailId: null,
+  applyView: null,
+  onbStep: 1,
+  onbCats: new Set(),
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+/* iOS 네브바 + large title */
+function navHTML(title, {left="", right="", large=null, sub=""} = {}){
+  return `<header class="hdr">
+    <div class="hdr-side">${left}</div>
+    <span class="hdr-ctitle">${title}</span>
+    <div class="hdr-side" style="justify-content:flex-end">${right}</div>
+  </header>
+  ${large!==null?`<div class="lt-wrap">${sub?`<span class="mono tabular">${sub}</span>`:""}<h1 class="large-title">${large}</h1></div>`:""}`;
+}
+function bindNav(scrollEl, hdr, threshold=34){
+  hdr = hdr || scrollEl.querySelector(".hdr");
+  if(!hdr) return;
+  const f = () => hdr.classList.toggle("scrolled", scrollEl.scrollTop > threshold);
+  scrollEl.addEventListener("scroll", f, {passive:true});
+  f();
+}
+
+/* ── D-day 헬퍼 ── */
+function ddCls(d){ return d==null ? "" : d<=3 ? "hot" : d<=7 ? "warn" : ""; }
+function ddTxt(d){ return d==null ? "마감" : "D-"+d; }
+function ddDate(d){
+  if(d==null) return "";
+  const t = new Date(TODAY); t.setDate(t.getDate()+d);
+  return String(t.getMonth()+1).padStart(2,"0")+"."+String(t.getDate()).padStart(2,"0");
+}
+
+/* ── 배지 ── */
+function methodBadge(x){
+  return x.oneclick
+    ? `<span class="badge oneclick">원클릭 지원</span>`
+    : `<span class="badge site">사이트 지원</span>`;
+}
+function rowHTML(x, i, opts={}){
+  const closed = x.dday==null;
+  const appliedMark = state.applied.has(x.id) && !closed ? `<span class="badge applied-mark">지원함</span>` : "";
+  return `<li class="row stg ${closed?"closed":""}" style="--i:${i}" data-open="${x.id}">
+    <div class="row-top">
+      <h3 class="row-title">${esc(x.title)}</h3>
+      <span class="dday ${ddCls(x.dday)}">${ddTxt(x.dday)}</span>
+    </div>
+    <p class="row-org">${esc(x.org)}</p>
+    <p class="row-meta">${esc(x.region)} &middot; ${esc(x.pay)}</p>
+    <div class="row-badges"><span class="badge genre">${x.cat}</span>${methodBadge(x)}${appliedMark}${opts.recFlag && x.oneclick ? `<span class="rec-flag">${I("check",12,2.2)}바로 지원 가능</span>`:""}</div>
+  </li>`;
+}
+function urgentRowHTML(x, i){
+  return `<li class="row urgent stg" style="--i:${i}" data-open="${x.id}">
+    <div class="urgent-d">
+      <div class="d-num ${ddCls(x.dday)==="hot"?"":""}" style="color:var(--${x.dday<=3?"danger":"warning"})">D-${x.dday}</div>
+      <div class="d-date">DUE ${ddDate(x.dday)}</div>
+    </div>
+    <div>
+      <h3 class="row-title">${esc(x.title)}</h3>
+      <p class="row-meta">${esc(x.org)} &middot; ${esc(x.region)} &middot; ${esc(x.pay)}</p>
+      <div class="row-badges"><span class="badge genre">${x.cat}</span>${methodBadge(x)}</div>
+    </div>
+  </li>`;
+}
+function skelRows(n){
+  let h = "";
+  for(let k=0;k<n;k++) h += `<div class="skel-row" aria-hidden="true">
+    <div class="skel l1"></div><div class="skel l2"></div>
+    <div class="l3"><span class="skel"></span><span class="skel"></span></div>
+  </div>`;
+  return `<div aria-busy="true">${h}<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">불러오는 중</span></div>`;
+}
+function ringHTML(pct, size=44){
+  const r = 17, C = 2*Math.PI*r;
+  return `<div class="ring-wrap" style="width:${size}px;height:${size}px">
+    <svg viewBox="0 0 40 40" width="${size}" height="${size}">
+      <circle cx="20" cy="20" r="${r}" fill="none" stroke="var(--line)" stroke-width="3.5"/>
+      <circle class="ring-fg" cx="20" cy="20" r="${r}" fill="none" stroke="var(--primary)" stroke-width="3.5"
+        stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}"/>
+    </svg>
+    <span class="ring-pct">${pct}%</span>
+  </div>`;
+}
+
+/* ============================================================
+   화면 렌더 — 홈
+   ============================================================ */
+function renderHome(){
+  const el = $("#scr-home");
+  const pct = state.hasProfile ? 70 : 15;
+  const oneclick = LISTINGS.filter(x=>x.dday!=null && x.oneclick).sort((a,b)=>a.dday-b.dday).slice(0,4);
+  const urgent = LISTINGS.filter(x=>x.dday!=null && x.dday<=4).sort((a,b)=>a.dday-b.dday);
+  const fresh = LISTINGS.filter(x=>x.dday!=null && state.interests.has(x.cat) && (x.posted==="오늘"||x.posted==="어제")).slice(0,3);
+  const freshFinal = fresh.length ? fresh : LISTINGS.filter(x=>x.dday!=null && x.posted==="오늘").slice(0,3);
+  const appliedCnt = [...state.applied.values()].filter(s=>s!=="closed").length;
+  const readCnt = [...state.applied.values()].filter(s=>s==="read").length;
+  const wd = ["SUN","MON","TUE","WED","THU","FRI","SAT"][TODAY.getDay()];
+
+  el.innerHTML = `
+    ${navHTML("오디션패스",{right:`<button class="icon-btn" data-toast="알림은 준비 중이에요. 지원 상태 변화부터 알려드릴 예정입니다." aria-label="알림">${I("bell")}</button>`})}
+    <div class="stagger-run">
+      <div class="lt-wrap">
+        <span class="mono tabular">TODAY'S CALL SHEET &middot; 2026.07.15 ${wd}</span>
+        <h1 class="large-title">오늘의 콜시트</h1>
+        <p style="font-size:15px;color:var(--ink-70);margin-top:7px">오늘 올라온 공고 ${LISTINGS.filter(x=>x.posted==="오늘").length}건, 마감 임박 ${urgent.length}건이 있어요.</p>
+      </div>
+
+      <div class="sect" style="padding-top:22px">
+        <div class="sect-head">
+          <div><span class="mono">ONE-CLICK &middot; ${LISTINGS.filter(x=>x.dday!=null&&x.oneclick).length}건 오픈</span><h2>원클릭 오디션</h2></div>
+          <button class="sect-more" data-oneclick-all>전체 보기 ${I("chevR",14)}</button>
+        </div>
+        <ul class="carousel">${oneclick.map((x,i)=>`
+          <li class="ccard stg" style="--i:${i}" data-open="${x.id}">
+            <div class="cc-top"><span class="badge oneclick">원클릭 지원</span><span class="dday ${ddCls(x.dday)}">D-${x.dday}</span></div>
+            <h3 class="cc-title">${esc(x.title)}</h3>
+            <p class="cc-meta">${esc(x.org)}</p>
+            <p class="cc-meta2">${esc(x.region)} &middot; ${esc(x.pay)}</p>
+          </li>`).join("")}
+        </ul>
+      </div>
+
+      ${pct<100?`
+      <div class="notice-card pressable stg" style="--i:0" data-tab="my">
+        ${ringHTML(pct)}
+        <div>
+          <p class="nc-t">${state.hasProfile?"컴프카드를 완성해 보세요":"미니 프로필부터 만들어 보세요"}</p>
+          <p class="nc-s">${state.hasProfile?"경력·사진을 더하면 지원 메일에 컴프카드가 첨부돼요.":"이름·출생연도·성별 세 가지면 원클릭 지원이 열려요."}</p>
+        </div>
+        <span class="chev">${I("chevR",18)}</span>
+      </div>`:""}
+
+      <div class="sect">
+        <div class="sect-head">
+          <div><span class="mono">CLOSING SOON</span><h2>마감 임박</h2></div>
+          <button class="sect-more" data-tab="explore">전체 보기 ${I("chevR",14)}</button>
+        </div>
+        <ul class="rows">${urgent.map((x,i)=>urgentRowHTML(x,i+1)).join("")}</ul>
+      </div>
+
+      <div class="sect">
+        <div class="sect-head">
+          <div><span class="mono">NEW IN &middot; ${[...state.interests].join(" / ")||"분야 미설정"}</span><h2>내 분야 신규</h2></div>
+        </div>
+        <ul class="rows">${freshFinal.map((x,i)=>rowHTML(x,i+1)).join("")}</ul>
+      </div>
+
+      <div class="notice-card pressable stg" style="--i:1;margin-bottom:36px" data-tab="apps">
+        <span style="color:var(--ink-40)">${I("send",20)}</span>
+        <div>
+          <p class="nc-t">지원 현황 <span class="tabular">${appliedCnt}</span>건 &middot; 열람 <span class="tabular">${readCnt}</span>건</p>
+          <p class="nc-s">지원 탭에서 발송·열람 상태를 확인할 수 있어요.</p>
+        </div>
+        <span class="chev">${I("chevR",18)}</span>
+      </div>
+    </div>`;
+  bindNav(el);
+}
+
+/* ============================================================
+   화면 렌더 — 탐색
+   ============================================================ */
+function filteredList(f = state.filters){
+  return LISTINGS.filter(x=>{
+    if(state.query && !(x.title+x.org+x.cat).includes(state.query)) return false;
+    if(f.cats.size && !f.cats.has(x.cat)) return false;
+    if(f.method==="oneclick" && !x.oneclick) return false;
+    if(f.method==="site" && x.oneclick) return false;
+    if(f.regions.size){
+      const hit = [...f.regions].some(r =>
+        r==="서울" ? x.region.includes("서울") :
+        r==="경기·인천" ? /파주|성수|판교|마포|경기|인천/.test(x.region) :
+        !/서울|파주|성수|판교|마포|경기|인천/.test(x.region));
+      if(!hit) return false;
+    }
+    if(f.pay==="paid" && /협의|무페이/.test(x.pay)) return false;
+    if(f.pay==="nego" && !/협의|무페이/.test(x.pay)) return false;
+    return true;
+  }).sort((a,b)=>(a.dday==null)-(b.dday==null) || (a.dday??99)-(b.dday??99));
+}
+function filterCount(){
+  const f = state.filters;
+  return f.cats.size + (f.method?1:0) + f.regions.size + (f.pay?1:0);
+}
+function renderExplore(){
+  const el = $("#scr-explore");
+  const open = LISTINGS.filter(x=>x.dday!=null).length;
+  el.innerHTML = `
+    ${navHTML("탐색",{large:"탐색",sub:`OPEN ${open} &middot; TODAY ${LISTINGS.filter(x=>x.posted==="오늘").length}`})}
+    <div class="search-bar">
+      <div class="search-field">
+        ${I("search",18)}
+        <input id="searchInput" type="search" placeholder="배역, 작품, 제작사 검색" value="${esc(state.query)}" aria-label="공고 검색">
+      </div>
+      <button class="filter-btn pressable ${filterCount()?"has":""}" id="openFilter" aria-label="상세 필터">
+        ${I("sliders",19)}<span class="fdot"></span>
+      </button>
+    </div>
+    <div class="chip-rack" id="quickChips"></div>
+    <div id="exploreList"></div>`;
+
+  renderQuickChips();
+  renderExploreList(true);
+  bindNav(el);
+
+  $("#searchInput").addEventListener("input", e=>{
+    state.query = e.target.value.trim();
+    renderExploreList(false);
+  });
+  $("#openFilter").addEventListener("click", ()=>{ renderFilterSheet(); openSheet("filterWrap"); });
+}
+function renderQuickChips(){
+  const rack = $("#quickChips");
+  if(!rack) return;
+  rack.innerHTML = `<button class="chip ${state.filters.cats.size===0?"on":""}" data-qc="__all">전체</button>` +
+    CATS.map(c=>`<button class="chip ${state.filters.cats.has(c)?"on":""}" data-qc="${c}">${c}</button>`).join("");
+  rack.querySelectorAll("[data-qc]").forEach(b=>b.addEventListener("click",()=>{
+    const v = b.dataset.qc;
+    if(v==="__all") state.filters.cats.clear();
+    else state.filters.cats.has(v) ? state.filters.cats.delete(v) : state.filters.cats.add(v);
+    renderQuickChips();
+    $("#openFilter").classList.toggle("has", filterCount()>0);
+    renderExploreList(false);
+  }));
+}
+function renderExploreList(stagger){
+  const box = $("#exploreList");
+  if(!box) return;
+  const list = filteredList();
+  if(!list.length){
+    box.innerHTML = `<div class="empty">
+      <span class="e-ic">${I("search",38,1.4)}</span>
+      <h3>조건에 맞는 공고가 없어요</h3>
+      <p>필터를 조금 넓혀 보시면 놓친 공고가 보일 수 있어요.</p>
+      <button class="btn btn-secondary btn-md" id="emptyReset">필터 초기화</button>
+    </div>`;
+    $("#emptyReset").addEventListener("click",()=>{
+      state.filters = { cats:new Set(), method:null, regions:new Set(), pay:null };
+      state.query = ""; renderExplore();
+    });
+    return;
+  }
+  box.innerHTML = `<ul class="rows no-top ${stagger?"stagger-run":""}">${list.map((x,i)=>rowHTML(x,Math.min(i,10))).join("")}</ul>`;
+}
+
+/* ============================================================
+   필터 바텀시트
+   ============================================================ */
+let tmpF = null;
+function renderFilterSheet(){
+  tmpF = {
+    cats:new Set(state.filters.cats), method:state.filters.method,
+    regions:new Set(state.filters.regions), pay:state.filters.pay,
+  };
+  drawFilterBody();
+}
+function drawFilterBody(){
+  const chip = (label,on,attr)=>`<button class="chip ${on?"on":""}" ${attr}>${label}</button>`;
+  $("#filterBody").innerHTML = `
+    <div class="filter-sect">
+      <span class="mono">CATEGORY &middot; 다중 선택</span>
+      <div class="chip-wrap">${CATS.map(c=>chip(c,tmpF.cats.has(c),`data-fc="${c}"`)).join("")}</div>
+      <span class="mono">지원 방식</span>
+      <div class="chip-wrap">
+        ${chip("원클릭 지원",tmpF.method==="oneclick",'data-fm="oneclick"')}
+        ${chip("사이트 지원",tmpF.method==="site",'data-fm="site"')}
+      </div>
+      <span class="mono">지역</span>
+      <div class="chip-wrap">
+        ${["서울","경기·인천","그 외 지역"].map(r=>chip(r,tmpF.regions.has(r),`data-fr="${r}"`)).join("")}
+      </div>
+      <span class="mono">보수</span>
+      <div class="chip-wrap">
+        ${chip("페이 명시",tmpF.pay==="paid",'data-fp="paid"')}
+        ${chip("협의·무페이 포함",tmpF.pay==="nego",'data-fp="nego"')}
+      </div>
+    </div>`;
+  const body = $("#filterBody");
+  body.querySelectorAll("[data-fc]").forEach(b=>b.addEventListener("click",()=>{
+    const v=b.dataset.fc; tmpF.cats.has(v)?tmpF.cats.delete(v):tmpF.cats.add(v); drawFilterBody(); updateFilterCTA();
+  }));
+  body.querySelectorAll("[data-fm]").forEach(b=>b.addEventListener("click",()=>{
+    tmpF.method = tmpF.method===b.dataset.fm ? null : b.dataset.fm; drawFilterBody(); updateFilterCTA();
+  }));
+  body.querySelectorAll("[data-fr]").forEach(b=>b.addEventListener("click",()=>{
+    const v=b.dataset.fr; tmpF.regions.has(v)?tmpF.regions.delete(v):tmpF.regions.add(v); drawFilterBody(); updateFilterCTA();
+  }));
+  body.querySelectorAll("[data-fp]").forEach(b=>b.addEventListener("click",()=>{
+    tmpF.pay = tmpF.pay===b.dataset.fp ? null : b.dataset.fp; drawFilterBody(); updateFilterCTA();
+  }));
+  updateFilterCTA();
+}
+function updateFilterCTA(){
+  $("#filterApply").textContent = `공고 ${filteredList(tmpF).length}건 보기`;
+}
+$("#filterReset").addEventListener("click",()=>{
+  tmpF = { cats:new Set(), method:null, regions:new Set(), pay:null };
+  drawFilterBody();
+});
+$("#filterApply").addEventListener("click",()=>{
+  state.filters = tmpF;
+  closeSheet("filterWrap");
+  renderQuickChips();
+  const fb = $("#openFilter"); if(fb) fb.classList.toggle("has", filterCount()>0);
+  renderExploreList(true);
+});
+
+/* ============================================================
+   화면 렌더 — 지원 탭
+   ============================================================ */
+function renderApps(){
+  const el = $("#scr-apps");
+  el.innerHTML = `
+    ${navHTML("지원",{large:"지원"})}
+    <div class="segctl" role="tablist">
+      <button class="segbtn ${state.appsSeg==="applied"?"on":""}" data-seg="applied" role="tab">지원함 <span class="tabular">${state.applied.size}</span></button>
+      <button class="segbtn ${state.appsSeg==="saved"?"on":""}" data-seg="saved" role="tab">찜 <span class="tabular">${state.bookmarks.size}</span></button>
+    </div>
+    <div id="appsBody"></div>`;
+  el.querySelectorAll("[data-seg]").forEach(b=>b.addEventListener("click",()=>{
+    state.appsSeg = b.dataset.seg;
+    el.querySelectorAll(".segbtn").forEach(x=>x.classList.toggle("on",x===b));
+    drawAppsBody(true);
+  }));
+  drawAppsBody(false);
+  bindNav(el);
+}
+function drawAppsBody(anim){
+  const box = $("#appsBody");
+  if(!box) return;
+  if(state.appsSeg==="applied"){
+    if(!state.applied.size){
+      box.innerHTML = emptyHTML("send","아직 지원한 오디션이 없어요","마음에 드는 공고를 찾아 첫 지원을 시작해 보세요.<br>발송·열람 상태를 여기서 추적할 수 있어요.","오늘의 공고 보기","explore");
+      bindEmpty(box); return;
+    }
+    const entries = [...state.applied.entries()].sort((a,b)=>
+      (state.appliedDates.get(b[0])||"").localeCompare(state.appliedDates.get(a[0])||""));
+    box.innerHTML = `<ul class="rows no-top ${anim?"stagger-run":""}">${entries.map(([id,st],i)=>{
+      const x = LISTINGS.find(l=>l.id===id);
+      const closed = st==="closed" || x.dday==null;
+      const chip = closed
+        ? `<span class="stchip closed"><span class="dot"></span>마감</span>`
+        : st==="read"
+          ? `<span class="stchip read"><span class="dot"></span>열람됨</span>`
+          : `<span class="stchip"><span class="dot"></span>지원 완료</span>`;
+      return `<li class="row stg ${closed?"closed":""}" style="--i:${i}" data-open="${id}">
+        <div class="row-top">
+          <h3 class="row-title">${esc(x.title)}</h3>
+          <span class="dday ${ddCls(x.dday)}">${ddTxt(x.dday)}</span>
+        </div>
+        <p class="row-org">${esc(x.org)}</p>
+        <div class="row-badges" style="margin-top:10px;justify-content:space-between;width:100%">
+          ${chip}
+          <span class="app-row-date">APPLIED ${state.appliedDates.get(id)||"07.15"}</span>
+        </div>
+      </li>`;
+    }).join("")}</ul>
+    <p style="padding:18px 20px 40px;font-size:12px;color:var(--ink-40);line-height:1.6">열람됨 표시는 담당자가 지원 메일을 확인한 시점에 업데이트돼요.</p>`;
+  } else {
+    if(!state.bookmarks.size){
+      box.innerHTML = emptyHTML("bookmark","찜한 오디션이 없어요","지금 지원하기 애매한 공고는 찜해 두세요.<br>마감 임박 순으로 정리해 드려요.","탐색하러 가기","explore");
+      bindEmpty(box); return;
+    }
+    const list = [...state.bookmarks].map(id=>LISTINGS.find(l=>l.id===id))
+      .sort((a,b)=>(a.dday==null)-(b.dday==null) || (a.dday??99)-(b.dday??99));
+    box.innerHTML = `<ul class="rows no-top ${anim?"stagger-run":""}">${list.map((x,i)=>rowHTML(x,i)).join("")}</ul>`;
+  }
+}
+function emptyHTML(icon,h,p,cta,tab){
+  return `<div class="empty">
+    <span class="e-ic">${I(icon,38,1.4)}</span>
+    <h3>${h}</h3><p>${p}</p>
+    <button class="btn btn-secondary btn-md" data-tab="${tab}">${cta}</button>
+  </div>`;
+}
+function bindEmpty(box){ /* data-tab 위임 처리됨 */ }
+
+/* ============================================================
+   화면 렌더 — 커뮤니티
+   ============================================================ */
+function renderCommunity(){
+  const el = $("#scr-community");
+  el.innerHTML = `
+    ${navHTML("커뮤니티",{large:"커뮤니티",right:`<button class="icon-btn" data-toast="글쓰기는 프로토타입 범위 밖이에요." aria-label="글쓰기">${I("edit",20)}</button>`})}
+    <div class="chip-rack">
+      <button class="chip on">전체</button>
+      <button class="chip" data-toast="카테고리 필터 데모입니다.">후기</button>
+      <button class="chip" data-toast="카테고리 필터 데모입니다.">질문</button>
+      <button class="chip" data-toast="카테고리 필터 데모입니다.">정보</button>
+      <button class="chip" data-toast="카테고리 필터 데모입니다.">팁</button>
+    </div>
+    <ul class="rows no-top stagger-run">
+      ${POSTS.map((p,i)=>`<li class="row stg" style="--i:${i}" data-toast="글 상세는 프로토타입 범위 밖이에요.">
+        <div class="row-badges" style="margin:0 0 7px"><span class="badge genre">${p.cat}</span></div>
+        <h3 class="row-title" style="font-size:15px">${esc(p.title)}</h3>
+        <p class="row-meta" style="font-family:var(--font-sans);font-size:13px;letter-spacing:0">${p.who} &middot; ${p.when} &middot; 댓글 ${p.cmt}</p>
+      </li>`).join("")}
+    </ul>`;
+  bindNav(el);
+}
+
+/* ============================================================
+   화면 렌더 — MY
+   ============================================================ */
+function renderMy(){
+  const el = $("#scr-my");
+  const pct = state.hasProfile ? 70 : 15;
+  const chips = state.hasProfile
+    ? `<span class="badge genre" style="background:rgba(16,185,129,.1);color:#0B7A5C">${I("check",11,2.4)}&nbsp;지원 가능</span><span class="badge genre">컴프카드 미완</span>`
+    : `<span class="badge genre">프로필 미작성</span>`;
+  el.innerHTML = `
+    ${navHTML("MY",{large:"MY"})}
+    <div class="stagger-run">
+      <div class="my-card stg" style="--i:0">
+        <div class="avatar">${state.hasProfile ? esc(state.profile.name[0]) : "?"}</div>
+        <div style="flex:1">
+          <p class="my-name">${state.hasProfile?esc(state.profile.name):"프로필을 만들어 주세요"}</p>
+          <div class="my-chips">${chips}</div>
+        </div>
+        ${ringHTML(pct,48)}
+      </div>
+
+      <button class="menu-row stg" style="--i:1" data-toast="프로필 편집은 프로토타입 범위 밖이에요.">
+        <span class="mi">${I("doc",20)}</span>프로필 관리
+        <span style="margin-left:auto;font-size:12px;color:var(--ink-40)" class="tabular">${pct}%</span>
+        <span class="chev">${I("chevR",17)}</span>
+      </button>
+      <button class="menu-row stg" style="--i:2" data-onb>
+        <span class="mi">${I("replay",20)}</span>온보딩 다시 보기<span class="chev">${I("chevR",17)}</span>
+      </button>
+      <button class="menu-row stg" style="--i:3" data-toast="내가 쓴 글 목록은 프로토타입 범위 밖이에요.">
+        <span class="mi">${I("chat",20)}</span>내가 쓴 글<span class="chev">${I("chevR",17)}</span>
+      </button>
+      <button class="menu-row stg" style="--i:4" data-toast="공지사항은 프로토타입 범위 밖이에요.">
+        <span class="mi">${I("megaphone",20)}</span>공지사항<span class="chev">${I("chevR",17)}</span>
+      </button>
+      <button class="menu-row stg" style="--i:5" data-toast="FAQ는 프로토타입 범위 밖이에요.">
+        <span class="mi">${I("help",20)}</span>자주 묻는 질문<span class="chev">${I("chevR",17)}</span>
+      </button>
+      <button class="menu-row stg" style="--i:6" data-toast="약관 문서는 프로토타입 범위 밖이에요.">
+        <span class="mi">${I("shield",20)}</span>이용약관 &middot; 개인정보 처리방침<span class="chev">${I("chevR",17)}</span>
+      </button>
+
+      <div class="page-pad" style="padding-top:24px">
+        <span class="mono">PROTOTYPE DEMO</span>
+      </div>
+      <div class="menu-row stg" style="--i:7;cursor:pointer" id="demoToggleRow">
+        <span class="mi">${I("user",20)}</span>
+        <span>미니 프로필 보유 상태<br><span style="font-size:12px;color:var(--ink-40)">끄면 지원 시 프로필 안내 시트가 먼저 떠요</span></span>
+        <span class="switch ${state.hasProfile?"on":""}" id="demoSwitch" role="switch" aria-checked="${state.hasProfile}"></span>
+      </div>
+
+      <button class="logout" data-toast="로그아웃은 프로토타입 범위 밖이에요.">로그아웃</button>
+    </div>`;
+
+  $("#demoToggleRow").addEventListener("click",()=>{
+    state.hasProfile = !state.hasProfile;
+    renderMy(); renderHome();
+    toast(state.hasProfile ? "미니 프로필 보유 상태로 전환했어요." : "프로필 없음 상태로 전환했어요.");
+  });
+  bindNav(el);
+}
+
+/* ============================================================
+   상세 (push)
+   ============================================================ */
+function openDetail(id){
+  state.detailId = id;
+  const x = LISTINGS.find(l=>l.id===id);
+  const closed = x.dday==null;
+  const applied = state.applied.has(id) && state.applied.get(id)!=="closed";
+  const bm = state.bookmarks.has(id);
+  const similar = closed ? LISTINGS.filter(l=>l.dday!=null && l.cat===x.cat && l.id!==id).slice(0,3) : [];
+  const similarFallback = closed && !similar.length ? LISTINGS.filter(l=>l.dday!=null&&l.id!==id).sort((a,b)=>a.dday-b.dday).slice(0,3) : similar;
+
+  const field = (k,en,v,extra="") => `<div class="field"><span class="mono">${en} / ${k}</span><div class="field-val">${v}${extra}</div></div>`;
+
+  $("#detail").innerHTML = `
+    <header class="hdr">
+      <div class="hdr-side">
+        <button class="icon-btn" id="detailBack" aria-label="뒤로가기">${I("back")}</button>
+      </div>
+      <span class="hdr-ctitle">${esc(x.title)}</span>
+      <div class="hdr-side" style="justify-content:flex-end">
+        <button class="icon-btn" id="bmBtn" aria-label="찜" style="color:${bm?"var(--primary)":"var(--ink-70)"}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="${bm?"currentColor":"none"}" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4h11v17L12 17l-5.5 4Z"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="detail-scroll" id="detailScroll">
+      <div class="doc-head">
+        <div class="doc-no">
+          <span class="mono tabular">CALL SHEET NO.${String(x.id).padStart(3,"0")}</span>
+          <span class="mono tabular">POSTED ${x.posted}</span>
+        </div>
+        <h1 class="doc-title">${esc(x.title)}</h1>
+        <p class="doc-org">${esc(x.org)}</p>
+        <div class="doc-badges"><span class="badge genre">${x.cat}</span>${methodBadge(x)}${applied?`<span class="badge applied-mark">지원함</span>`:""}</div>
+      </div>
+
+      ${field("배역","ROLE",esc(x.role))}
+      ${field("지역","LOCATION",esc(x.region))}
+      ${field("보수","PAY",`<span class="tabular">${esc(x.pay)}</span>`)}
+      ${field("일정","SCHEDULE",esc(x.schedule))}
+      ${field("마감","DEADLINE",
+        closed?`<span style="color:var(--ink-40)">마감된 공고</span>`
+        :`<span class="tabular">2026.${ddDate(x.dday)}</span><span class="dday ${ddCls(x.dday)}" style="padding-top:0">D-${x.dday}</span>`)}
+
+      <div class="doc-body">
+        <span class="mono">ABOUT / 상세 내용</span>
+        <p>${esc(x.desc)}</p>
+      </div>
+
+      <div class="src-row pressable" data-toast="원문 페이지로 이동해요. (프로토타입)">
+        ${I("external",17)}
+        <span>수집 출처 <span class="src-host">${x.src}</span></span>
+        <span class="go">원문 보기 ${I("chevR",13)}</span>
+      </div>
+      <p style="padding:10px 20px 26px;font-size:12px;color:var(--ink-40);line-height:1.6">오디션패스가 공개된 공고를 수집·정리했어요. 지원 전 원문의 조건을 한 번 더 확인해 주세요.</p>
+
+      ${closed?`
+      <div class="sect" style="border-top:1px solid var(--line-app);padding-bottom:30px">
+        <div class="sect-head">
+          <div><span class="mono">SIMILAR</span><h2>비슷한 오디션</h2></div>
+        </div>
+        <ul class="rows">${similarFallback.map((s,i)=>rowHTML(s,i)).join("")}</ul>
+      </div>`:""}
+    </div>
+
+    <div class="applybar">
+      <div class="ab-left">
+        ${closed
+          ?`<div class="ab-d" style="color:var(--ink-40)">마감</div><div class="ab-date">CLOSED</div>`
+          :`<div class="ab-d ${ddCls(x.dday)==="hot"?"":""}" style="color:var(--${x.dday<=3?"danger":x.dday<=7?"warning":"ink"})">D-${x.dday}</div>
+             <div class="ab-date">DUE ${ddDate(x.dday)}</div>`}
+      </div>
+      ${closed
+        ? `<button class="btn btn-secondary btn-lg" disabled>마감된 공고예요</button>`
+        : applied
+          ? `<button class="btn btn-secondary btn-lg" disabled>지원함</button>`
+          : x.oneclick
+            ? `<button class="btn btn-primary btn-lg" id="applyBtn">원클릭 지원</button>`
+            : `<button class="btn btn-secondary btn-lg" data-toast="출처 사이트에서 지원하는 공고예요. (프로토타입)">사이트에서 지원</button>`}
+    </div>`;
+
+  $("#detailBack").addEventListener("click", closeDetail);
+  bindNav($("#detailScroll"), $("#detail .hdr"), 120);
+  $("#bmBtn").addEventListener("click", ()=>{
+    if(state.bookmarks.has(id)){ state.bookmarks.delete(id); toast("찜을 해제했어요."); }
+    else { state.bookmarks.add(id); toast("찜했어요. 지원 탭에 마감 임박 순으로 정리돼요.","지원 탭",()=>{ closeDetail(); switchTab("apps"); state.appsSeg="saved"; renderApps(); }); }
+    openDetailHeaderRefresh(id);
+    if(state.tab==="apps") renderApps();
+  });
+  const ab = $("#applyBtn");
+  if(ab) ab.addEventListener("click", ()=>openApplySheet(id));
+
+  requestAnimationFrame(()=>$("#detail").classList.add("open"));
+}
+function openDetailHeaderRefresh(id){
+  const bm = state.bookmarks.has(id);
+  $("#bmBtn").style.color = bm ? "var(--primary)" : "var(--ink-70)";
+  $("#bmBtn").innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="${bm?"currentColor":"none"}" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4h11v17L12 17l-5.5 4Z"/></svg>`;
+}
+function closeDetail(){
+  $("#detail").classList.remove("open");
+  state.detailId = null;
+}
+
+/* ============================================================
+   지원 바텀시트 (3종: 프로필 안내 → 확인 → 완료)
+   ============================================================ */
+function openApplySheet(id){
+  state.applySheetTarget = id;
+  drawApplyView(state.hasProfile ? "confirm" : "profile");
+  openSheet("applyWrap");
+}
+function drawApplyView(view){
+  state.applyView = view;
+  const x = LISTINGS.find(l=>l.id===state.applySheetTarget);
+  const body = $("#applyBody"), ft = $("#applyFt"), title = $("#applyTitle");
+
+  if(view==="profile"){
+    title.textContent = "지원 전에 잠깐이면 돼요";
+    body.innerHTML = `<div class="sheet-view on">
+      <p style="font-size:14px;line-height:1.65;color:var(--ink-70);margin-top:2px">
+        담당자에게 보낼 최소 정보 세 가지만 받을게요.<br>저장해 두면 다음부터는 바로 지원돼요.</p>
+      <label class="f-label" for="apName">이름</label>
+      <input class="f-input" id="apName" value="${esc(state.profile.name)}" placeholder="실명 또는 활동명">
+      <label class="f-label" for="apYear">출생연도</label>
+      <input class="f-input tabular" id="apYear" inputmode="numeric" value="${esc(state.profile.year)}" placeholder="예: 1999">
+      <span class="f-label">성별</span>
+      <div class="seg2" id="apGender">
+        <button class="chip ${state.profile.gender==="여성"?"on":""}" data-g="여성">여성</button>
+        <button class="chip ${state.profile.gender==="남성"?"on":""}" data-g="남성">남성</button>
+      </div>
+      <p style="font-size:12px;color:var(--ink-40);margin-top:14px;line-height:1.6">사진·경력 등 컴프카드 항목은 MY &gt; 프로필에서 언제든 더할 수 있어요.</p>
+    </div>`;
+    ft.innerHTML = `<button class="btn btn-primary btn-lg" id="apSave">저장하고 이어서 지원하기</button>`;
+    body.querySelectorAll("[data-g]").forEach(b=>b.addEventListener("click",()=>{
+      state.profile.gender = b.dataset.g;
+      body.querySelectorAll("[data-g]").forEach(c=>c.classList.toggle("on",c===b));
+    }));
+    $("#apSave").addEventListener("click",()=>{
+      const n = $("#apName").value.trim(), y = $("#apYear").value.trim();
+      if(!n || !y){ toast("이름과 출생연도를 채워 주세요."); return; }
+      state.profile.name = n; state.profile.year = y;
+      state.hasProfile = true;
+      renderMy(); renderHome();
+      drawApplyView("confirm");
+    });
+  }
+
+  if(view==="confirm"){
+    title.textContent = "지원 내용 확인";
+    body.innerHTML = `<div class="sheet-view on">
+      <div class="confirm-doc">
+        <div class="confirm-line"><span class="mono ck">TO</span><span class="cv">${esc(x.org)} 캐스팅 담당자</span></div>
+        <div class="confirm-line"><span class="mono ck">RE</span><span class="cv">${esc(x.title)}</span></div>
+        <div class="confirm-line"><span class="mono ck">ROLE</span><span class="cv">${esc(x.role)}</span></div>
+      </div>
+      <span class="mono" style="display:block;margin-top:16px">ATTACHED / 첨부 프로필</span>
+      <div class="profile-strip" style="margin-top:8px">
+        <div class="avatar">${esc(state.profile.name[0])}</div>
+        <div>
+          <p class="ps-name">${esc(state.profile.name)}</p>
+          <p class="ps-meta tabular">${esc(state.profile.year)}년생 &middot; ${esc(state.profile.gender)} &middot; ${[...state.interests][0]||"배우"}</p>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--ink-40);margin-top:14px;line-height:1.6">보내기를 누르면 위 내용이 지원 메일로 발송돼요. 발송 후에는 지원 탭에서 열람 여부를 확인할 수 있어요.</p>
+    </div>`;
+    ft.innerHTML = `<button class="btn btn-primary btn-lg" id="apSend">지원 메일 보내기</button>`;
+    $("#apSend").addEventListener("click",()=>{
+      const b = $("#apSend");
+      b.disabled = true; b.setAttribute("aria-busy","true");
+      b.textContent = "보내는 중…";
+      setTimeout(()=>{
+        state.applied.set(x.id,"sent");
+        state.appliedDates.set(x.id,"07.15");
+        drawApplyView("done");
+        renderHome();
+      }, 900);
+    });
+  }
+
+  if(view==="done"){
+    title.textContent = "";
+    body.innerHTML = `<div class="sheet-view on">
+      <div class="done-wrap">
+        <div class="done-ic">${I("check",26,2)}</div>
+        <h3>지원이 완료되었어요</h3>
+        <p>${esc(x.org)}에 프로필이 전달됐어요.<br>담당자가 열람하면 지원 탭에서 알려드릴게요.</p>
+      </div>
+    </div>`;
+    ft.innerHTML = `
+      <button class="btn btn-primary btn-lg" id="goApps">지원 탭에서 확인</button>
+      <button class="btn btn-ghost btn-lg" id="goSimilar" style="margin-top:6px">비슷한 오디션 더 보기</button>`;
+    $("#goApps").addEventListener("click",()=>{
+      closeSheet("applyWrap"); closeDetail();
+      state.appsSeg = "applied"; switchTab("apps");
+    });
+    $("#goSimilar").addEventListener("click",()=>{
+      closeSheet("applyWrap"); closeDetail();
+      state.filters = { cats:new Set([x.cat]), method:null, regions:new Set(), pay:null };
+      switchTab("explore");
+    });
+    if(state.detailId===x.id){
+      const bar = document.querySelector("#detail .applybar .btn");
+      if(bar){ bar.className="btn btn-secondary btn-lg"; bar.disabled=true; bar.textContent="지원함"; }
+    }
+  }
+}
+
+/* ============================================================
+   온보딩 3스텝
+   ============================================================ */
+function openOnboarding(){
+  state.onbStep = 1;
+  state.onbCats = new Set(state.interests);
+  drawOnb();
+  const onb = $("#onb");
+  onb.classList.add("open");
+}
+function closeOnboarding(done){
+  $("#onb").classList.remove("open");
+  if(done){
+    if(state.onbCats.size) state.interests = new Set(state.onbCats);
+    renderHome(); renderMy();
+    toast("온보딩을 마쳤어요. 오늘의 콜시트를 확인해 보세요.");
+    switchTab("home");
+  }
+}
+function drawOnb(){
+  const s = state.onbStep;
+  const recs = LISTINGS.filter(x=>x.dday!=null && (state.onbCats.size ? state.onbCats.has(x.cat) : true))
+    .sort((a,b)=>(b.oneclick?1:0)-(a.oneclick?1:0) || a.dday-b.dday).slice(0,4);
+  const recsFinal = recs.length ? recs : LISTINGS.filter(x=>x.dday!=null).slice(0,4);
+
+  $("#onb").innerHTML = `
+    <div class="onb-hd">
+      <button class="icon-btn" id="onbClose" aria-label="닫기">${I("x",20)}</button>
+      <span class="mono">ONBOARDING</span>
+      <button class="onb-skip" id="onbSkip">${s<3?"건너뛰기":"&nbsp;"}</button>
+    </div>
+    <div class="stepper" aria-label="3단계 중 ${s}단계">
+      <span class="mono tabular">STEP ${s}/3</span>
+      <div class="bars">${[1,2,3].map(i=>`<div class="bar ${i<=s?"on":""}"></div>`).join("")}</div>
+    </div>
+    <div class="onb-body">
+      <div class="onb-step ${s===1?"on":""}">
+        <h2 class="onb-title">어떤 무대를<br>찾고 계세요?</h2>
+        <p class="onb-sub">선택한 분야를 기준으로 공고를 추천해 드려요. 여러 개를 골라도 좋아요.</p>
+        <div class="chip-wrap" style="margin-top:20px" id="onbChips">
+          ${CATS.map(c=>`<button class="chip ${state.onbCats.has(c)?"on":""}" data-oc="${c}">${c}</button>`).join("")}
+        </div>
+      </div>
+      <div class="onb-step ${s===2?"on":""}">
+        <h2 class="onb-title">지원에 필요한<br>최소 정보만 받을게요</h2>
+        <p class="onb-sub">이 세 가지면 원클릭 지원을 시작할 수 있어요. 나머지는 나중에 채워도 돼요.</p>
+        <label class="f-label" for="onbName">이름</label>
+        <input class="f-input" id="onbName" value="${esc(state.profile.name)}" placeholder="실명 또는 활동명">
+        <label class="f-label" for="onbYear">출생연도</label>
+        <input class="f-input tabular" id="onbYear" inputmode="numeric" value="${esc(state.profile.year)}" placeholder="예: 1999">
+        <span class="f-label">성별</span>
+        <div class="seg2" id="onbGender">
+          <button class="chip ${state.profile.gender==="여성"?"on":""}" data-og="여성">여성</button>
+          <button class="chip ${state.profile.gender==="남성"?"on":""}" data-og="남성">남성</button>
+        </div>
+      </div>
+      <div class="onb-step ${s===3?"on":""}">
+        <h2 class="onb-title">${esc(state.profile.name)} 님의<br>첫 콜시트예요</h2>
+        <p class="onb-sub">선택하신 분야에서 지금 바로 지원할 수 있는 공고부터 모았어요.</p>
+        <ul class="onb-recs ${s===3?"stagger-run":""}">
+          ${recsFinal.map((x,i)=>rowHTML(x,i,{recFlag:true})).join("")}
+        </ul>
+      </div>
+    </div>
+    <div class="onb-ft">
+      ${s===1?`<button class="btn btn-primary btn-lg" id="onbNext" ${state.onbCats.size?"":"disabled"}>다음</button>`:""}
+      ${s===2?`<button class="btn btn-primary btn-lg" id="onbNext">다음</button>`:""}
+      ${s===3?`<button class="btn btn-primary btn-lg" id="onbDone">홈에서 시작하기</button>`:""}
+    </div>`;
+
+  $("#onbClose").addEventListener("click",()=>closeOnboarding(false));
+  $("#onbSkip").addEventListener("click",()=>{
+    if(state.onbStep<3){ state.onbStep++; drawOnb(); } else closeOnboarding(true);
+  });
+  const chips = $("#onbChips");
+  if(chips) chips.querySelectorAll("[data-oc]").forEach(b=>b.addEventListener("click",()=>{
+    const v=b.dataset.oc;
+    state.onbCats.has(v)?state.onbCats.delete(v):state.onbCats.add(v);
+    b.classList.toggle("on");
+    const nx = $("#onbNext"); if(nx && state.onbStep===1) nx.disabled = !state.onbCats.size;
+  }));
+  $("#onb").querySelectorAll("[data-og]").forEach(b=>b.addEventListener("click",()=>{
+    state.profile.gender=b.dataset.og;
+    $("#onb").querySelectorAll("[data-og]").forEach(c=>c.classList.toggle("on",c===b));
+  }));
+  const nx = $("#onbNext");
+  if(nx) nx.addEventListener("click",()=>{
+    if(state.onbStep===2){
+      const n=$("#onbName").value.trim(), y=$("#onbYear").value.trim();
+      if(!n||!y){ toast("이름과 출생연도를 채워 주세요."); return; }
+      state.profile.name=n; state.profile.year=y;
+      state.hasProfile = true;
+    }
+    state.onbStep++; drawOnb();
+  });
+  const dn = $("#onbDone");
+  if(dn) dn.addEventListener("click",()=>closeOnboarding(true));
+}
+
+/* ============================================================
+   시트 열기/닫기 · 토스트
+   ============================================================ */
+function openSheet(id){ $("#"+id).classList.add("open"); }
+function closeSheet(id){ $("#"+id).classList.remove("open"); }
+document.querySelectorAll("[data-close]").forEach(el=>{
+  el.addEventListener("click",()=>closeSheet(el.dataset.close));
+  if(el.classList.contains("icon-btn") && !el.innerHTML.trim()) el.innerHTML = I("x",20);
+});
+
+let toastTimer = null;
+function toast(msg, actionLabel, actionFn){
+  const t = $("#toast");
+  t.innerHTML = `${I("check",15,2)}<span>${msg}</span>${actionLabel?`<button id="toastAct">${actionLabel}</button>`:""}`;
+  t.classList.add("show");
+  if(actionLabel) $("#toastAct").addEventListener("click",()=>{ t.classList.remove("show"); actionFn && actionFn(); });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), actionLabel?5000:2600);
+}
+
+/* ============================================================
+   탭바 & 전환
+   ============================================================ */
+const TABS = [
+  { key:"home", label:"홈", icon:"home" },
+  { key:"explore", label:"탐색", icon:"search" },
+  { key:"apps", label:"지원", icon:"send" },
+  { key:"community", label:"커뮤니티", icon:"chat" },
+  { key:"my", label:"MY", icon:"user" },
+];
+const RENDER = { home:renderHome, explore:renderExplore, apps:renderApps, community:renderCommunity, my:renderMy };
+
+function buildTabbar(){
+  const bar = $("#tabbar");
+  TABS.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "tab"; b.dataset.tabkey = t.key;
+    b.innerHTML = `${I(t.icon,22)}<span>${t.label}</span>`;
+    b.addEventListener("click",()=>{
+      if(state.tab===t.key){
+        const scr = $("#scr-"+t.key); if(scr) scr.scrollTo({top:0,behavior:"smooth"});
+        if($("#detail").classList.contains("open")) closeDetail();
+        return;
+      }
+      switchTab(t.key);
+    });
+    bar.appendChild(b);
+  });
+}
+function switchTab(key){
+  if($("#detail").classList.contains("open")) closeDetail();
+  state.tab = key;
+  const idx = TABS.findIndex(t=>t.key===key);
+  $("#tabInd").style.transform = `translateX(${idx*100}%)`;
+  document.querySelectorAll(".tab").forEach(b=>{
+    const on = b.dataset.tabkey===key;
+    b.classList.toggle("on",on);
+    b.setAttribute("aria-current", on?"page":"false");
+    b.querySelector("svg").setAttribute("stroke-width", on?"2.1":"1.75");
+  });
+  document.querySelectorAll(".screen").forEach(s=>{ s.classList.remove("active","anim"); });
+  const scr = $("#scr-"+key);
+  scr.classList.add("active");
+
+  if(!state.visited[key]){
+    /* 첫 진입: 스켈레톤 0.6초 데모 */
+    state.visited[key] = true;
+    scr.innerHTML = `
+      ${navHTML(key==="home"?"오디션패스":TABS[idx].label,{large:key==="home"?"오늘의 콜시트":TABS[idx].label})}
+      ${skelRows(7)}`;
+    scr.classList.add("anim");
+    setTimeout(()=>{
+      RENDER[key]();
+      scr.scrollTop = 0;
+      scr.classList.remove("anim");
+      void scr.offsetWidth;
+      scr.classList.add("anim");
+    }, 600);
+  } else {
+    RENDER[key]();
+    scr.scrollTop = 0;
+    void scr.offsetWidth;
+    scr.classList.add("anim");
+  }
+}
+
+/* ============================================================
+   전역 위임: 상세 열기 · 탭 이동 · 토스트 · 온보딩
+   ============================================================ */
+document.addEventListener("click", e=>{
+  const open = e.target.closest("[data-open]");
+  if(open){ openDetail(Number(open.dataset.open)); return; }
+  const oc = e.target.closest("[data-oneclick-all]");
+  if(oc){
+    state.filters = { cats:new Set(), method:"oneclick", regions:new Set(), pay:null };
+    switchTab("explore"); return;
+  }
+  const tabgo = e.target.closest("[data-tab]");
+  if(tabgo){
+    const k = tabgo.dataset.tab;
+    if(k==="apps") state.appsSeg = "applied";
+    switchTab(k); return;
+  }
+  const tst = e.target.closest("[data-toast]");
+  if(tst){ toast(tst.dataset.toast); return; }
+  const onb = e.target.closest("[data-onb]");
+  if(onb){ openOnboarding(); return; }
+});
+
+/* ============================================================
+   부팅
+   ============================================================ */
+if("scrollRestoration" in history) history.scrollRestoration = "manual";
+buildTabbar();
+switchTab("home");
+</script>
+</body>
+</html>
