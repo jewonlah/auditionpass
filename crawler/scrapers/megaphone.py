@@ -32,7 +32,7 @@ class MegaphoneScraper(BaseScraper):
 
         try:
             resp = requests.get(
-                self.list_url, timeout=30, headers=_HEADERS, verify=False
+                self.list_url, timeout=30, headers=_HEADERS
             )
             resp.raise_for_status()
         except requests.RequestException as e:
@@ -119,7 +119,7 @@ class MegaphoneScraper(BaseScraper):
             "location": None, "deadline": None, "requirements": None,
         }
         try:
-            resp = requests.get(url, timeout=30, headers=_HEADERS, verify=False)
+            resp = requests.get(url, timeout=30, headers=_HEADERS)
             resp.raise_for_status()
         except requests.RequestException:
             return result
