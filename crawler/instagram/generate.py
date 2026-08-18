@@ -1,11 +1,18 @@
 """
-인스타그램 콘텐츠 일괄 생성 — 매일 실행
-사용법: python generate.py [--type top5|deadline|weekly|all]
+인스타그램 콘텐츠 일괄 생성 + SNS 자동 게시
+사용법:
+  python generate.py [--type top5|deadline|weekly|all] [--publish] [--platform instagram|threads]
 """
 
 import sys
+import os
 import logging
+import argparse
 from pathlib import Path
+
+# sns 모듈 import를 위해 crawler 루트를 path에 추가
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from card_top5 import fetch_top5, generate_top5_card, generate_top5_caption
 from card_deadline import fetch_deadline_soon, generate_deadline_card, generate_deadline_caption
 from card_weekly import fetch_weekly_stats, generate_weekly_card, generate_weekly_caption
@@ -57,20 +64,52 @@ def gen_weekly():
     logger.info(f"[주간통계] 완료 — {card.name}")
 
 
+def auto_publish(content_type: str, platform: str | None = None):
+    """생성된 콘텐츠를 SNS에 자동 게시."""
+    from sns.publish import find_content, publish_to_all
+    from datetime import date
+
+    today = str(date.today())
+    platforms = [platform] if platform else None
+    type_filter = None if content_type == "all" else content_type
+
+    contents = find_content(today, type_filter)
+    if not contents:
+        logger.warning("게시할 콘텐츠 없음")
+        return
+
+    for content in contents:
+        logger.info(f"[자동게시] {content['type']} → SNS 게시 중...")
+        results = publish_to_all(content, platforms)
+        logger.info(f"[자동게시] {content['type']} → {len(results)}개 플랫폼 완료")
+
+
 def main():
-    content_type = sys.argv[1] if len(sys.argv) > 1 else "all"
-    content_type = content_type.lstrip("-").lstrip("-").replace("type=", "")
+    parser = argparse.ArgumentParser(description="인스타 콘텐츠 생성 + SNS 자동 게시")
+    parser.add_argument("--type", default="all",
+                        choices=["top5", "deadline", "weekly", "all"],
+                        help="생성할 콘텐츠 타입")
+    parser.add_argument("--publish", action="store_true",
+                        help="생성 후 SNS에 자동 게시")
+    parser.add_argument("--platform", choices=["instagram", "threads"],
+                        help="특정 플랫폼만 게시")
+    args = parser.parse_args()
 
-    logger.info(f"===== 인스타 콘텐츠 생성 ({content_type}) =====")
+    logger.info(f"===== 인스타 콘텐츠 생성 ({args.type}) =====")
 
-    if content_type in ("top5", "all"):
+    if args.type in ("top5", "all"):
         gen_top5()
-    if content_type in ("deadline", "all"):
+    if args.type in ("deadline", "all"):
         gen_deadline()
-    if content_type in ("weekly", "all"):
+    if args.type in ("weekly", "all"):
         gen_weekly()
 
-    logger.info("===== 완료 =====")
+    logger.info("===== 생성 완료 =====")
+
+    if args.publish:
+        logger.info("===== SNS 자동 게시 시작 =====")
+        auto_publish(args.type, args.platform)
+        logger.info("===== 자동 게시 완료 =====")
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ from scrapers.filmmakers import FilmmakersScraper
 from scrapers.casting114 import Casting114Scraper
 from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
+from scrapers.starlet import StarletScraper
 from utils.supabase_client import upsert_auditions, deactivate_expired
 
 # crawler/.env 로드
@@ -58,6 +59,7 @@ def main():
         Casting114Scraper(),     # 5. casting114.com — JSON API
         CastingnaraScraper(),    # 6. castingnara.com — SSR (PHP)
         CastikScraper(),         # 7. castik.co.kr — Playwright
+        StarletScraper(),        # 8. starlet-studio.co.kr — SSR
     ]
 
     total_collected = 0

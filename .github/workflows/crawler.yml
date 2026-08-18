@@ -1,14 +1,27 @@
-name: Daily Audition Crawler
+name: Daily Audition Crawler + SNS Auto-Publish
 
 on:
   schedule:
-    - cron: "0 18 * * *"  # UTC 18:00 = KST 03:00
-  workflow_dispatch:       # 수동 실행 가능
+    - cron: "0 18 * * *"  # UTC 18:00 = KST 03:00 (크롤링)
+    - cron: "0 0 * * *"   # UTC 00:00 = KST 09:00 (아침 게시)
+  workflow_dispatch:
+    inputs:
+      skip_crawl:
+        description: "크롤링 건너뛰기 (콘텐츠 생성+게시만)"
+        type: boolean
+        default: false
+      skip_publish:
+        description: "자동 게시 건너뛰기 (크롤링+생성만)"
+        type: boolean
+        default: false
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: >-
+      github.event.schedule != '0 0 * * *' &&
+      github.event.inputs.skip_crawl != 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -32,3 +45,43 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python main.py
+
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [crawl]
+    if: >-
+      always() &&
+      (needs.crawl.result == 'success' || needs.crawl.result == 'skipped')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: crawler/requirements.txt
+
+      - name: 의존성 설치
+        run: |
+          pip install -r crawler/requirements.txt
+          # Pillow용 한글 폰트 설치
+          sudo apt-get update && sudo apt-get install -y fonts-nanum
+
+      - name: 콘텐츠 생성 + SNS 자동 게시
+        working-directory: crawler/instagram
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+        run: |
+          if [ "${{ github.event.inputs.skip_publish }}" = "true" ]; then
+            python generate.py --type all
+          else
+            python generate.py --type all --publish
+          fi
