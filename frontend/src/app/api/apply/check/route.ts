@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { getMissingFields } from "@/lib/profile";
+import type { Profile } from "@/types";
 
 export async function GET(req: Request) {
   try {
@@ -19,16 +21,12 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const auditionId = searchParams.get("auditionId");
 
-    // 프로필 존재 여부
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    const hasProfile = !!profile;
-
-    // 이미 지원했는지 확인
     let hasApplied = false;
     if (auditionId) {
       const { data: application } = await supabase
@@ -36,36 +34,28 @@ export async function GET(req: Request) {
         .select("id")
         .eq("user_id", user.id)
         .eq("audition_id", auditionId)
-        .single();
+        .maybeSingle();
       hasApplied = !!application;
     }
 
-    // 오늘 지원 현황 (횟수, 보너스, 남은 횟수 등)
-    const { data: applyStatus } = await supabase.rpc(
-      "get_daily_apply_status",
-      { p_user_id: user.id }
-    );
-
-    const status = applyStatus as {
-      plan: string;
-      count: number;
-      ad_bonus: number;
-      max_applies: number;
-      remaining: number;
-      can_apply: boolean;
-      can_watch_ad: boolean;
-    } | null;
+    const typedProfile = (profile as Profile | null) ?? null;
+    const missingFields = getMissingFields(typedProfile);
 
     return NextResponse.json({
-      hasProfile,
       hasApplied,
-      canApply: status?.can_apply ?? true,
-      canWatchAd: status?.can_watch_ad ?? true,
-      plan: status?.plan ?? "free",
-      todayCount: status?.count ?? 0,
-      adBonus: status?.ad_bonus ?? 0,
-      maxApplies: status?.max_applies ?? 1,
-      remaining: status?.remaining ?? 1,
+      missingFields,
+      // 시트 ⓒ 확인 화면용 프로필 요약 (발송 메일 스냅샷)
+      profileSummary: typedProfile
+        ? {
+            name: typedProfile.name,
+            birthYear: typedProfile.birth_year,
+            age: typedProfile.age,
+            gender: typedProfile.gender,
+            genre: typedProfile.genre ?? [],
+            photoCount: typedProfile.photo_urls?.length ?? 0,
+            agency: typedProfile.agency,
+          }
+        : null,
     });
   } catch {
     return NextResponse.json(

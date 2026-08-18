@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 function getProfileCompleteness(profile: Profile | null): number {
   const checks = [
     !!profile?.name,
-    !!profile?.age,
+    !!profile?.birth_year || !!profile?.age,
     !!profile?.gender,
     (profile?.activity_field?.length ?? 0) > 0,
     (profile?.genre?.length ?? 0) > 0,

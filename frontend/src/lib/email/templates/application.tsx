@@ -15,7 +15,8 @@ import {
 interface ApplicationEmailProps {
   auditionTitle: string;
   applicantName: string;
-  applicantAge: number;
+  /** "만 22세 (2004년생)" 형식 — 발신부에서 포맷 */
+  applicantAgeLabel: string;
   applicantGender: string;
   applicantHeight?: number | null;
   applicantWeight?: number | null;
@@ -33,7 +34,7 @@ interface ApplicationEmailProps {
 export function ApplicationEmail({
   auditionTitle,
   applicantName,
-  applicantAge,
+  applicantAgeLabel,
   applicantGender,
   applicantHeight,
   applicantWeight,
@@ -98,10 +99,12 @@ export function ApplicationEmail({
             <Column style={labelCell}>이름</Column>
             <Column style={valueCell}>{applicantName}</Column>
           </Row>
-          <Row style={{ ...tableRow, backgroundColor: "#f9fafb" }}>
-            <Column style={labelCell}>나이</Column>
-            <Column style={valueCell}>{applicantAge}세</Column>
-          </Row>
+          {applicantAgeLabel && (
+            <Row style={{ ...tableRow, backgroundColor: "#f9fafb" }}>
+              <Column style={labelCell}>나이</Column>
+              <Column style={valueCell}>{applicantAgeLabel}</Column>
+            </Row>
+          )}
           <Row style={tableRow}>
             <Column style={labelCell}>성별</Column>
             <Column style={valueCell}>{applicantGender}</Column>

@@ -21,11 +21,11 @@ import {
 
 const profileSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요").max(20, "20자 이내로 입력해주세요"),
-  age: z.coerce
+  birth_year: z.coerce
     .number({ error: "숫자를 입력해주세요" })
     .int()
-    .min(14, "14세 이상만 가입 가능합니다")
-    .max(80, "80세 이하만 가입 가능합니다"),
+    .min(1940, "올바른 출생연도를 입력해주세요")
+    .max(2015, "14세 이상만 가입 가능합니다"),
   gender: z.enum(["남성", "여성", "기타"], {
     error: "성별을 선택해주세요",
   }),
@@ -71,7 +71,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     resolver: zodResolver(profileSchema) as Resolver<ProfileFormData>,
     defaultValues: {
       name: initialData?.name ?? "",
-      age: initialData?.age ?? (undefined as unknown as number),
+      // 구 데이터(age만 보유)는 출생연도로 환산해 프리필 (009 마이그레이션과 동일 규칙)
+      birth_year:
+        initialData?.birth_year ??
+        (initialData?.age
+          ? new Date().getFullYear() - initialData.age
+          : (undefined as unknown as number)),
       gender: initialData?.gender ?? undefined,
       height: initialData?.height ?? undefined,
       weight: initialData?.weight ?? undefined,
@@ -191,11 +196,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="나이 *"
+            label="출생연도 *"
             type="number"
-            placeholder="만 나이"
-            error={errors.age?.message}
-            {...register("age")}
+            placeholder="2004"
+            error={errors.birth_year?.message}
+            {...register("birth_year")}
           />
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">

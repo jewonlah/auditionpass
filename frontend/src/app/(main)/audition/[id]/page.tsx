@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { Suspense, use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -19,32 +19,6 @@ import { formatDday, getDday, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Audition } from "@/types";
 
-interface ApplyStatus {
-  hasProfile: boolean;
-  hasApplied: boolean;
-  canApply: boolean;
-  canWatchAd: boolean;
-  plan: string;
-  todayCount: number;
-  adBonus: number;
-  maxApplies: number;
-  remaining: number;
-  loading: boolean;
-}
-
-const DEFAULT_STATUS: ApplyStatus = {
-  hasProfile: false,
-  hasApplied: false,
-  canApply: true,
-  canWatchAd: true,
-  plan: "free",
-  todayCount: 0,
-  adBonus: 0,
-  maxApplies: 1,
-  remaining: 1,
-  loading: true,
-};
-
 const GENRE_COLORS: Record<string, string> = {
   배우: "bg-indigo-50 text-indigo-700 border border-indigo-200",
   모델: "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200",
@@ -61,7 +35,6 @@ export default function AuditionDetailPage({
   const { user, loading: authLoading } = useAuth();
   const [audition, setAudition] = useState<Audition | null>(null);
   const [auditionLoading, setAuditionLoading] = useState(true);
-  const [applyStatus, setApplyStatus] = useState<ApplyStatus>(DEFAULT_STATUS);
   const supabase = createClient();
 
   useEffect(() => {
@@ -80,51 +53,6 @@ export default function AuditionDetailPage({
 
     fetchAudition();
   }, [id, supabase]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      // TODO(R1.1 F5/F7): 지원 플로우 재작성 시 데이터 페칭 구조로 정리
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setApplyStatus((prev) => ({ ...prev, loading: false }));
-      return;
-    }
-
-    async function checkApplyStatus() {
-      try {
-        const res = await fetch(`/api/apply/check?auditionId=${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setApplyStatus({
-            hasProfile: data.hasProfile,
-            hasApplied: data.hasApplied,
-            canApply: data.canApply,
-            canWatchAd: data.canWatchAd,
-            plan: data.plan,
-            todayCount: data.todayCount,
-            adBonus: data.adBonus,
-            maxApplies: data.maxApplies,
-            remaining: data.remaining,
-            loading: false,
-          });
-        } else {
-          setApplyStatus((prev) => ({ ...prev, loading: false }));
-        }
-      } catch {
-        setApplyStatus((prev) => ({ ...prev, loading: false }));
-      }
-    }
-
-    checkApplyStatus();
-  }, [user, authLoading, id]);
-
-  const handleStatusChange = useCallback(
-    (updates: Partial<ApplyStatus>) => {
-      setApplyStatus((prev) => ({ ...prev, ...updates }));
-    },
-    []
-  );
 
   if (auditionLoading) {
     return (
@@ -267,13 +195,16 @@ export default function AuditionDetailPage({
               지원하러 가기
             </a>
           ) : (
-            <ApplyButton
-              auditionId={audition.id}
-              status={applyStatus}
-              isLoggedIn={!!user}
-              loading={authLoading || applyStatus.loading}
-              onStatusChange={handleStatusChange}
-            />
+            // useSearchParams(apply=1) 사용 — Suspense 경계 필요
+            <Suspense
+              fallback={<div className="h-12 animate-pulse rounded-xl bg-gray-200" />}
+            >
+              <ApplyButton
+                audition={audition}
+                isLoggedIn={!!user}
+                authLoading={authLoading}
+              />
+            </Suspense>
           )}
         </div>
       </div>

@@ -38,6 +38,18 @@ async function getSignedPhotoUrls(photoUrls: string[]): Promise<string[]> {
   return signedUrls;
 }
 
+/**
+ * 나이 표기 — birth_year 우선(만나이 + 년생 병기), 구 데이터는 age 폴백
+ * 예: "만 22세 (2004년생)" / "27세"
+ */
+function formatAgeLabel(profile: Profile): string {
+  if (profile.birth_year) {
+    const age = new Date().getFullYear() - profile.birth_year;
+    return `만 ${age}세 (${profile.birth_year}년생)`;
+  }
+  return profile.age ? `${profile.age}세` : "";
+}
+
 export async function sendApplicationEmail({
   audition,
   profile,
@@ -46,6 +58,8 @@ export async function sendApplicationEmail({
     throw new Error("이 오디션은 이메일 지원이 불가능합니다.");
   }
 
+  const ageLabel = formatAgeLabel(profile);
+
   // 프로필 사진을 서명된 URL로 변환
   const signedPhotoUrls = await getSignedPhotoUrls(profile.photo_urls);
 
@@ -53,7 +67,7 @@ export async function sendApplicationEmail({
     ApplicationEmail({
       auditionTitle: audition.title,
       applicantName: profile.name,
-      applicantAge: profile.age,
+      applicantAgeLabel: ageLabel,
       applicantGender: profile.gender,
       applicantHeight: profile.height,
       applicantWeight: profile.weight,
@@ -73,7 +87,7 @@ export async function sendApplicationEmail({
   const genreLabel = profile.genre?.[0];
   const descriptor = [
     `${profile.gender}`,
-    `${profile.age}세`,
+    ...(ageLabel ? [ageLabel] : []),
     ...(genreLabel ? [genreLabel] : []),
   ].join("/");
   const subject = `[오디션 지원] ${profile.name} (${descriptor})`;

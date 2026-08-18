@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendApplicationEmail } from "@/lib/email/sendApplicationEmail";
+import { getMissingFields } from "@/lib/profile";
 
 export async function POST(req: Request) {
   try {
@@ -27,16 +28,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. 프로필 등록 여부 확인
-    const { data: profile, error: profileError } = await supabase
+    // 2. 미니 프로필(지원 최소 요건) 확인 — 이름·출생연도·성별·분야
+    const { data: profile } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
+    const missingFields = getMissingFields(profile);
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "프로필을 먼저 등록해주세요.", code: "NO_PROFILE" },
+        {
+          error: "지원에 필요한 프로필 정보가 부족합니다.",
+          code: "INCOMPLETE_PROFILE",
+          missingFields,
+        },
         { status: 400 }
       );
     }
@@ -56,22 +62,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. 지원 가능 횟수 확인 (can_apply_today RPC)
-    const { data: canApply } = await supabase.rpc("can_apply_today", {
-      p_user_id: user.id,
-    });
-
-    if (!canApply) {
-      return NextResponse.json(
-        {
-          error: "오늘 지원 횟수를 모두 사용했습니다.",
-          code: "LIMIT_EXCEEDED",
-        },
-        { status: 429 }
-      );
-    }
-
-    // 5. 오디션 정보 조회
+    // 4. 오디션 정보 조회
     const { data: audition, error: auditionError } = await supabase
       .from("auditions")
       .select("*")
@@ -92,10 +83,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // 6. 이메일 발송
+    // 5. 이메일 발송
     await sendApplicationEmail({ audition, profile });
 
-    // 7. 지원 이력 저장
+    // 6. 지원 이력 저장 (status는 F6 상태 모델 — R1은 sent/failed)
     const { error: insertError } = await supabase
       .from("applications")
       .insert({
@@ -103,6 +94,7 @@ export async function POST(req: Request) {
         audition_id: auditionId,
         email_sent: true,
         sent_at: new Date().toISOString(),
+        status: "sent",
       });
 
     if (insertError) {
@@ -111,11 +103,6 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-
-    // 8. 일일 지원 횟수 +1 (increment_apply_count RPC)
-    await supabase.rpc("increment_apply_count", {
-      p_user_id: user.id,
-    });
 
     return NextResponse.json({
       success: true,

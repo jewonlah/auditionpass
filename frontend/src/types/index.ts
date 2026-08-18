@@ -5,7 +5,10 @@
 export interface Profile {
   id: string;
   name: string;
-  age: number;
+  /** 출생연도 (12_ia-userflows 정본 — age를 대체, 009 마이그레이션) */
+  birth_year: number | null;
+  /** @deprecated birth_year로 대체 — 구 데이터 호환용 (F4에서 제거 검토) */
+  age: number | null;
   gender: '남성' | '여성' | '기타';
   height: number | null;
   weight: number | null;
@@ -47,6 +50,16 @@ export interface Application {
   audition_id: string;
   email_sent: boolean;
   sent_at: string | null;
+  /** F6 상태 모델 — R1: sent/failed, R1.2+: replied (열람은 R3 프리미엄) */
+  status: 'sent' | 'failed' | 'replied';
+  created_at: string;
+  audition?: Audition;
+}
+
+export interface Bookmark {
+  id: string;
+  user_id: string;
+  audition_id: string;
   created_at: string;
   audition?: Audition;
 }
@@ -60,14 +73,6 @@ export interface Subscription {
   expires_at: string | null;
   toss_order_id: string | null;
   created_at: string;
-}
-
-export interface DailyApplyCount {
-  id: string;
-  user_id: string;
-  apply_date: string;
-  count: number;
-  ad_bonus: number;
 }
 
 // ============================================
