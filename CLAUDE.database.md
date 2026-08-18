@@ -1,156 +1,61 @@
 # DB 에이전트 — Supabase 스키마 & 마이그레이션
 
+> 2026-08-18 재작성. 마이그레이션은 `database/migrations/001~009` 순서 적용이 정본. **`daily_apply_count`·지원 제한 함수는 009에서 DROP**, `subscriptions`는 미사용 잔존(신규 로직 금지, R3 결제 재설계 시 신규 스키마).
+
 ## 역할
-Supabase 데이터베이스 스키마 설계, 마이그레이션 파일 생성, RLS 정책 설정.
+스키마 설계, `database/migrations/NNN_*.sql` 작성(Supabase SQL 편집기 실행 전제), RLS·인덱스·pg_cron. 마이그레이션 거버넌스는 Phase 2-7에서 Supabase CLI로 전환 예정 — 그 전까지 **적용 여부를 파일만 보고 단정하지 말고 실측**(information_schema 조회).
 
-## 테이블 정의
+## 마이그레이션 이력
+| 파일 | 내용 | 적용 |
+|---|---|---|
+| 001_initial_schema | profiles·auditions·applications·subscriptions·daily_apply_count + RLS | ✅ |
+| 002_apply_limit | 지원 제한 함수(폐지 대상) | ✅ |
+| 003_auto_deactivate_expired | pg_cron `deactivate_expired_auditions()` | ✅ |
+| 004_profile_extra_fields | profiles.activity_field·agency·specialty·career | ✅ |
+| 005_apply_type | auditions.apply_type ('email'\|'external') | ✅ |
+| 006_community | community_posts·comments·likes + RLS + 인덱스 | ✅ |
+| 007_category_system | auditions.category·sub_category·category_confidence·classify_method, genre CHECK 15종 | ✅ (컬럼만 — 분류기 미연결, Phase 2-1) |
+| 008_crawl_logs | crawl_logs (미기록 상태, Phase 2-4) | ✅ |
+| **009_renewal_apply_flow** | profiles.birth_year(+age nullable) · applications.status/opened_at · **bookmarks** · daily_apply_count·함수 DROP | ❓ **적용 여부 미확인 — 배포 게이트 (30 §2 0-3)** |
 
-### 1. profiles (유저 프로필)
+## 현행 테이블 요약
 ```sql
-create table profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  name text not null,
-  age integer not null check (age >= 14 and age <= 80),
-  gender text not null check (gender in ('남성', '여성', '기타')),
-  height integer, -- cm
-  weight integer, -- kg
-  bio text,
-  photo_urls text[] default '{}',
-  instagram_url text,
-  youtube_url text,
-  other_url text,
-  genre text[] default '{}', -- ['배우', '모델']
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+profiles        id(auth.users FK) name birth_year age(deprecated) gender height weight bio photo_urls[]
+                instagram_url youtube_url other_url genre[] activity_field[] agency specialty[] career phone
+auditions       id title company genre(15종) category sub_category category_confidence classify_method
+                deadline apply_email apply_type description requirements source_url source_name is_active crawled_at
+applications    id user_id audition_id email_sent sent_at status('sent'|'failed'|'replied') opened_at  unique(user,audition)
+bookmarks       id user_id audition_id created_at  unique(user,audition)          -- 009
+community_posts / community_comments / community_likes                            -- 006
+crawl_logs      run_date source_name total_collected total_saved duplicates_skipped … ai_tokens_used errors  -- 008
+subscriptions   (잔존·미사용)
 ```
+- 나이는 **`birth_year` 정본**(1940~2015 CHECK). `age`는 백필된 구 데이터 폴백, F4 온보딩 완료 후 제거 검토.
+- `applications.opened_at`은 R1.2 Resend open tracking 예약 — **유저에게 노출 금지**(D2 과금 후보).
+- 카테고리 14개(007 genre CHECK에서 '기타' 제외)는 `frontend/src/lib/profile.ts PROFILE_GENRES`와 동일 문자열이어야 함.
 
-### 2. subscriptions (구독 정보)
-```sql
-create table subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  plan text not null check (plan in ('free', 'basic', 'pro')),
-  status text not null check (status in ('active', 'cancelled', 'expired')),
-  started_at timestamptz default now(),
-  expires_at timestamptz,
-  toss_order_id text,
-  created_at timestamptz default now()
-);
-```
+## RLS 원칙
+- profiles/applications/bookmarks/community_likes: 본인 행만 (`auth.uid() = user_id`)
+- auditions: 전체 select 공개, 쓰기는 service_role(크롤러)만
+- community_posts/comments: `is_active = true` 공개 조회, 본인 insert/update
+- 새 테이블은 반드시 `enable row level security` + 정책 3종(select/insert/delete) 세트로
 
-### 3. auditions (오디션 공고)
-```sql
-create table auditions (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  company text,
-  genre text not null check (genre in ('배우', '모델', '기타')),
-  deadline date,
-  apply_email text,
-  description text,
-  requirements text,
-  source_url text,
-  source_name text, -- 크롤링 출처 (씨엔씨캐스팅 등)
-  is_active boolean default true,
-  crawled_at timestamptz default now(),
-  created_at timestamptz default now()
-);
-```
+## 규칙
+- 파일명 `NNN_snake_case.sql`, 상단 주석에 근거 정본 번호(예: `-- 근거: 11 PRD F6`)
+- `add column if not exists` / `create table if not exists` 멱등 작성
+- DROP·데이터 변형 마이그레이션은 **적용 전 대상 테이블 백업 덤프** 절차를 주석으로 명시
+- 인덱스는 조회 패턴 근거와 함께 (예: `idx_auditions_category` — 카테고리 필터·SEO 랜딩)
+- 이 문서에 폐지된 예제 SQL(지원 제한 함수 등)을 되살리지 말 것
 
-### 4. applications (지원 이력)
-```sql
-create table applications (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  audition_id uuid not null references auditions(id) on delete cascade,
-  email_sent boolean default false,
-  sent_at timestamptz,
-  created_at timestamptz default now(),
-  unique(user_id, audition_id) -- 중복 지원 방지
-);
-```
-
-### 5. daily_apply_count (일일 지원 횟수 제한)
-```sql
-create table daily_apply_count (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  apply_date date not null default current_date,
-  count integer default 0,
-  ad_bonus integer default 0, -- 광고 시청으로 획득한 추가 지원 횟수
-  unique(user_id, apply_date)
-);
-```
-
-## RLS 정책
-
-```sql
--- profiles: 본인만 읽기/쓰기
-alter table profiles enable row level security;
-create policy "본인 프로필 조회" on profiles for select using (auth.uid() = id);
-create policy "본인 프로필 수정" on profiles for update using (auth.uid() = id);
-create policy "본인 프로필 생성" on profiles for insert with check (auth.uid() = id);
-
--- auditions: 전체 공개 읽기, 쓰기는 service_role만
-alter table auditions enable row level security;
-create policy "오디션 전체 공개" on auditions for select using (true);
-
--- applications: 본인 이력만 조회
-alter table applications enable row level security;
-create policy "본인 지원 이력 조회" on applications for select using (auth.uid() = user_id);
-create policy "본인 지원 생성" on applications for insert with check (auth.uid() = user_id);
-
--- daily_apply_count: 본인만
-alter table daily_apply_count enable row level security;
-create policy "본인 횟수 조회" on daily_apply_count for select using (auth.uid() = user_id);
-create policy "본인 횟수 생성" on daily_apply_count for insert with check (auth.uid() = user_id);
-create policy "본인 횟수 수정" on daily_apply_count for update using (auth.uid() = user_id);
-
--- subscriptions: 본인만
-alter table subscriptions enable row level security;
-create policy "본인 구독 조회" on subscriptions for select using (auth.uid() = user_id);
-```
-
-## 유용한 함수
-
-```sql
--- 오늘 지원 가능 여부 확인 함수
-create or replace function can_apply_today(p_user_id uuid)
-returns boolean as $$
-declare
-  v_plan text;
-  v_count integer;
-  v_ad_bonus integer;
-begin
-  -- 구독 플랜 확인
-  select plan into v_plan
-  from subscriptions
-  where user_id = p_user_id and status = 'active'
-  order by created_at desc limit 1;
-
-  -- 유료 구독자는 무제한
-  if v_plan in ('basic', 'pro') then
-    return true;
-  end if;
-
-  -- 무료 유저: 오늘 횟수 확인
-  select count, ad_bonus into v_count, v_ad_bonus
-  from daily_apply_count
-  where user_id = p_user_id and apply_date = current_date;
-
-  -- 기록 없으면 지원 가능
-  if not found then return true; end if;
-
-  -- 기본 1회 + 광고 보너스
-  return v_count < (1 + v_ad_bonus);
-end;
-$$ language plpgsql security definer;
-```
+## 예정 작업
+- 2-1 분류기 연결 후 category 4컬럼 실저장 확인 쿼리
+- 2-3 인코딩 손상 `source_name` 레코드 정정
+- 2-7 Supabase CLI 마이그레이션 전환, profiles.phone 드리프트 정리
+- R2: `boards`(토큰) / R3: 결제 신규 스키마(payments·webhook·갱신)
 
 ## 작업 지시 예시
 ```
-database/CLAUDE.md를 참조해서:
-1. Supabase SQL 편집기에서 실행할 마이그레이션 파일을 생성해줘
-2. 파일명: database/migrations/001_initial_schema.sql
+CLAUDE.database.md를 참조해서:
+1. 009 적용 여부를 확인하는 조회 SQL(information_schema.columns / tables)을 만들어줘
+2. 010: 카테고리별 SEO 랜딩용 인덱스·뷰를 설계해줘 (근거: 12 §1.2)
 ```
