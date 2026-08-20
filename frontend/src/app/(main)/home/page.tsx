@@ -3,13 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
-import { formatDday, getDday } from "@/lib/utils";
+import { formatDday, getDday, todayKST } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Audition, Profile } from "@/types";
 import { ChevronRight, Send, UserRound, Zap, Clock, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "홈 | 오디션패스",
+  title: "홈", // 루트 layout template("%s | 오디션패스")이 접미를 붙임 — 중복 지정 금지
   robots: { index: false, follow: false },
 };
 
@@ -38,7 +38,7 @@ export default async function HomePage() {
   // proxy가 1차 차단하지만 서버에서도 방어 (returnTo 포함)
   if (!user) redirect("/login?returnTo=%2Fhome");
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고 노출 (F10)
   const activeFilter = `deadline.gte.${today},deadline.is.null`;
 
   const [profileRes, oneClickRes, deadlineRes, applyCountRes] =

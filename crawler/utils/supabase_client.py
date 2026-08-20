@@ -1,3 +1,4 @@
+import html
 import os
 import logging
 from datetime import date
@@ -13,6 +14,18 @@ supabase: Client = create_client(
     os.environ["SUPABASE_URL"],
     os.environ["SUPABASE_SERVICE_ROLE_KEY"],
 )
+
+
+def _unescape(text: str | None) -> str | None:
+    """HTML 엔티티(&lt; &amp; 등) 디코드 — 이중 이스케이프(&amp;lt;)까지 수렴할 때까지 반복.
+    미적용 시 프론트에 '&lt;우리별&gt;'처럼 노출됨 (F10, DB 정정: database/maintenance/fix_html_entities.sql)"""
+    if not text:
+        return text
+    prev = None
+    while text != prev:
+        prev = text
+        text = html.unescape(text)
+    return text.strip()
 
 
 def _refine_if_needed(description: str | None, title: str) -> str | None:
@@ -45,13 +58,13 @@ def upsert_auditions(auditions: list) -> int:
             continue
 
         data = {
-            "title": audition.title,
-            "company": audition.company,
+            "title": _unescape(audition.title),
+            "company": _unescape(audition.company),
             "genre": audition.genre,
             "deadline": audition.deadline.isoformat() if audition.deadline else None,
             "apply_email": audition.apply_email,
-            "description": audition.description,
-            "requirements": audition.requirements,
+            "description": _unescape(audition.description),
+            "requirements": _unescape(audition.requirements),
             "source_url": audition.source_url,
             "source_name": audition.source_name,
             "apply_type": "email" if audition.apply_email else "external",

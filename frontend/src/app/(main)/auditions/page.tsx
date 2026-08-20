@@ -6,6 +6,7 @@ import { AuditionCard } from "@/components/audition/AuditionCard";
 import { AuditionFilter } from "@/components/audition/AuditionFilter";
 import { Search, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { todayKST } from "@/lib/utils";
 import type { Audition } from "@/types";
 
 const PAGE_SIZE = 20;
@@ -27,7 +28,7 @@ function HomeContent() {
   const observerRef = useRef<HTMLDivElement | null>(null);
   const pageRef = useRef(0);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고 노출 (F10)
 
   // URL 쿼리 파라미터 동기화
   const updateURL = useCallback(

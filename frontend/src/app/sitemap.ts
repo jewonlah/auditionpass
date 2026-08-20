@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { todayKST } from "@/lib/utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://auditionpass.co.kr";
 
@@ -43,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고가 sitemap에 잔류
     const { data } = await supabase
       .from("auditions")
       .select("id, updated_at")

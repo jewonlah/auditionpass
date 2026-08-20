@@ -1,4 +1,13 @@
 /**
+ * 오늘 날짜 (KST 기준, YYYY-MM-DD)
+ * ⚠️ `new Date().toISOString()`은 UTC라서 KST 자정~09시 사이에 어제 날짜가 됨 —
+ * 마감 필터가 마감 지난 공고를 통과시키는 원인 (F10). 서버·클라이언트 공용.
+ */
+export function todayKST(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
+/**
  * D-Day 계산 (마감일까지 남은 일수)
  */
 export function getDday(deadline: string | null): number | null {
