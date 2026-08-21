@@ -32,32 +32,46 @@ logger = logging.getLogger(__name__)
 
 ENDPOINT = "https://naverapihub.apigw.ntruss.com/search/v1/cafearticle"
 
-# 키워드 셋 — 정밀도 순. 넓은 키워드("배우 모집")는 필터에 기대고, 좁은 키워드는 그대로 신뢰.
+# 키워드 셋 — 14카테고리(classifier.CATEGORIES) 전체를 덮는다. 배우뿐 아니라 엑스트라·모델·행사 MC·쇼호스트·
+# 아나운서·성우·댄서·가수 등 "출연해서 수익이 나는" 모든 공고가 대상 (사용자 지시 2026-08-21).
+# 넓은 키워드는 필터(_NEWS_TITLE/_CAFE_SIGNALS/_NEGATIVE)에 기대고, 좁은 키워드는 그대로 신뢰. 키워드당 1 call/일.
 KEYWORDS: list[str] = [
-    "단편영화 캐스팅",
-    "단편영화 배우 모집",
-    "독립영화 배우 모집",
-    "웹드라마 오디션",
-    "웹드라마 배우 모집",
-    "뮤지컬 오디션",
-    "연극 배우 모집",
-    "아역배우 모집",
-    "보조출연 모집",
-    "캐스팅 공고",
-    "배우 오디션",
-    "오디션 공고",
-    "배우 모집",
-    "출연자 모집",
+    # 배우 — 영화·드라마·웹드라마
+    "단편영화 캐스팅", "단편영화 배우 모집", "독립영화 배우 모집", "장편영화 배우 모집", "상업영화 캐스팅",
+    "웹드라마 오디션", "웹드라마 배우 모집", "웹드라마 모델 모집", "숏폼 드라마 배우 모집", "드라마 보조출연",
+    "뮤직비디오 출연자 모집", "광고 촬영 배우 모집", "유튜브 출연자 모집", "캐스팅 공고", "배우 오디션", "배우 모집", "출연자 모집",
+    # 엑스트라·단역
+    "보조출연 모집", "엑스트라 모집", "이미지 단역 모집", "단역 배우 모집",
+    # 연극·뮤지컬
+    "뮤지컬 오디션", "뮤지컬 배우 모집", "연극 배우 모집", "연극 오디션", "극단 단원 모집",
+    # 모델·촬영모델·키즈
+    "모델 모집 촬영", "피팅모델 모집", "쇼핑몰 모델 모집", "광고모델 모집", "패션쇼 모델 모집", "화보 모델 모집",
+    "아역모델 모집", "아역배우 모집", "키즈모델 모집", "아동 모델 촬영", "시니어 모델 모집",
+    # MC·진행자·쇼호스트·아나운서·행사
+    "행사 MC 모집", "행사 진행자 모집", "이벤트 MC 모집", "쇼호스트 모집", "쇼호스트 채용", "라이브커머스 쇼호스트",
+    "라이브커머스 진행자 모집", "틱톡 라이브 쇼호스트", "아나운서 모집", "아나운서 채용", "리포터 모집",
+    "유튜브 진행자 모집", "사회자 모집", "행사 모델 모집",
+    # 가수·트로트·아이돌
+    "가수 오디션", "보컬 모집 오디션", "트로트 오디션", "아이돌 오디션", "아이돌 연습생 오디션", "연습생 모집",
+    "걸그룹 멤버 모집", "보이그룹 멤버 모집", "걸그룹 오디션", "보이그룹 오디션",
+    # 성우·댄서·인플루언서·BJ/스트리머
+    "성우 모집", "더빙 배우 모집", "나레이션 모집", "댄서 모집", "안무 댄서 오디션", "백업댄서 모집", "BJ 댄서 모집",
+    "인플루언서 모집 촬영", "크리에이터 모집 출연", "틱톡 크리에이터 모집", "틱톡커 모집", "방송 BJ 모집", "인터넷 방송 진행자 모집",
+    "스트리머 모집", "유튜버 모집 출연",
+    # 포괄
+    "오디션 공고", "캐스팅 모집",
 ]
 PAGES_PER_KEYWORD = 1   # display=100 × 1페이지 (sort=date). 더 깊이 긁을 필요 없음 — 매일 돈다.
 DISPLAY = 100
 
 # 제외 신호 — 실측 노이즈 유형: 뷰티 시술 모델, 스터디/수강, 창업 오디션, 음악 단원, 체험단, 후기
 _NEGATIVE = re.compile(
-    r"반영구|문신|시술|속눈썹|헤어라인|눈썹|네일|왁싱|피부|두피|"
+    # 뷰티 시술 실습 모델 (화장품·두피케어 '광고 촬영 배우 모집'은 정상 수익 건이라 '피부|두피' 단독은 쓰지 않는다)
+    r"반영구|문신|시술|속눈썹\s*(?:펌|연장)|헤어라인|눈썹\s*(?:문신|반영구|잔흔)|네일\s*(?:모델|실습)|왁싱|"
+    r"헤어\s*모델|커트\s*모델|드라이\s*모델|염색\s*모델|펌\s*모델|무료\s*시술|실습\s*모델|연습\s*모델|"
     r"스터디원|스터디 모집|수강생|클래스 모집|레슨|과정 모집|"
     r"창업 오디션|창업 프로젝트|공급기업|"
-    r"오케스트라|합창단|성가대|단원 모집|"
+    r"오케스트라|합창단|성가대|"  # '단원 모집' 단독은 극단 단원 모집(연극)을 죽이므로 제외
     r"체험단|서포터즈|리뷰어|합격 후기|체험 후기",
 )
 # 제목 전용 제외 — 공고가 아닌 '소식·결과·정리·후기' 글. 본문에 적용하면 "캐스팅 완료 시 조기마감" 같은 정상 공고가 죽는다(실측).
@@ -66,13 +80,25 @@ _NEWS_TITLE = re.compile(
     r"자료\s*정리|정리글|모음|캐스팅\s*후기|오디션\s*후기|"
     r"캐스팅 배우\s+\S+\s*$",  # '단편영화 "X" 캐스팅 배우 홍길동' (소속 배우 홍보)
 )
-# 검색 API 요약 기준 신호어 — instagram 신호어 + 카페 문체('배우님들 모집합니다', '구합니다', '구인')
+# 검색 API 요약 기준 신호어 — 2축: (A) 단독으로 충분한 강신호 / (B) 역할어 + 모집동사가 함께 있어야 하는 약신호
+# 실측: "모집" 직결 문체만 잡으면 비배우 직군(쇼호스트·아나운서·성우·댄서·BJ)이 '채용·구해요·찾습니다·급구' 문체라 20%대만 통과.
 _CAFE_SIGNALS = re.compile(
-    r"오디션|캐스팅|배우[^\n]{0,8}모집|배우[^\n]{0,8}구합니다|배우[^\n]{0,8}구인|모델\s*모집|출연자\s*모집|출연해\s*주실|"
-    r"섭외|배역|모집\s*공고|단역|주연|조연|아역|보조출연|퍼포머|주인공\s*모집|남주\s*모집|여주\s*모집|남녀\s*주인공",
+    r"오디션|캐스팅|섭외|배역|모집\s*공고|단역|주연|조연|아역|보조출연|엑스트라|퍼포머|출연해\s*주실|출연하실|출연할|"
+    r"주인공\s*모집|남주\s*모집|여주\s*모집|남녀\s*주인공|연습생|더빙|나레이션|쇼호스트|라이브\s*커머스|라이브커머스",
 )
-# 카페명 블랙리스트 (키워드 부분 일치) — 뷰티·맘카페·창업 계열
-_CAFE_BLACKLIST = re.compile(r"모델나라|뷰티|미용|네일|맘카페|맘 카페|창업|부동산|주식")
+_ROLE = re.compile(
+    r"배우|모델|출연자|출연진|MC|진행자|사회자|아나운서|리포터|성우|댄서|보컬|가수|멤버|인플루언서|크리에이터|유튜버|틱톡커|"
+    r"BJ|스트리머|호스트|패널|엑스트라|단역|아역|키즈|시니어|퍼포머|안무",
+)
+_RECRUIT = re.compile(
+    r"모집|구함|구합니다|구해요|구인|채용|찾습니다|찾아요|찾고\s*있|급구|모십니다|지원\s*방법|지원\s*자격|접수|공고|선발|오디션|캐스팅|섭외",
+)
+# 사기·성인·고수익 BJ 광고 (제목+요약 전체에 적용)
+_SCAM = re.compile(r"고수익|고소득|성인\s*방송|19금|숙식\s*제공|당일\s*지급|선불|선입금|대출|투자\s*모집|월\s*\d{3,4}만\s*원?\s*보장|보장\s*수익")
+# 카페명 블랙리스트 (키워드 부분 일치) — 맘카페·창업·재테크·중고거래만.
+# 실측 교훈: '나눔'은 "우리연기할래 정보나눔카페"(2위 소스)를, '뷰티|미용'은 모델나라·헤어모델 카페의 쇼핑몰 촬영 모델 공고까지
+# 막았다. 미용 실습 모델 글은 카페가 아니라 본문 제외어(_NEGATIVE)로 거른다.
+_CAFE_BLACKLIST = re.compile(r"맘카페|맘 카페|육아|창업|부동산|주식|재테크|중고나라|벼룩")
 
 _TAG_RE = re.compile(r"</?b>")  # API는 검색어 강조 <b>만 씀. 작품명 <수집> 같은 꺾쇠는 보존
 _EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -129,7 +155,11 @@ def is_candidate(item: CafeItem) -> tuple[bool, str]:
         return False, "cafe_blacklist"
     if _NEWS_TITLE.search(item.title):
         return False, "news"
-    if not (_CAFE_SIGNALS.search(text) or _AUDITION_SIGNALS.search(text)):
+    if _SCAM.search(text):
+        return False, "scam"
+    strong = _CAFE_SIGNALS.search(text) or _AUDITION_SIGNALS.search(text)
+    weak = _ROLE.search(text) and _RECRUIT.search(text)
+    if not (strong or weak):
         return False, "no_signal"
     if _NEGATIVE.search(text):
         return False, "negative"
@@ -169,7 +199,7 @@ class NaverCafeScraper(BaseScraper):
         self.keywords = keywords or KEYWORDS
         self.client_id = os.environ.get("NAVER_API_HUB_CLIENT_ID", "")
         self.client_secret = os.environ.get("NAVER_API_HUB_CLIENT_SECRET", "")
-        self.stats: dict[str, int] = {"fetched": 0, "ok": 0, "cafe_blacklist": 0, "news": 0, "no_signal": 0, "negative": 0, "too_short": 0, "dup": 0}
+        self.stats: dict[str, int] = {"fetched": 0, "ok": 0, "cafe_blacklist": 0, "news": 0, "scam": 0, "no_signal": 0, "negative": 0, "too_short": 0, "dup": 0}
 
     @staticmethod
     def enabled() -> bool:
@@ -247,7 +277,24 @@ if __name__ == "__main__":
     print(f"\n수집 {len(items)}건 → 통과 {len(passed)} / 제외 {len(rejected)}  (fetched {s.stats['fetched']}, dup {s.stats['dup']})")
     from collections import Counter
     print("제외 사유:", Counter(r for r, _ in rejected))
-    print("통과 키워드:", Counter(it.keyword for _, it in passed).most_common())
+    kw_pass = Counter(it.keyword for _, it in passed)
+    kw_all = Counter(it.keyword for it in items)
+    print("\n[키워드별 통과/수집 (통과율)] — 30% 미만은 노이즈 키워드 후보")
+    kw_reasons: dict[str, Counter] = {}
+    for reason, it in rejected:
+        kw_reasons.setdefault(it.keyword, Counter())[reason] += 1
+    for kw, n in kw_all.most_common():
+        p = kw_pass.get(kw, 0)
+        flag = "  ⚠ " + str(dict(kw_reasons.get(kw, {}))) if n >= 10 and p / n < 0.3 else ""
+        print(f"  {kw:18s} {p:4d}/{n:<4d} ({p / n:4.0%}){flag}")
+    flagged = {kw for kw, n in kw_all.items() if n >= 10 and kw_pass.get(kw, 0) / n < 0.3}
+    if flagged:
+        print("\n[⚠ 키워드 제외 샘플]")
+        shown: Counter = Counter()
+        for reason, it in rejected:
+            if it.keyword in flagged and shown[it.keyword] < 4:
+                shown[it.keyword] += 1
+                print(f"  ({it.keyword} / {reason}) {it.title[:45]} | {_short_cafe(it.cafename)}")
     print("통과 카페:", Counter(_short_cafe(it.cafename) for _, it in passed).most_common(12))
     auds = [to_audition(it) for _, it in passed]
     print("마감일 추출:", sum(1 for a in auds if a.deadline), "/", len(auds), " 이메일:", sum(1 for a in auds if a.apply_email))

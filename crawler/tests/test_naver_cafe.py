@@ -19,9 +19,30 @@ class FilterTest(unittest.TestCase):
             ok, reason = is_candidate(item(t))
             self.assertTrue(ok, f"{t} → {reason}")
 
-    def test_reject_beauty_model_cafe(self):
-        ok, reason = is_candidate(item("헤어라인 문신 모델 모집", "압구정 시술 모델 배우 인플루언서", cafe="모델나라 ★ 피팅모델구인구직"))
-        self.assertEqual((ok, reason), (False, "cafe_blacklist"))
+    def test_reject_beauty_procedure_but_keep_fitting_jobs(self):
+        # 모델나라는 블랙리스트 해제 — 시술 글은 제외어로, 쇼핑몰 피팅 공고는 통과
+        ok, reason = is_candidate(item("헤어라인 문신 모델 모집", "압구정 시술 모델 배우 인플루언서 포트폴리오 작업입니다", cafe="모델나라 ★ 피팅모델구인구직"))
+        self.assertEqual((ok, reason), (False, "negative"))
+        ok, reason = is_candidate(item("여성 쇼핑몰 피팅모델 구해요", "동대문 의류 쇼핑몰 피팅 촬영 모델 구합니다. 페이 회당 15만원, 주 1회 촬영", cafe="모델나라 ★ 피팅모델구인구직"))
+        self.assertTrue(ok, reason)
+        self.assertEqual(is_candidate(item("육아맘 모델 모집", "아동 모델 촬영 모집합니다", cafe="서초맘카페"))[1], "cafe_blacklist")
+        self.assertEqual(is_candidate(item("맨즈 헤어모델 모집합니다! 무료시술", "커트 드라이 헤어모델 모집 무료 시술", cafe="모델나라"))[1], "negative")
+        # '정보나눔카페'가 블랙리스트에 걸리던 회귀
+        self.assertTrue(is_candidate(item("로맨스 스릴러 <THE ROOM IN SEOUL> 배우 모집", "웹드라마 주연 배우 모집합니다. 촬영 9월, 페이 협의", cafe="'우리연기할래' 정보나눔카페 - 배우오디션"))[0])
+
+    def test_non_actor_roles_with_various_recruit_verbs(self):
+        for t, d in [
+            ("라이브커머스 쇼호스트 채용", "뷰티 브랜드 라이브 방송 진행할 쇼호스트 채용합니다. 경력 무관, 건당 페이"),
+            ("행사 MC 급구", "이번 주 토요일 기업 행사 MC 급구합니다. 페이 30만원"),
+            ("성우 찾습니다", "게임 캐릭터 더빙 성우 찾습니다. 샘플 보내주세요"),
+            ("아나운서 채용 공고", "지역 방송국 계약직 아나운서 채용 공고입니다. 서류 접수 9월 5일까지"),
+            ("BJ 댄서 구해요", "인터넷 방송 댄스 콘텐츠 같이 할 댄서 구해요. 주 2회 방송"),
+        ]:
+            ok, reason = is_candidate(item(t, d, cafe="자유카페"))
+            self.assertTrue(ok, f"{t} → {reason}")
+
+    def test_reject_scam_bj_ads(self):
+        self.assertEqual(is_candidate(item("고수익 BJ 모집", "초보 가능 월 1000만원 보장 숙식 제공 당일 지급", cafe="자유카페"))[1], "scam")
 
     def test_reject_procedure_and_news(self):
         self.assertEqual(is_candidate(item("눈썹 반영구 모델 모집", "반영구 시술 모델 배우 모집", cafe="자유카페"))[1], "negative")

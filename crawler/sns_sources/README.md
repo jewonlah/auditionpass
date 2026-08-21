@@ -5,8 +5,9 @@
 ## 트랙 A-1. 네이버 카페 (`naver_cafe.py`) — 공식 API, 운용 중(게이트)
 - NAVER API HUB `GET /search/v1/cafearticle`, 헤더 `X-NCP-APIGW-API-KEY-ID/KEY`. env `NAVER_API_HUB_CLIENT_ID/SECRET`.
 - `NaverCafeScraper`는 `BaseScraper` 구현 → `main.py`가 **`NAVER_CAFE_ENABLED=1`일 때만** 파이프라인에 추가(검수 전 라이브 오염 방지).
-- 키워드 14개 × 최신 100건. 필터 순서: 카페 블랙리스트 → 제목 '소식·정리·후기' 제외(`_NEWS_TITLE`) → 신호어(`_CAFE_SIGNALS`) → 본문 제외어(`_NEGATIVE`, 시술·수강·창업·단원) → 요약 20자 미만 제외.
-- dry-run(DB 저장 없음): `python -m sns_sources.naver_cafe [샘플수]` (crawler/에서). 2026-08-21 실측 1,184→846 통과, 이메일 0.5%, 마감 추출 24%.
+- 키워드 ~80개(14카테고리 전체: 배우·엑스트라·모델·키즈·MC/쇼호스트/아나운서·가수·아이돌·성우·댄서·인플루언서·BJ/스트리머) × 최신 100건. 필터 순서: 카페 블랙리스트(맘카페·창업·부동산·중고) → 제목 '소식·정리·후기' 제외(`_NEWS_TITLE`) → 사기 광고(`_SCAM`) → 신호어(강신호 `_CAFE_SIGNALS` 또는 역할어 `_ROLE`+모집동사 `_RECRUIT`) → 본문 제외어(`_NEGATIVE`, 시술·실습모델·수강·레슨·오케스트라) → 요약 20자 미만 제외.
+- dry-run(DB 저장 없음): `python -m sns_sources.naver_cafe [샘플수]` — 키워드별 통과율과 ⚠(30% 미만) 제외 사유를 출력. 2026-08-21 실측 6,120→4,871 통과(80%), 이메일 0.3%, 마감 추출 24%.
+- 카페명 블랙리스트는 넓게 잡지 말 것(‘나눔’이 "정보나눔카페"를 막은 전례). 노이즈는 본문 제외어로.
 - 마감 미상 공고는 `deactivate_stale_undated(30)`으로 수집 30일 후 비활성화. 마감일은 위조하지 않는다.
 
 ## 트랙 B. 인스타그램 — **D4 개정 확정 후 운용**
