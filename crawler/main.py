@@ -18,7 +18,7 @@ from scrapers.casting114 import Casting114Scraper
 from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from scrapers.starlet import StarletScraper
-from utils.supabase_client import upsert_auditions, deactivate_expired
+from utils.supabase_client import upsert_auditions, deactivate_expired, pop_classify_stats
 
 # crawler/.env 로드
 load_dotenv(Path(__file__).parent / ".env")
@@ -81,6 +81,12 @@ def main():
                 saved = upsert_auditions(auditions)
                 total_saved += saved
                 logger.info(f"[{scraper.source_name}] {saved}건 저장 완료")
+                # 분류 통계 (2-1) — 2-4 crawl_logs 기록 시 그대로 컬럼에 매핑
+                st = pop_classify_stats()
+                logger.info(
+                    f"[{scraper.source_name}] 분류: keyword {st['keyword']} / rule {st['rule']} / "
+                    f"기타 {st['etc']} / 저확신(<0.6) {st['low_confidence']}"
+                )
             else:
                 logger.warning(f"[{scraper.source_name}] 수집된 공고 없음")
 

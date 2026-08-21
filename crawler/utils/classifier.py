@@ -106,20 +106,31 @@ class ClassifyResult:
     sub_category: Optional[str] = None
 
 
+def _kw_in(kw: str, text: str) -> bool:
+    """키워드 포함 여부. 짧은 영문 약어(MC, VJ, OTT)는 단어 경계를 요구한다 —
+    'AIMC', 'ott'가 든 도메인 등 부분 일치 오탐 방지(실측: 'AIMC 내방 오디션' → MC/진행자 오분류)."""
+    import re
+    k = kw.lower()
+    if k.isascii() and k.isalpha() and len(k) <= 3:
+        return re.search(rf"(?<![a-z0-9]){re.escape(k)}(?![a-z0-9])", text) is not None
+    return k in text
+
+
 def classify_by_keyword(title: str, description: str = "") -> ClassifyResult:
     """Stage 1: 키워드 점수 기반 분류"""
     text = f"{title} {description}".lower()
+    title_l = title.lower()
     scores: dict[str, float] = {}
 
     for cat_code, keywords in CATEGORY_KEYWORDS.items():
         score = 0.0
         for kw in keywords:
-            if kw.lower() in text:
+            if _kw_in(kw, text):
                 # 고가중치 키워드
                 if cat_code in HIGH_WEIGHT_KEYWORDS and kw in HIGH_WEIGHT_KEYWORDS[cat_code]:
                     score += 3.0
                 # 제목에 있으면 가중치 2배
-                elif kw.lower() in title.lower():
+                elif _kw_in(kw, title_l):
                     score += 2.0
                 else:
                     score += 1.0
@@ -161,23 +172,46 @@ def classify_by_keyword(title: str, description: str = "") -> ClassifyResult:
 # ============================================
 
 # 출처 사이트별 기본 카테고리 가중치
+# 키는 스크레이퍼의 한글 source_name(scrapers/*.py)과 일치해야 한다 (30 마스터플랜 2-1).
+# SNS 소스는 "인스타그램:@계정" 형식이므로 ':' 앞부분으로 매칭한다 (31 §4 source_name 규약).
 SOURCE_CATEGORY_BIAS: dict[str, str] = {
-    "casting114": "actor",
-    "castingnara": "actor",
-    "castik": "actor",
-    "castlink": "actor",
-    "plfil": "actor",
-    "vaudition": "actor",
-    "otr": "actor",
-    "megaphone": "model",
-    "filmmakers": "actor",
+    "캐스팅114": "actor",
+    "캐스팅나라": "actor",
+    "캐스틱": "actor",
+    "캐스트링크": "actor",
+    "플필": "actor",
+    "V오디션": "actor",
+    "OTR": "actor",
+    "필메코": "actor",
+    "스타렛스튜디오": "actor",
+    "메가폰코리아": "model",
+    "인스타그램": "actor",
 }
 
+
+def _source_bias(source_name: str) -> Optional[str]:
+    """source_name → 편향 카테고리 코드. 대소문자·공백 무시, ':' 뒤(계정명) 무시,
+    인코딩 손상 문자(U+FFFD — 예: '캐스팅나��')는 제거 후 접두 일치로 매칭."""
+    if not source_name:
+        return None
+    src = source_name.split(":")[0].replace(" ", "").replace("�", "").strip().lower()
+    if len(src) < 2:
+        return None
+    for key, code in SOURCE_CATEGORY_BIAS.items():
+        k = key.lower()
+        if src == k or src.startswith(k) or k.startswith(src):
+            return code
+    return None
+
+
 # 나이 조건 → 카테고리 매핑
+# (?<!\d) : "20~26세"의 "6세", "27세"의 "7세"처럼 다자리 나이의 끝자리만 잡히는 오탐 방지
+# (?!\s*(?:이상|대)) : "15세 이상"(성인 모집), "2세대" 제외
+_AGE_TAIL = r"\s*세(?!\s*(?:이상|대))"
 AGE_RULES = [
-    (r"(?:0|1|2|3|4|5|6)\s*세|유아|영유아|아기", "kids_model"),
-    (r"(?:7|8|9|10|11|12)\s*세|초등", "kids_model"),
-    (r"(?:13|14|15)\s*세|중학|주니어", "kids_model"),
+    (r"(?<!\d)[0-6]" + _AGE_TAIL + r"|영유아|유아\s*모델|아기\s*모델|신생아", "kids_model"),
+    (r"(?<!\d)(?:[7-9]|1[0-2])" + _AGE_TAIL + r"|초등학생|초등\s*모델", "kids_model"),
+    (r"(?<!\d)1[3-5]" + _AGE_TAIL + r"|중학생\s*모델|주니어\s*모델", "kids_model"),
 ]
 
 
@@ -201,16 +235,15 @@ def classify_by_rule(
                 method="rule",
             )
 
-    # 확신도가 낮고 출처에 편향이 있으면 보정
-    if result.confidence < 0.5 and source_name.lower().replace(" ", "") in SOURCE_CATEGORY_BIAS:
-        bias_code = SOURCE_CATEGORY_BIAS[source_name.lower().replace(" ", "")]
-        if result.category_code == "etc":
-            return ClassifyResult(
-                category=CATEGORIES[bias_code],
-                category_code=bias_code,
-                confidence=0.5,
-                method="rule",
-            )
+    # 키워드로 못 잡았고(기타) 출처에 편향이 있으면 출처 기본값으로 보정
+    bias_code = _source_bias(source_name)
+    if result.category_code == "etc" and bias_code:
+        return ClassifyResult(
+            category=CATEGORIES[bias_code],
+            category_code=bias_code,
+            confidence=0.5,
+            method="rule",
+        )
 
     return result
 

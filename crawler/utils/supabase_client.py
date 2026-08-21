@@ -5,6 +5,7 @@ from datetime import date
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from utils.refine_description import refine_description
+from utils.classifier import classify_audition, to_legacy_genre
 
 load_dotenv()
 
@@ -14,6 +15,69 @@ supabase: Client = create_client(
     os.environ["SUPABASE_URL"],
     os.environ["SUPABASE_SERVICE_ROLE_KEY"],
 )
+
+# ============================================
+# 분류기 연결 (30 마스터플랜 2-1)
+# ============================================
+
+# 007_category_system.sql 컬럼. 라이브 DB 미적용 상태(2026-08-21 실측)에서도 크롤러가
+# 죽지 않도록 최초 1회 존재 여부를 탐지하고, 없으면 category 계열은 생략하고 genre만 저장한다.
+CATEGORY_COLUMNS = ("category", "sub_category", "category_confidence", "classify_method")
+_category_columns_available: bool | None = None
+
+# 소스별 분류 통계 (main.py가 소스 단위로 읽고 리셋 — 2-4 crawl_logs 기록의 재료)
+classify_stats: dict[str, int] = {"keyword": 0, "rule": 0, "ai": 0, "etc": 0, "low_confidence": 0}
+
+
+def category_columns_available() -> bool:
+    """auditions에 007 컬럼이 있는지 1회 탐지. 없으면 경고 후 False(이후 호출은 캐시)."""
+    global _category_columns_available
+    if _category_columns_available is None:
+        try:
+            supabase.table("auditions").select(",".join(CATEGORY_COLUMNS)).limit(1).execute()
+            _category_columns_available = True
+        except Exception as e:
+            _category_columns_available = False
+            logger.error(
+                "auditions에 category 컬럼이 없음 — 007_category_system.sql 미적용. "
+                f"분류 결과는 genre만 반영하고 category 계열은 생략합니다. ({str(e)[:80]})"
+            )
+    return _category_columns_available
+
+
+def pop_classify_stats() -> dict[str, int]:
+    """누적 분류 통계를 반환하고 0으로 리셋."""
+    snapshot = dict(classify_stats)
+    for k in classify_stats:
+        classify_stats[k] = 0
+    return snapshot
+
+
+def _classify_fields(audition) -> dict:
+    """AuditionData → 저장용 분류 필드.
+    - genre: 프론트 타입('배우'|'모델'|'기타')·필터 호환을 위해 레거시 3분류 유지(to_legacy_genre).
+      분류기가 '기타'(etc)면 스크레이퍼 휴리스틱 genre를 존중한다.
+    - category 계열 4컬럼: 007 적용 시에만 포함."""
+    text = "\n".join(t for t in (audition.description, audition.requirements) if t)
+    result = classify_audition(audition.title or "", text, audition.source_name or "")
+
+    classify_stats[result.method] = classify_stats.get(result.method, 0) + 1
+    if result.category_code == "etc":
+        classify_stats["etc"] += 1
+    elif result.confidence < 0.6:
+        classify_stats["low_confidence"] += 1
+
+    fields = {
+        "genre": to_legacy_genre(result.category_code) if result.category_code != "etc" else audition.genre,
+    }
+    if category_columns_available():
+        fields.update({
+            "category": result.category,
+            "sub_category": result.sub_category,
+            "category_confidence": result.confidence,
+            "classify_method": result.method,
+        })
+    return fields
 
 
 def _unescape(text: str | None) -> str | None:
@@ -60,7 +124,7 @@ def upsert_auditions(auditions: list) -> int:
         data = {
             "title": _unescape(audition.title),
             "company": _unescape(audition.company),
-            "genre": audition.genre,
+            **_classify_fields(audition),  # genre(레거시 3분류) + category 4컬럼 (2-1)
             "deadline": audition.deadline.isoformat() if audition.deadline else None,
             "apply_email": audition.apply_email,
             "description": _unescape(audition.description),

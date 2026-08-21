@@ -14,7 +14,7 @@
 - **메일**: Resend + @react-email
 - **크롤러**: Python (requests/BeautifulSoup + Playwright 일부), GitHub Actions cron
 - **배포**: Vercel (frontend, git 연동 추정 — **main 푸시 = 즉시 배포**) + GitHub Actions (crawler)
-- **AI 분류**: Claude API (`crawler/classifier.py` — 현재 dead code, Phase 2-1에서 연결)
+- **분류**: `crawler/utils/classifier.py` 키워드+규칙 2단계 — **2-1에서 upsert 파이프라인에 연결 완료**(2026-08-21). `category` 4컬럼은 007 라이브 적용 후 실저장(미적용 시 genre만 저장 폴백). AI 3단계·오디션 여부 판별은 미구현(SNS 소싱 31 §4 전제)
 
 ## 저장소 구조
 ```
@@ -56,8 +56,8 @@ auditionpass/
 
 ## 현재 단계 (2026-08-18)
 - 브랜치 `renewal/r1`(origin 푸시됨)에 R1.1 작업 전부 커밋. `origin/main`은 2026-04-08 상태 = 라이브.
-- 진행 위치: **Phase 0 안전 확보** 중 (30 마스터플랜 §2). 남은 항목: 0-3 Supabase 009 적용 여부 확인(사용자), 0-5 SERVICE_ROLE_KEY 로테이션(사용자).
-- 다음: Phase 1 라이브 정상화(핫픽스 배포) → Phase 2 데이터 트랙 ∥ Phase 3 R1.1 프론트 본선.
+- 진행 위치 (2026-08-21): Phase 0 잔여 0-5(키 로테이션, 사용자) · Phase 1 F10 핫픽스 커밋됨(배포 대기 — 009b는 배포 직후) · **Phase 2-1 분류기 연결 완료**(007·008 라이브 적용 + 백필은 사용자 실행 대기) · SNS 소싱 31 트랙 B 파서 완료(D4 개정 게이트).
+- 다음: Phase 1 배포 → 2-2 extract_email 상향 → 2-3 인코딩 수복 → 31 트랙 A-1 네이버 카페(키 발급 필요).
 
 ## 모델 운영 전략 (2026-08-10 확정)
 | 역할 | 모델 |

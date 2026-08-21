@@ -127,4 +127,13 @@ Resend open tracking webhook ─→ Phase 4 열람 인프라
 
 ---
 
+## 7. 실행 기록 — 발견된 격차
+
+### 2026-08-21 · 2-1 분류기 연결
+- **격차**: 라이브 DB에 `007_category_system`(category 4컬럼·genre CHECK 15종)·`008_crawl_logs` **둘 다 미적용**으로 실측됨(CLAUDE.database.md는 ✅로 기재돼 있었음 — 009와 같은 "파일 존재 ≠ 적용" 패턴). 2-1의 "category 실저장"과 2-4의 crawl_logs 기록은 **007·008 적용이 선행 게이트**. 의존성 맵 §3에 `007 적용 → 2-1 실저장 → 3-7 SEO 랜딩` 추가.
+- **조치**: 분류기를 `upsert_auditions`에 연결(키워드+규칙). 컬럼 부재 시 category 계열을 생략하고 genre만 저장하는 1회 탐지 폴백 → 미적용 상태에서도 크롤러 무중단. `genre`는 프론트 타입(`'배우'|'모델'|'기타'`)·필터 호환을 위해 레거시 3분류 유지, 14카테고리는 `category`(한글 라벨)에 저장. 기존 행 백필은 `crawler/scripts/backfill_categories.py`(dry-run 기본). 확인 쿼리 `database/checks/007_008_status.sql`.
+- **분류기 결함 수정**: ① `SOURCE_CATEGORY_BIAS` 키가 영문 모듈명이라 한 번도 매칭 안 됨 → 한글 source_name 키 + 접두 매칭(`인스타그램:@x`, 인코딩 손상 `캐스팅나��` 포함) ② 나이 규칙이 "20~26세"의 "6세"를 키즈모델로 오탐 → 숫자 경계·"이상/대" 제외 ③ 2~3자 영문 약어(MC·VJ·OTT) 부분일치(`AIMC`→MC/진행자) → 단어 경계.
+- **실측 분포**(활성 1,854건, 연결 전 시뮬레이션): 배우 1,506 · 엑스트라 107 · 뮤지컬 44 · 모델 43 · 연극 36 · 키즈모델 30 · 인플루언서 27 · 아이돌 27 · 댄서 12 · MC 9 · 가수 7 · 성우 3 · 트로트 2 · 촬영모델 1. 확신도 ≥0.6이 83%. 3-7 SEO 랜딩은 배우·엑스트라·뮤지컬·모델·연극·키즈모델 6개가 즉시 유효, 나머지는 30건 미만(롱테일 — 노출 기준 검토).
+- **사용자 액션**: `! supabase db query --linked -f database/migrations/007_category_system.sql` → 008 동일 → 확인 쿼리 → `python scripts/backfill_categories.py --apply`(crawler/). 라이브 크롤러(origin/main)는 Phase 1 병합 전까지 분류기를 태우지 않으므로 백필이 유일한 데이터 경로.
+
 *본 문서는 00 브리프(D1~D8)를 상위 기준으로 하며, 충돌 시 브리프가 우선한다. 실행 중 발견되는 격차는 본 문서에 추가 기록한다.*

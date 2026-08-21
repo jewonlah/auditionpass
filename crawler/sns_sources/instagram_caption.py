@@ -7,7 +7,7 @@
   - 어느 채널이든 최종 산출물은 사이트 크롤러와 동일한 AuditionData → 기존 upsert 파이프라인 재사용
 
 근거: docs/renewal/31_sns-sourcing-plan.md 트랙 B. D4 개정 확정 후 운용.
-분류(오디션 여부·카테고리)는 Phase 2-1 classifier와 연동 예정 — 여기서는 규칙 기반 1차 필터만.
+오디션 여부는 여기서 규칙 기반 1차 필터만 수행하고, 카테고리는 upsert 단계에서 classifier가 확정한다(2-1 연결 완료 — genre는 힌트).
 """
 from __future__ import annotations
 
