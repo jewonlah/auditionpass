@@ -1,7 +1,16 @@
-# sns_sources — SNS 오디션 소싱 (트랙 B)
+# sns_sources — SNS·검색형 오디션 소싱 (트랙 A·B)
 
-> 근거: `docs/renewal/31_sns-sourcing-plan.md`. **D4 개정 확정 후 운용.**
-> 수집 채널(캡션을 어떻게 가져오나)과 파싱(`instagram_caption.py`)을 분리했다. 어느 채널이든 산출물은 사이트 크롤러와 동일한 `AuditionData` → 기존 `upsert_auditions` 재사용.
+> 근거: `docs/renewal/31_sns-sourcing-plan.md`. 어느 채널이든 산출물은 사이트 크롤러와 동일한 `AuditionData` → 기존 `upsert_auditions` 재사용(카테고리는 거기서 classifier가 확정).
+
+## 트랙 A-1. 네이버 카페 (`naver_cafe.py`) — 공식 API, 운용 중(게이트)
+- NAVER API HUB `GET /search/v1/cafearticle`, 헤더 `X-NCP-APIGW-API-KEY-ID/KEY`. env `NAVER_API_HUB_CLIENT_ID/SECRET`.
+- `NaverCafeScraper`는 `BaseScraper` 구현 → `main.py`가 **`NAVER_CAFE_ENABLED=1`일 때만** 파이프라인에 추가(검수 전 라이브 오염 방지).
+- 키워드 14개 × 최신 100건. 필터 순서: 카페 블랙리스트 → 제목 '소식·정리·후기' 제외(`_NEWS_TITLE`) → 신호어(`_CAFE_SIGNALS`) → 본문 제외어(`_NEGATIVE`, 시술·수강·창업·단원) → 요약 20자 미만 제외.
+- dry-run(DB 저장 없음): `python -m sns_sources.naver_cafe [샘플수]` (crawler/에서). 2026-08-21 실측 1,184→846 통과, 이메일 0.5%, 마감 추출 24%.
+- 마감 미상 공고는 `deactivate_stale_undated(30)`으로 수집 30일 후 비활성화. 마감일은 위조하지 않는다.
+
+## 트랙 B. 인스타그램 — **D4 개정 확정 후 운용**
+> 수집 채널(캡션을 어떻게 가져오나)과 파싱(`instagram_caption.py`)을 분리했다.
 
 ## 2026-08-21 실측 결론
 - 인스타 **공개 게시물 캡션·이미지·계정 최근글·키워드 검색은 브라우저 세션에서 전부 읽힘**.

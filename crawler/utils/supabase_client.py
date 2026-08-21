@@ -191,6 +191,27 @@ def upsert_auditions(auditions: list) -> int:
     return saved
 
 
+def deactivate_stale_undated(days: int = 30, source_prefix: str = "네이버카페") -> int:
+    """마감일이 없는 SNS/검색형 공고를 수집 후 N일 지나면 비활성화.
+    검색 API는 요약만 주므로 마감일 미상 비율이 높다(실측 70%). 마감일을 위조하지 않는 대신 노출 기간으로 만료시킨다
+    (31 §4 — '게시 후 N일 만료 정책은 호출측에서')."""
+    from datetime import datetime, timedelta, timezone
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    result = (
+        supabase.table("auditions")
+        .update({"is_active": False})
+        .eq("is_active", True)
+        .is_("deadline", "null")
+        .like("source_name", f"{source_prefix}%")
+        .lt("crawled_at", cutoff)
+        .execute()
+    )
+    count = len(result.data) if result.data else 0
+    if count > 0:
+        logger.info(f"  마감일 미상 {source_prefix} 공고 {count}건 비활성화 ({days}일 경과)")
+    return count
+
+
 def deactivate_expired() -> int:
     """마감일이 지난 공고를 비활성화"""
     today = date.today().isoformat()

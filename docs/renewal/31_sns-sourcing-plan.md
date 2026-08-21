@@ -25,7 +25,12 @@
 ## 3. 3트랙 아키텍처
 
 ### 트랙 A — 공식 API 소스 (D4 개정 불필요, 즉시 착수 가능) ★권장 1순위
-1. **네이버 카페 검색** (`cafearticle`): 키워드 셋(오디션, 배우 모집, 단편 캐스팅…)으로 일 1회 폴링 → 신규 링크만 저장.
+1. **네이버 카페 검색** (`cafearticle`) — **2026-08-21 구현·실측 완료** (`crawler/sns_sources/naver_cafe.py`, `NAVER_CAFE_ENABLED=1` 게이트)
+   - 키워드 14개(정밀도 순): 단편영화 캐스팅 · 단편영화 배우 모집 · 독립영화 배우 모집 · 웹드라마 오디션 · 웹드라마 배우 모집 · 뮤지컬 오디션 · 연극 배우 모집 · 아역배우 모집 · 보조출연 모집 · 캐스팅 공고 · 배우 오디션 · 오디션 공고 · 배우 모집 · 출연자 모집. 키워드당 최신 100건 × 1페이지, 일 14 call.
+   - 실측(첫 풀스캔): 1,400건 수신 → 링크 중복 216 → **1,184건 중 846건 통과**(71%). 제외: 소식·정리·후기 제목 128 / 신호어 없음 74 / 뷰티·맘카페 블랙리스트 59 / 요약 20자 미만 53 / 시술·수강·창업·단원 제외어 24.
+   - 상위 카페: 빛이 모이는 곳(아역·대학 단편 집결지) 200 · 우리연기할래 93 · 연뮤덕(뮤지컬) 81 · 디포인트 시니어 연기 74 · 액터길드 8.
+   - **한계(구조적)**: API는 제목·요약(≈100자)·카페명·링크만 주고 게시일 없음. 요약 속 이메일은 마스킹(`***@gmail.com`) → **apply_email 보유율 0.5%(4/846)** — 사실상 전량 external 공고(커버리지·SEO용, 원클릭 X). 마감일 추출 24%(200/846). 마감 미상 공고는 위조하지 않고 **수집 후 30일 자동 비활성화**(`deactivate_stale_undated`).
+   - 우리연기할래의 "[필름메이커스 자료 정리]" 일일 다이제스트는 기존 필메코 소스와 중복이라 제목 필터로 제외.
 2. **YouTube Data API**: 기획사 채널 화이트리스트 + 키워드 검색 → 설명란 이메일 추출.
 3. **X pay-per-use** (예산 승인 시): 캐스팅 계정 화이트리스트 타임라인 + 해시태그 검색, 일 200read 상한으로 비용 캡.
 
@@ -100,7 +105,8 @@ crawler/
 | 1 | **D4 개정 여부** (인스타 크롤링 금지 해제 — 트랙 B 게이트) | 결정 |
 | 2 | X API 예산 (월 $30~75) 승인 여부 | 결정 |
 | 3 | Apify 예산 (월 $5~49) 승인 여부 | 결정 |
-| 4 | ~~네이버 개발자센터 앱 등록~~ → **네이버 클라우드 플랫폼(ncloud.com) 가입 → 콘솔 Menu > All Services > Application Services > NAVER API HUB > 신청하기 → Application 등록(검색 API 선택) → 인증 정보에서 Client ID/Secret** (2026-08-21 확인: 개발자센터 경로는 신규 차단됨) | 물리 작업 (10~15분, NCP 가입 포함) |
+| 4 | ~~네이버 개발자센터 앱 등록~~ → NAVER API HUB Application(블로그·웹문서·카페) 등록 — **2026-08-21 완료**, 키는 `crawler/.env`. 남은 일: GitHub Secrets `NAVER_API_HUB_CLIENT_ID/SECRET` + Variables `NAVER_CAFE_ENABLED=1`(라이브 게재 승인 시) | 물리 작업 (3분) |
+| 4-1 | **네이버 카페 라이브 게재 승인** — 첫 실행 시 ~850건이 external 공고로 들어감(이메일 0.5%, 마감 미상 76%·30일 만료). 승인 시 `NAVER_CAFE_ENABLED=1` | 결정 |
 | 5 | Google Cloud 콘솔 YouTube Data API 키 발급 | 물리 작업 (5분) |
 
 — 근거 조사 출처: X API 가격([postproxy](https://postproxy.dev/blog/x-api-pricing-2026/), [socialcrawl](https://www.socialcrawl.dev/blog/x-twitter-api-2026)), Instagram 수집 실태([scrapecreators](https://scrapecreators.com/blog/instagram-scraping-apis), [socialcrawl](https://www.socialcrawl.dev/blog/instagram-scraping-2026))

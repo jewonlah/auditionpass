@@ -44,6 +44,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # 트랙 A-1 네이버 카페 (NAVER API HUB). vars.NAVER_CAFE_ENABLED=1 로 켬
+          NAVER_API_HUB_CLIENT_ID: ${{ secrets.NAVER_API_HUB_CLIENT_ID }}
+          NAVER_API_HUB_CLIENT_SECRET: ${{ secrets.NAVER_API_HUB_CLIENT_SECRET }}
+          NAVER_CAFE_ENABLED: ${{ vars.NAVER_CAFE_ENABLED }}
         run: python main.py
 
   generate-and-publish:

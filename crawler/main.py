@@ -18,7 +18,13 @@ from scrapers.casting114 import Casting114Scraper
 from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from scrapers.starlet import StarletScraper
-from utils.supabase_client import upsert_auditions, deactivate_expired, pop_classify_stats
+from sns_sources.naver_cafe import NaverCafeScraper
+from utils.supabase_client import (
+    upsert_auditions,
+    deactivate_expired,
+    deactivate_stale_undated,
+    pop_classify_stats,
+)
 
 # crawler/.env 로드
 load_dotenv(Path(__file__).parent / ".env")
@@ -61,6 +67,11 @@ def main():
         CastikScraper(),         # 7. castik.co.kr — Playwright
         StarletScraper(),        # 8. starlet-studio.co.kr — SSR
     ]
+    # 트랙 A-1 네이버 카페 (31 §3) — NAVER_CAFE_ENABLED=1 + API HUB 키가 있을 때만 (검수 전 라이브 오염 방지)
+    if NaverCafeScraper.enabled():
+        scrapers.append(NaverCafeScraper())
+    else:
+        logger.info("[네이버카페] 비활성 (NAVER_CAFE_ENABLED≠1 또는 키 없음) — 건너뜀")
 
     total_collected = 0
     total_saved = 0
@@ -98,6 +109,7 @@ def main():
     # 마감 공고 비활성화
     logger.info("마감 공고 비활성화 처리...")
     deactivated = deactivate_expired()
+    deactivated += deactivate_stale_undated(days=30)  # 마감일 미상 네이버카페 공고 30일 만료
 
     logger.info("========== 크롤러 완료 ==========")
     logger.info(f"  수집: {total_collected}건 / 저장: {total_saved}건 / 비활성화: {deactivated}건")
