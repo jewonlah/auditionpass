@@ -108,7 +108,7 @@ crawler/
 | 2 | X API 예산 (월 $30~75) 승인 여부 | 결정 |
 | 3 | Apify 예산 (월 $5~49) 승인 여부 | 결정 |
 | 4 | ~~네이버 개발자센터 앱 등록~~ → NAVER API HUB Application(블로그·웹문서·카페) 등록 — **2026-08-21 완료**, 키는 `crawler/.env`. 남은 일: GitHub Secrets `NAVER_API_HUB_CLIENT_ID/SECRET` + Variables `NAVER_CAFE_ENABLED=1`(라이브 게재 승인 시) | 물리 작업 (3분) |
-| 4-1 | **네이버 카페 라이브 게재 승인** — 첫 실행 시 ~4,900건이 external 공고로 들어감(이메일 0.3%, 마감 미상 76%·30일 만료). 기존 활성 1,854건의 2.6배 → 탐색 탭 구성이 바뀌므로 external 후순위 정렬(Phase 3)과 같이 가야 함. 승인 시 `NAVER_CAFE_ENABLED=1` | 결정 |
+| 4-1 | ~~네이버 카페 라이브 게재 승인~~ → **2026-08-21 사용자 승인·실행 완료**: 4,866 수집 → 마감 제외 4,343 → **4,081건 저장**(내부 중복 262 스킵). 14카테고리 전부 채워짐(배우 858 · MC/진행자 609 · 아이돌 506 · 키즈모델 400 · 모델 342 · 인플루언서 315 · 엑스트라 182 · 연극 145 · 성우 139 · 뮤지컬 123 · 댄서 103 · 가수 85 · 촬영모델 85 · 트로트 78). 전체 활성 1,854 → **5,930**. GitHub Secrets·Variables 등록 완료(cron 반영은 Phase 1 병합 후). **후속 필수**: 탐색 탭 external 후순위·출처 배지(Phase 3), 마감 미상 30일 만료 동작 확인 | ✅ |
 | 5 | Google Cloud 콘솔 YouTube Data API 키 발급 | 물리 작업 (5분) |
 
 — 근거 조사 출처: X API 가격([postproxy](https://postproxy.dev/blog/x-api-pricing-2026/), [socialcrawl](https://www.socialcrawl.dev/blog/x-twitter-api-2026)), Instagram 수집 실태([scrapecreators](https://scrapecreators.com/blog/instagram-scraping-apis), [socialcrawl](https://www.socialcrawl.dev/blog/instagram-scraping-2026))
