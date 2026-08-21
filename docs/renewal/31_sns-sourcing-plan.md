@@ -12,7 +12,7 @@
 
 | 플랫폼 | 오디션 정보 형태 | 공식 API | 현실적 수집 방법 | 난도 | 리스크 | 예상 비용 |
 |---|---|---|---|---|---|---|
-| **네이버 카페** (엑터길드 등 배우 커뮤니티) | 오디션 공고 게시글, 이메일 포함 多 | ✅ 네이버 검색 오픈API `cafearticle` (일 25,000건 무료) | 키워드 검색 → 제목·링크 수집 → 본문은 링크 유도(비로그인 열람 제한 카페는 전문 수집 불가) | 하 | **低** (공식 API) | 무료 |
+| **네이버 카페** (엑터길드 등 배우 커뮤니티) | 오디션 공고 게시글, 이메일 포함 多 | ✅ **NAVER API HUB**(네이버 클라우드 플랫폼) `GET https://naverapihub.apigw.ntruss.com/search/v1/cafearticle` — 월 775,000건 무료(키당 50 RPS, 추후 유료제 예고). ⚠️ 개발자센터(`openapi.naver.com`) 검색 API는 **2026-07-31부로 신규 신청 차단**(기존 키만 2027-06-30까지) → 신규는 HUB만 가능. 헤더 `X-NCP-APIGW-API-KEY-ID` / `X-NCP-APIGW-API-KEY` | 키워드 검색 → 제목·링크·요약(description)·카페명 수집 → 본문은 링크 유도(비로그인 열람 제한 카페는 전문 수집 불가) | 하 | **低** (공식 API) | 무료 |
 | **YouTube** | 기획사 오디션 공지 영상·설명란 | ✅ Data API v3 (무료 쿼터 일 10,000유닛) | 채널·키워드 검색, 설명란에서 이메일 추출. 커뮤니티 탭은 API 미지원 | 하 | **低** | 무료 |
 | **X (트위터)** | 캐스팅 계정·해시태그(#오디션 #배우모집) | ✅ 유료 — 2026-02부터 pay-per-use: post read $0.005/건, 월 200만 read 상한. 무료 티어 폐지 | 공식 API 키워드/계정 타임라인 폴링 | 중 | **低~中** (공식이나 비용) | 일 200read ≈ $1 → **월 $30~75** |
 | **Instagram** | 캐스팅 전문 계정·기획사 공식 계정·CD 개인 계정. 정보 밀도 최상 | ❌ Graph API는 본인(비즈니스) 계정만. 타 계정 공개글 공식 경로 없음 (Basic Display 2024-12 폐지) | ① 관리형 스크레이퍼(Apify ~$1.5/1천건, Bright Data) ② instaloader(자체 실행, 계정·IP 밴 리스크) ③ 제휴·제보 | 중~상 | **高** (Meta ToS 위반 — 미국 판례상 공개 데이터 스크레이핑이 곧 위법은 아니나, 계정 차단·법적 분쟁 리스크는 실재. **D4 금지의 근거**) | Apify 월 $5~49 |
@@ -100,7 +100,7 @@ crawler/
 | 1 | **D4 개정 여부** (인스타 크롤링 금지 해제 — 트랙 B 게이트) | 결정 |
 | 2 | X API 예산 (월 $30~75) 승인 여부 | 결정 |
 | 3 | Apify 예산 (월 $5~49) 승인 여부 | 결정 |
-| 4 | 네이버 개발자센터 앱 등록 → Client ID/Secret 발급 | 물리 작업 (5분) |
+| 4 | ~~네이버 개발자센터 앱 등록~~ → **네이버 클라우드 플랫폼(ncloud.com) 가입 → 콘솔 Menu > All Services > Application Services > NAVER API HUB > 신청하기 → Application 등록(검색 API 선택) → 인증 정보에서 Client ID/Secret** (2026-08-21 확인: 개발자센터 경로는 신규 차단됨) | 물리 작업 (10~15분, NCP 가입 포함) |
 | 5 | Google Cloud 콘솔 YouTube Data API 키 발급 | 물리 작업 (5분) |
 
 — 근거 조사 출처: X API 가격([postproxy](https://postproxy.dev/blog/x-api-pricing-2026/), [socialcrawl](https://www.socialcrawl.dev/blog/x-twitter-api-2026)), Instagram 수집 실태([scrapecreators](https://scrapecreators.com/blog/instagram-scraping-apis), [socialcrawl](https://www.socialcrawl.dev/blog/instagram-scraping-2026))
