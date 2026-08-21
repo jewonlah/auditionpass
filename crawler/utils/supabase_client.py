@@ -1,7 +1,7 @@
 import html
 import os
 import logging
-from datetime import date
+from datetime import date, datetime, timezone
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from utils.refine_description import refine_description
@@ -173,7 +173,12 @@ def upsert_auditions(auditions: list) -> int:
                 .execute()
             )
             if existing_by_url.data:
-                continue  # 이미 존재 → API 호출 없이 스킵
+                # 이미 존재 → 재발견 표시만 (crawled_at 갱신 + 재활성화). 사이트에 아직 걸려 있는 공고가
+                # deactivate_stale_undated의 N일 만료에 잘못 걸리지 않게 한다. Claude 정제는 호출 안 함.
+                supabase.table("auditions").update(
+                    {"crawled_at": datetime.now(timezone.utc).isoformat(), "is_active": True}
+                ).eq("id", existing_by_url.data[0]["id"]).execute()
+                continue
 
             # 신규 데이터만 description 정제 (Claude API 호출)
             data["description"] = _refine_if_needed(data["description"], audition.title)
@@ -194,24 +199,26 @@ def upsert_auditions(auditions: list) -> int:
     return saved
 
 
-def deactivate_stale_undated(days: int = 30, source_prefix: str = "네이버카페") -> int:
-    """마감일이 없는 SNS/검색형 공고를 수집 후 N일 지나면 비활성화.
-    검색 API는 요약만 주므로 마감일 미상 비율이 높다(실측 70%). 마감일을 위조하지 않는 대신 노출 기간으로 만료시킨다
-    (31 §4 — '게시 후 N일 만료 정책은 호출측에서')."""
+def deactivate_stale_undated(days: int = 45, source_prefix: str | None = None) -> int:
+    """마감일이 없는 공고를 마지막 수집(crawled_at) 후 N일 지나면 비활성화.
+    - 2026-08-21 실측: 활성 1,854건 중 1,691건(89%)이 필메코·캐스트링크의 4개월 묵은 마감 미상 공고였다(좀비).
+      마감일을 위조하지 않는 대신 노출 기간으로 만료시킨다. 재발견되면 upsert가 crawled_at을 갱신·재활성화한다.
+    - source_prefix=None이면 전 소스. 네이버카페 등 검색형은 30일로 더 짧게 호출한다(31 §4)."""
     from datetime import datetime, timedelta, timezone
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    result = (
+    q = (
         supabase.table("auditions")
         .update({"is_active": False})
         .eq("is_active", True)
         .is_("deadline", "null")
-        .like("source_name", f"{source_prefix}%")
         .lt("crawled_at", cutoff)
-        .execute()
     )
+    if source_prefix:
+        q = q.like("source_name", f"{source_prefix}%")
+    result = q.execute()
     count = len(result.data) if result.data else 0
     if count > 0:
-        logger.info(f"  마감일 미상 {source_prefix} 공고 {count}건 비활성화 ({days}일 경과)")
+        logger.info(f"  마감일 미상 {source_prefix or '전체'} 공고 {count}건 비활성화 ({days}일 경과)")
     return count
 
 

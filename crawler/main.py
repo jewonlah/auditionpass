@@ -109,7 +109,8 @@ def main():
     # 마감 공고 비활성화
     logger.info("마감 공고 비활성화 처리...")
     deactivated = deactivate_expired()
-    deactivated += deactivate_stale_undated(days=30)  # 마감일 미상 네이버카페 공고 30일 만료
+    deactivated += deactivate_stale_undated(days=45)                          # 전 소스: 마감 미상 45일 만료 (좀비 방지)
+    deactivated += deactivate_stale_undated(days=30, source_prefix="네이버카페")  # 검색형은 30일
 
     logger.info("========== 크롤러 완료 ==========")
     logger.info(f"  수집: {total_collected}건 / 저장: {total_saved}건 / 비활성화: {deactivated}건")
