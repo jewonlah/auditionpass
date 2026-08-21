@@ -14,7 +14,7 @@
 | 004_profile_extra_fields | profiles.activity_field·agency·specialty·career | ✅ |
 | 005_apply_type | auditions.apply_type ('email'\|'external') | ✅ |
 | 006_community | community_posts·comments·likes + RLS + 인덱스 | ✅ |
-| 007_category_system | auditions.category·sub_category·category_confidence·classify_method, genre CHECK 15종 | ❌ **라이브 미적용 (2026-08-21 실측 — 컬럼 없음)**. 분류기는 2-1에서 연결 완료, 컬럼 부재 시 genre만 저장하도록 폴백. 적용 후 `crawler/scripts/backfill_categories.py --apply`로 기존 행 백필 |
+| 007_category_system | auditions.category·sub_category·category_confidence·classify_method, genre CHECK 15종 | ✅ **2026-08-21 적용 + 백필 완료**(2,630건, 활성 1,854건 14카테고리 실저장). 분류기 2-1 연결 완료. `category`=한글 라벨, `genre`=레거시 3분류 유지 |
 | 008_crawl_logs | crawl_logs (미기록 상태, Phase 2-4) | ❌ **라이브 미적용 (2026-08-21 실측 — 테이블 없음)** |
 | **009_renewal_apply_flow** | profiles.birth_year(+age nullable) · applications.status/opened_at · **bookmarks** · daily_apply_count·함수 DROP | ❓ **적용 여부 미확인 — 배포 게이트 (30 §2 0-3)** |
 
@@ -48,7 +48,8 @@ subscriptions   (잔존·미사용)
 - 이 문서에 폐지된 예제 SQL(지원 제한 함수 등)을 되살리지 말 것
 
 ## 예정 작업
-- **007·008 라이브 적용** (사용자: `! supabase db query --linked -f database/migrations/007_category_system.sql` → 008 동일) → `database/checks/007_008_status.sql`로 확인 → `crawler/scripts/backfill_categories.py --apply` 백필. `category` 값은 한글 라벨(007 백필 `category = genre`와 동일 체계), `genre`는 레거시 3분류 유지(프론트 타입 호환)
+- **008 라이브 적용** (사용자: `! supabase db query --linked -f database/migrations/008_crawl_logs.sql`) → `database/checks/007_008_status.sql`로 확인 — 2-4 crawl_logs 기록의 전제
+- 재분류가 필요하면 `crawler/scripts/backfill_categories.py`(dry-run 기본 → `--apply`, 멱등)
 - 2-3 인코딩 손상 `source_name` 레코드 정정
 - 2-7 Supabase CLI 마이그레이션 전환, profiles.phone 드리프트 정리
 - R2: `boards`(토큰) / R3: 결제 신규 스키마(payments·webhook·갱신)
