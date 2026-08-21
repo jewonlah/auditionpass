@@ -260,13 +260,26 @@ class NaverCafeScraper(BaseScraper):
 
 
 if __name__ == "__main__":
-    # dry-run: DB 저장 없이 필터 결과만 출력.  crawler/ 에서: python -m sns_sources.naver_cafe
+    # dry-run: DB 저장 없이 필터 결과만 출력.  crawler/ 에서: python -m sns_sources.naver_cafe [샘플수]
+    # 저장:   python -m sns_sources.naver_cafe --save   (main.py와 동일 경로: filter_expired → upsert_auditions)
     import sys
     from pathlib import Path
     from dotenv import load_dotenv
 
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
+
+    if "--save" in sys.argv:
+        from utils.supabase_client import upsert_auditions, pop_classify_stats
+
+        sc = NaverCafeScraper()
+        auds = sc.scrape()
+        today = date.today()
+        fresh = [a for a in auds if not (a.deadline and a.deadline < today)]
+        print(f"수집 {len(auds)}건 → 마감 제외 후 {len(fresh)}건 저장 시도")
+        saved = upsert_auditions(fresh)
+        print(f"✓ 저장 {saved}건 / 분류 {pop_classify_stats()}")
+        sys.exit(0)
 
     s = NaverCafeScraper()
     items = s.fetch_items()

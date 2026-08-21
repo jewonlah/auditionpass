@@ -92,9 +92,12 @@ def _unescape(text: str | None) -> str | None:
     return text.strip()
 
 
+REFINE_MIN_CHARS = 400  # 이보다 짧으면 이미 요약 수준 — 검색 API 요약(네이버카페 ≈100~200자)은 정제 불필요
+
+
 def _refine_if_needed(description: str | None, title: str) -> str | None:
-    """description이 있으면 Claude API로 정제"""
-    if description and len(description.strip()) >= 10:
+    """description이 충분히 길 때만 Claude API로 정제(300자 bullet). 짧은 본문은 그대로 — 비용·지연 절감."""
+    if description and len(description.strip()) >= REFINE_MIN_CHARS:
         return refine_description(description, title)
     return description
 
