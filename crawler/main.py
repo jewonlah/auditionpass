@@ -37,6 +37,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+# supabase/httpx의 요청 단위 INFO 로그(수천 줄) 억제 — 로컬 로그 파일 가독성
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 def filter_expired(auditions, source_name: str):
