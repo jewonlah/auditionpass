@@ -19,6 +19,7 @@ from scrapers.casting114 import Casting114Scraper
 from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from scrapers.starlet import StarletScraper
+from scrapers.generic_board import all_scrapers as all_board_scrapers
 from sns_sources.naver_cafe import NaverCafeScraper
 from sns_sources.naver_web import NaverWebScraper
 from utils import crawl_log
@@ -73,6 +74,8 @@ def main():
         CastikScraper(),         # 7. castik.co.kr — Playwright
         StarletScraper(),        # 8. starlet-studio.co.kr — SSR
     ]
+    # 범용 게시판 (플랜 E-4): 콘테스트코리아·국립극단·이벤트넷·플레이DB — 신규 출처는 검수 큐(pending)로 들어감
+    scrapers.extend(all_board_scrapers())
     # 트랙 A-1 네이버 카페 (31 §3) — NAVER_CAFE_ENABLED=1 + API HUB 키가 있을 때만 (검수 전 라이브 오염 방지)
     if NaverCafeScraper.enabled():
         scrapers.append(NaverCafeScraper())
