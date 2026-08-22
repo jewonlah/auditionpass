@@ -37,3 +37,4 @@ crawler/logs/
 crawler/.browser/
 crawler/.browser_state.json
 crawler/.review_cache.json
+crawler/.official_state.json

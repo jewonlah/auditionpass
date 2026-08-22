@@ -58,6 +58,7 @@ class Board:
     list_title_re: Optional[str] = None    # 목록에서 (id, 제목) 추출 정규식 — 그룹1=id, 그룹2=제목
     id_re: Optional[str] = None            # href형 게시판에서 링크→id 추출 (list_title_re의 id와 매칭해 제목 사전 필터)
     skip_re: Optional[str] = None          # 상세 본문에 이 패턴이 있으면 제외 (예: 현재상태 종료)
+    render: bool = False                   # JS 렌더 필요(카카오톡 채널·SPA) → Playwright로 목록·상세 로드
 
 
 BOARDS: list[Board] = [
@@ -131,7 +132,34 @@ class GenericBoardScraper(BaseScraper):
         self.base_url = board.list_urls[0]
         self.details: dict = {}
 
+    _browser = None  # Playwright (render=True 보드 공유)
+
+    def _render(self, url: str) -> Optional[str]:
+        """JS 렌더 페이지 HTML (Playwright headless). 한 인스턴스 재사용, 실패 시 None."""
+        try:
+            if GenericBoardScraper._browser is None:
+                from playwright.sync_api import sync_playwright
+                pw = sync_playwright().start()
+                GenericBoardScraper._browser = (pw, pw.chromium.launch(headless=True))
+            _, br = GenericBoardScraper._browser
+            pg = br.new_page(locale="ko-KR")
+            pg.goto(url, wait_until="networkidle", timeout=45000)
+            pg.wait_for_timeout(1500)
+            pg.mouse.wheel(0, 1500)
+            pg.wait_for_timeout(800)
+            html = pg.content()
+            pg.close()
+            return html
+        except Exception as e:
+            logger.warning(f"[{self.source_name}] 렌더 실패 {url[:80]}: {str(e)[:80]}")
+            return None
+
     def _get(self, url: str, post: Optional[dict] = None) -> Optional[requests.Response]:
+        if self.board.render and post is None:
+            html = self._render(url)
+            if html is None:
+                return None
+            return type("R", (), {"text": html, "status_code": 200})()
         try:
             if post is not None:
                 r = requests.post(url, data=post, headers={**UA, "Referer": self.base_url}, timeout=20)
@@ -230,13 +258,8 @@ class GenericBoardScraper(BaseScraper):
             body = body[:300]
         text = f"{title}\n{body}"
         email = self._email_not_site(body, url)
-        # 모집기간 "A ~ B" 가 있으면 종료일을 마감으로 (플레이DB·공공 게시판 공통 서식)
-        deadline = None
-        rng = re.search(r"(?:모집\s*기간|접수\s*기간|지원\s*기간)\s*[:：]?\s*([\d.\-/년월일\s]{6,14})\s*[~∼-]\s*([\d.\-/년월일\s]{6,14})", body)
-        if rng:
-            deadline = self.parse_deadline(rng.group(2))
-        if not deadline:
-            deadline = self.parse_deadline(body) if re.search(r"마감|접수|모집\s*기간|까지", body) else None
+        # 마감일: 범위 "A ~ B"의 종료일 우선 → 마감 라벨 근처 → 첫 날짜 (base.parse_deadline_smart, 2-3)
+        deadline = self.parse_deadline_smart(body) if re.search(r"마감|접수|모집\s*기간|까지", body) else None
         desc = summarize(body, max_chars=600) if self.board.mode == "post" else f"{body[:200]}…"
         footer = f"\n\n---\n출처: {self.source_name} ({'요약' if self.board.mode == 'post' else '링크 인덱스'} — 전문·지원 방법은 원문 링크 확인)"
         comp = re.search(r"(?:업체명|주최|제작사?)\s*[:：]?\s*([^\n/|]{2,40})", body)

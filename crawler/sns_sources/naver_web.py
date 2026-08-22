@@ -43,13 +43,8 @@ KEYWORDS_BLOG = [
     "아역배우 모집", "모델 모집 촬영", "쇼호스트 모집", "성우 모집", "댄서 모집", "가수 오디션", "연습생 모집",
 ]
 
-# 웹문서에서 제외할 도메인 — 애그리게이터(링크 역추적 모드: 저장 안 함), 포털·SNS·쇼핑
-EXCLUDE_DOMAINS = re.compile(
-    r"(?:^|\.)(?:castingchatgo\.com|audee\.co\.kr|plfil\.com|castlink\.co\.kr|filmmakers\.co\.kr|casting114\.com|"
-    r"naver\.com|daum\.net|kakao\.com|tistory\.com|google\.com|youtube\.com|instagram\.com|facebook\.com|twitter\.com|x\.com|"
-    r"threads\.net|tiktok\.com|namu\.wiki|wikipedia\.org|coupang\.com|smartstore\.naver\.com|saramin\.co\.kr|jobkorea\.co\.kr|"
-    r"albamon\.com|alba\.co\.kr|incruit\.com|wanted\.co\.kr|indeed\.com)$"
-)
+# 웹문서에서 제외할 도메인 — 애그리게이터(링크 역추적 모드: 저장 안 함)·포털·SNS·구인 플랫폼. 정본: sns_sources/exclude_domains.py
+from sns_sources.exclude_domains import _ALL as EXCLUDE_DOMAINS  # noqa: E402
 
 
 # 블로그 콘텐츠팜·후기·뉴스 블로거 — 실측(2026-08-22): '건강백과365', '뉴스인사이더', '나만의 소확행 경제학' 류가 상위

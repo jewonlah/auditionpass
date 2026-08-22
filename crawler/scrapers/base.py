@@ -121,6 +121,29 @@ class BaseScraper(ABC):
         return None
 
     @staticmethod
+    def parse_deadline_smart(text: str) -> Optional[date]:
+        """마감일 파싱 개선(2-3): '모집기간/접수/마감 A ~ B' 범위가 있으면 **종료일 B**(가장 늦은 것),
+        없으면 마감 라벨 근처의 날짜, 그것도 없으면 본문 첫 날짜. 전화번호 오탐 방지를 위해 전화번호는 먼저 제거."""
+        if not text:
+            return None
+        clean = re.sub(r"\b0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}\b", " ", text)
+        date_tok = r"(?:\d{2,4}[.\-/년]\s*\d{1,2}[.\-/월]\s*\d{1,2}일?)"
+        ends: list[date] = []
+        for m in re.finditer(rf"({date_tok})\s*[~∼\-–]\s*({date_tok})", clean):
+            d = BaseScraper.parse_deadline(m.group(2))
+            if d:
+                ends.append(d)
+        if ends:
+            return max(ends)
+        near = re.search(rf"(?:마감|접수\s*마감|모집\s*마감|지원\s*마감|까지)[^\n]{{0,25}}?({date_tok})", clean) or \
+               re.search(rf"({date_tok})[^\n]{{0,12}}?(?:까지|마감)", clean)
+        if near:
+            d = BaseScraper.parse_deadline(near.group(1))
+            if d:
+                return d
+        return BaseScraper.parse_deadline(clean)
+
+    @staticmethod
     def classify_genre(text: str) -> str:
         """텍스트에서 장르 분류"""
         text_lower = text.lower()

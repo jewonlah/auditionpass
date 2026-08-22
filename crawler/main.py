@@ -20,6 +20,8 @@ from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from scrapers.starlet import StarletScraper
 from scrapers.generic_board import all_scrapers as all_board_scrapers
+from scrapers.official_pages import OfficialPagesScraper
+from sns_sources.backtrace import BacktraceScraper
 from sns_sources.naver_cafe import NaverCafeScraper
 from sns_sources.naver_web import NaverWebScraper
 from utils import crawl_log
@@ -76,11 +78,14 @@ def main():
     ]
     # 범용 게시판 (플랜 E-4): 콘테스트코리아·국립극단·이벤트넷·플레이DB — 신규 출처는 검수 큐(pending)로 들어감
     scrapers.extend(all_board_scrapers())
+    # 기획사·공공 공식 페이지 변경 감시 (플랜 E-5, D4 지정 소스)
+    scrapers.append(OfficialPagesScraper())
     # 트랙 A-1 네이버 카페 (31 §3) — NAVER_CAFE_ENABLED=1 + API HUB 키가 있을 때만 (검수 전 라이브 오염 방지)
     if NaverCafeScraper.enabled():
         scrapers.append(NaverCafeScraper())
         scrapers.append(NaverWebScraper("webkr"))   # 홈페이지 공고 + 도메인 발견 큐 (플랜 E-3)
         scrapers.append(NaverWebScraper("blog"))
+        scrapers.append(BacktraceScraper())            # 애그리게이터 링크 역추적 (플랜 E-7, 저장은 원글만)
     else:
         logger.info("[네이버카페] 비활성 (NAVER_CAFE_ENABLED≠1 또는 키 없음) — 건너뜀")
 
