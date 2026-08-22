@@ -4,6 +4,7 @@
 """
 
 import sys
+import time
 import logging
 from datetime import date
 from pathlib import Path
@@ -19,6 +20,7 @@ from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from scrapers.starlet import StarletScraper
 from sns_sources.naver_cafe import NaverCafeScraper
+from utils import crawl_log
 from utils.supabase_client import (
     upsert_auditions,
     deactivate_expired,
@@ -79,6 +81,7 @@ def main():
 
     for scraper in scrapers:
         logger.info(f"[{scraper.source_name}] 수집 시작...")
+        t0 = time.monotonic()
         try:
             auditions = scraper.scrape()
             collected = len(auditions)
@@ -86,13 +89,17 @@ def main():
             logger.info(f"[{scraper.source_name}] {collected}건 수집")
 
             # 마감된 공고 필터링
+            before = len(auditions)
             auditions = filter_expired(auditions, scraper.source_name)
+            expired = before - len(auditions)
 
+            saved = 0
+            st = {"keyword": 0, "rule": 0, "ai": 0, "etc": 0, "low_confidence": 0}
             if auditions:
                 saved = upsert_auditions(auditions)
                 total_saved += saved
                 logger.info(f"[{scraper.source_name}] {saved}건 저장 완료")
-                # 분류 통계 (2-1) — 2-4 crawl_logs 기록 시 그대로 컬럼에 매핑
+                # 분류 통계 (2-1)
                 st = pop_classify_stats()
                 logger.info(
                     f"[{scraper.source_name}] 분류: keyword {st['keyword']} / rule {st['rule']} / "
@@ -101,10 +108,24 @@ def main():
             else:
                 logger.warning(f"[{scraper.source_name}] 수집된 공고 없음")
 
+            # crawl_logs 실기록 (2-4) — 세부 통계(details)는 스크레이퍼가 제공하면 포함(네이버카페: 키워드·카페 수율)
+            crawl_log.record(
+                scraper.source_name, collected=collected, saved=saved, expired=expired,
+                dups=max(0, len(auditions) - saved), by_keyword=st["keyword"], by_rule=st["rule"], by_ai=st["ai"],
+                duration=round(time.monotonic() - t0, 1), details=getattr(scraper, "details", None),
+            )
+
         except Exception as e:
             logger.error(f"[{scraper.source_name}] 크롤링 실패: {e}")
             errors.append(f"{scraper.source_name}: {e}")
+            crawl_log.record(scraper.source_name, collected=0, saved=0, errors=str(e)[:500],
+                             duration=round(time.monotonic() - t0, 1))
             continue
+
+    # 소스 생존 경보 (최근 3일 저장 0건) — 4개월 동안 모르고 지나간 필메코·캐스트링크 사례 방지
+    dead = crawl_log.recent_zero_days(days=3)
+    if dead:
+        logger.warning(f"⚠ 최근 3일 신규 저장 0건 소스: {', '.join(dead)}")
 
     # 마감 공고 비활성화
     logger.info("마감 공고 비활성화 처리...")

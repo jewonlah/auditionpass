@@ -31,3 +31,6 @@ public/swe-worker-*.js
 
 # Supabase CLI
 supabase/.temp/
+
+# 로컬 크롤러 로그
+crawler/logs/

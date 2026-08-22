@@ -5,6 +5,8 @@ from datetime import date, datetime, timezone
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from utils.refine_description import refine_description
+from utils.summarize import summarize
+from utils.quality import quality_score
 from utils.classifier import classify_audition, to_legacy_genre
 
 load_dotenv()
@@ -77,7 +79,28 @@ def _classify_fields(audition) -> dict:
             "category_confidence": result.confidence,
             "classify_method": result.method,
         })
+    if quality_column_available():
+        fields["quality_score"] = quality_score(
+            apply_email=audition.apply_email, deadline=audition.deadline, description=audition.description,
+            source_name=audition.source_name, title=audition.title, category_confidence=result.confidence,
+        )
     return fields
+
+
+_quality_column_available: bool | None = None
+
+
+def quality_column_available() -> bool:
+    """auditions.quality_score(010) 존재 여부 1회 탐지."""
+    global _quality_column_available
+    if _quality_column_available is None:
+        try:
+            supabase.table("auditions").select("quality_score").limit(1).execute()
+            _quality_column_available = True
+        except Exception:
+            _quality_column_available = False
+            logger.warning("auditions.quality_score 없음(010 미적용) — 품질 점수 생략")
+    return _quality_column_available
 
 
 def _unescape(text: str | None) -> str | None:
@@ -93,12 +116,16 @@ def _unescape(text: str | None) -> str | None:
 
 
 REFINE_MIN_CHARS = 400  # 이보다 짧으면 이미 요약 수준 — 검색 API 요약(네이버카페 ≈100~200자)은 정제 불필요
+# 2026-08-22 사용자 지시: Anthropic API 사용 금지(비용 0). 기본은 규칙 기반 summarize(). REFINE_ENABLED=1일 때만 Claude.
+REFINE_ENABLED = os.environ.get("REFINE_ENABLED") == "1"
 
 
 def _refine_if_needed(description: str | None, title: str) -> str | None:
-    """description이 충분히 길 때만 Claude API로 정제(300자 bullet). 짧은 본문은 그대로 — 비용·지연 절감."""
+    """긴 본문만 요약(600자). 기본 규칙 기반(비용 0), REFINE_ENABLED=1이면 Claude 정제."""
     if description and len(description.strip()) >= REFINE_MIN_CHARS:
-        return refine_description(description, title)
+        if REFINE_ENABLED:
+            return refine_description(description, title)
+        return summarize(description)
     return description
 
 

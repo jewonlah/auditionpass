@@ -246,16 +246,46 @@ class NaverCafeScraper(BaseScraper):
         return items
 
     def scrape(self) -> list[AuditionData]:
+        """수집 + 필터. 키워드별·카페별 수율을 self.details에 남겨 crawl_logs.details로 기록 →
+        다음 실행에서 learn_low_yield()가 저수율 키워드/카페를 자동 강등한다(31 §5 KPI 게이트 자동화)."""
+        # 학습: 최근 실행 기록에서 저수율 키워드·카페 산출 (DB 조회 실패 시 빈 집합 → 전부 실행)
+        try:
+            from utils.crawl_log import learn_low_yield
+            demoted_kw = learn_low_yield(self.source_name, "keywords")
+            demoted_cafe = learn_low_yield(self.source_name, "cafes")
+        except Exception as e:  # supabase 미설정(dry-run 등)
+            logger.debug(f"수율 학습 생략: {e}")
+            demoted_kw, demoted_cafe = set(), set()
+        if demoted_kw:
+            self.keywords = [k for k in self.keywords if k not in demoted_kw]
+
+        kw_stat: dict[str, dict[str, int]] = {}
+        cafe_stat: dict[str, dict[str, int]] = {}
+        reasons: dict[str, int] = {}
         out: list[AuditionData] = []
         for item in self.fetch_items():
+            cafe = _short_cafe(item.cafename)
+            kw_stat.setdefault(item.keyword, {"fetched": 0, "passed": 0})["fetched"] += 1
+            cafe_stat.setdefault(cafe, {"fetched": 0, "passed": 0})["fetched"] += 1
+            if cafe in demoted_cafe:
+                reasons["cafe_demoted"] = reasons.get("cafe_demoted", 0) + 1
+                continue
             ok, reason = is_candidate(item)
             self.stats[reason] = self.stats.get(reason, 0) + 1
-            if not ok:
+            reasons[reason] = reasons.get(reason, 0) + 1
+            if not ok or self.is_noise_title(item.title):
                 continue
-            if self.is_noise_title(item.title):
-                continue
+            kw_stat[item.keyword]["passed"] += 1
+            cafe_stat[cafe]["passed"] += 1
             out.append(to_audition(item))
-        logger.info(f"[네이버카페] 통계: {self.stats}")
+        self.details = {
+            "keywords": kw_stat,
+            "cafes": dict(sorted(cafe_stat.items(), key=lambda kv: -kv[1]["fetched"])[:60]),
+            "reasons": reasons,
+            "demoted": {"keywords": sorted(demoted_kw), "cafes": sorted(demoted_cafe)},
+            "fetched": self.stats["fetched"], "dup": self.stats["dup"],
+        }
+        logger.info(f"[네이버카페] 통계: {self.stats} | 강등 키워드 {len(demoted_kw)} 카페 {len(demoted_cafe)}")
         return out
 
 
