@@ -28,7 +28,7 @@ CATEGORY_COLUMNS = ("category", "sub_category", "category_confidence", "classify
 _category_columns_available: bool | None = None
 
 # 소스별 분류 통계 (main.py가 소스 단위로 읽고 리셋 — 2-4 crawl_logs 기록의 재료)
-classify_stats: dict[str, int] = {"keyword": 0, "rule": 0, "ai": 0, "etc": 0, "low_confidence": 0}
+classify_stats: dict[str, int] = {"keyword": 0, "rule": 0, "ai": 0, "etc": 0, "low_confidence": 0, "pending": 0}
 
 
 def category_columns_available() -> bool:
@@ -85,6 +85,53 @@ def _classify_fields(audition) -> dict:
             source_name=audition.source_name, title=audition.title, category_confidence=result.confidence,
         )
     return fields
+
+
+# ============================================
+# 검수 큐 (플랜 E-2) — 게재 결정 규칙
+#   score ≥ AUTO_MIN_SCORE 이고 출처가 trusted_sources에 있으면 auto(활성)
+#   그 외(저품질 또는 신뢰되지 않은 신규 출처) → pending(비활성) → tools/review.py 로 승인/거절
+# ============================================
+AUTO_MIN_SCORE = 0.30
+_review_available: bool | None = None
+_trusted: set[str] | None = None
+
+
+def review_available() -> bool:
+    global _review_available
+    if _review_available is None:
+        try:
+            supabase.table("auditions").select("review_status").limit(1).execute()
+            supabase.table("trusted_sources").select("source_name").limit(1).execute()
+            _review_available = True
+        except Exception:
+            _review_available = False
+            logger.warning("review_status/trusted_sources 없음(011 미적용) — 검수 큐 생략, 전부 활성 저장")
+    return _review_available
+
+
+def trusted_sources() -> set[str]:
+    """자동 게재 허용 출처(캐시). 출처명은 정확히 일치해야 한다('네이버카페:빛이 모이는 곳' 단위)."""
+    global _trusted
+    if _trusted is None:
+        try:
+            rows = supabase.table("trusted_sources").select("source_name").execute().data or []
+            _trusted = {r["source_name"] for r in rows}
+        except Exception:
+            _trusted = set()
+    return _trusted
+
+
+def _review_fields(source_name: str | None, score: float | None) -> dict:
+    """게재 결정. 011 미적용이면 빈 dict(기존 동작 유지)."""
+    if not review_available():
+        return {}
+    trusted = (source_name or "") in trusted_sources()
+    ok = trusted and (score is None or score >= AUTO_MIN_SCORE)
+    if ok:
+        return {"review_status": "auto", "is_active": True}
+    classify_stats["pending"] = classify_stats.get("pending", 0) + 1
+    return {"review_status": "pending", "is_active": False}
 
 
 _quality_column_available: bool | None = None
@@ -164,6 +211,8 @@ def upsert_auditions(auditions: list) -> int:
             "apply_type": "email" if audition.apply_email else "external",
             "is_active": True,
         }
+        # 검수 큐: 저품질·미신뢰 출처는 pending(비활성). 기존 행 업데이트 경로에서는 상태를 건드리지 않는다(아래에서 제거)
+        data.update(_review_fields(data["source_name"], data.get("quality_score")))
 
         try:
             # 1) 제목+주최사+마감일로 기존 중복 확인
@@ -183,7 +232,8 @@ def upsert_auditions(auditions: list) -> int:
                 if existing["source_url"] != data["source_url"]:
                     if _is_more_detailed(data, existing):
                         data["description"] = _refine_if_needed(data["description"], audition.title)
-                        supabase.table("auditions").update(data).eq(
+                        upd = {k: v for k, v in data.items() if k not in ("review_status", "is_active")}  # 검수 상태 보존
+                        supabase.table("auditions").update(upd).eq(
                             "id", existing["id"]
                         ).execute()
                         saved += 1
@@ -200,11 +250,17 @@ def upsert_auditions(auditions: list) -> int:
                 .execute()
             )
             if existing_by_url.data:
-                # 이미 존재 → 재발견 표시만 (crawled_at 갱신 + 재활성화). 사이트에 아직 걸려 있는 공고가
-                # deactivate_stale_undated의 N일 만료에 잘못 걸리지 않게 한다. Claude 정제는 호출 안 함.
-                supabase.table("auditions").update(
-                    {"crawled_at": datetime.now(timezone.utc).isoformat(), "is_active": True}
-                ).eq("id", existing_by_url.data[0]["id"]).execute()
+                # 이미 존재 → 재발견 표시만 (crawled_at 갱신). 사이트에 아직 걸려 있는 공고가
+                # deactivate_stale_undated의 N일 만료에 잘못 걸리지 않게 한다. 재활성화는 검수 거절/대기 행은 제외.
+                touch = {"crawled_at": datetime.now(timezone.utc).isoformat()}
+                if not review_available():
+                    touch["is_active"] = True
+                q = supabase.table("auditions").update(touch).eq("id", existing_by_url.data[0]["id"])
+                q.execute()
+                if review_available():
+                    supabase.table("auditions").update({"is_active": True}).eq(
+                        "id", existing_by_url.data[0]["id"]
+                    ).in_("review_status", ["auto", "approved"]).execute()
                 continue
 
             # 신규 데이터만 description 정제 (Claude API 호출)
