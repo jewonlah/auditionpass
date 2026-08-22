@@ -20,6 +20,7 @@ from scrapers.castingnara import CastingnaraScraper
 from scrapers.castik import CastikScraper
 from scrapers.starlet import StarletScraper
 from sns_sources.naver_cafe import NaverCafeScraper
+from sns_sources.naver_web import NaverWebScraper
 from utils import crawl_log
 from utils.supabase_client import (
     upsert_auditions,
@@ -75,6 +76,8 @@ def main():
     # 트랙 A-1 네이버 카페 (31 §3) — NAVER_CAFE_ENABLED=1 + API HUB 키가 있을 때만 (검수 전 라이브 오염 방지)
     if NaverCafeScraper.enabled():
         scrapers.append(NaverCafeScraper())
+        scrapers.append(NaverWebScraper("webkr"))   # 홈페이지 공고 + 도메인 발견 큐 (플랜 E-3)
+        scrapers.append(NaverWebScraper("blog"))
     else:
         logger.info("[네이버카페] 비활성 (NAVER_CAFE_ENABLED≠1 또는 키 없음) — 건너뜀")
 
@@ -110,6 +113,15 @@ def main():
                 )
             else:
                 logger.warning(f"[{scraper.source_name}] 수집된 공고 없음")
+
+            # 발견 큐(source_candidates) — 웹문서·SNS 검색이 찾은 도메인/계정 후보 적립
+            if hasattr(scraper, "push_candidates"):
+                try:
+                    n_c = scraper.push_candidates()
+                    if n_c:
+                        logger.info(f"[{scraper.source_name}] 출처 후보 {n_c}건 기록 (tools/review.py candidates)")
+                except Exception as e:
+                    logger.warning(f"[{scraper.source_name}] 후보 기록 실패: {e}")
 
             # crawl_logs 실기록 (2-4) — 세부 통계(details)는 스크레이퍼가 제공하면 포함(네이버카페: 키워드·카페 수율)
             crawl_log.record(
