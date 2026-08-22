@@ -1,0 +1,16 @@
+{
+  "_doc": "세션 브라우저 수집기 화이트리스트 (플랜 E-8). 계정은 @ 없이. 시드는 Claude in Chrome/explore 검색으로 발굴 → tools/review.py candidates 승인 후 여기에 추가. keywords는 플랫폼 검색어.",
+  "instagram": {
+    "accounts": ["a_pointcompany_official"],
+    "keywords": ["오디션 공고", "배우 모집", "캐스팅 공고", "보조출연 모집", "모델 모집", "단편영화 배우"]
+  },
+  "threads": {
+    "accounts": [],
+    "keywords": ["오디션 공고", "배우 모집", "캐스팅"]
+  },
+  "x": {
+    "accounts": [],
+    "keywords": ["오디션 공고", "배우 모집", "캐스팅 공고", "#오디션", "#캐스팅", "보조출연 모집"]
+  },
+  "limits": {"per_account": 12, "per_platform_daily": 150, "per_keyword": 20, "delay_min": 2.0, "delay_max": 6.0}
+}

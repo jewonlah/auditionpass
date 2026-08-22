@@ -47,11 +47,16 @@ _GENRE_HINTS = [
 
 @dataclass
 class IGPost:
-    """수집 채널이 채워 넣는 원자료 (캡션 + 메타)"""
+    """수집 채널이 채워 넣는 원자료 (캡션 + 메타). 인스타 외 플랫폼(스레드·X)도 url/platform만 채우면 같은 파서를 쓴다."""
     shortcode: str
     username: str
     caption: str
     posted_at: Optional[date] = None  # 게시일 (마감일 추정 폴백에 사용)
+    url: Optional[str] = None          # 없으면 인스타 /p/{shortcode}/ 로 구성
+    platform: str = "instagram"        # instagram | threads | x → source_name 접두
+
+
+_PLATFORM_LABEL = {"instagram": "인스타그램", "threads": "스레드", "x": "X"}
 
 
 def _guess_genre(text: str) -> str:
@@ -145,8 +150,8 @@ def parse_caption(post: IGPost) -> Optional[AuditionData]:
         apply_email=apply_email,  # 없으면 DM 지원형 → upsert에서 apply_type='external'
         description=cap.strip()[:2000],
         requirements=None,
-        source_url=f"https://www.instagram.com/p/{post.shortcode}/",
-        source_name=f"인스타그램:@{post.username}",
+        source_url=post.url or f"https://www.instagram.com/p/{post.shortcode}/",
+        source_name=f"{_PLATFORM_LABEL.get(post.platform, post.platform)}:@{post.username}",
     )
 
 

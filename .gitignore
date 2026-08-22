@@ -34,3 +34,6 @@ supabase/.temp/
 
 # 로컬 크롤러 로그
 crawler/logs/
+crawler/.browser/
+crawler/.browser_state.json
+crawler/.review_cache.json
