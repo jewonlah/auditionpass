@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .card{border:1.5px solid #E7E5E0;border-radius:12px;overflow:hidden;background:#FFFFFF;}
+    .card.on{border-color:#4F46E5;box-shadow:0 0 0 1px #4F46E5;}
+    .cap{padding:9px 11px 11px;}
+    .cap .t{font-size:14px;font-weight:800;letter-spacing:-0.01em;display:flex;align-items:center;gap:5px;}
+    .cap .d{font-size:11px;color:#8A8A86;margin-top:2px;line-height:1.45;}
+    img{display:block;}
+  </style>
+</helmet>
+<div style="width:390px;height:844px;background:#FFFFFF;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+
+  <!-- 태스크형 헤더 -->
+  <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid #F0F0EE;flex-shrink:0;">
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#4A4A48;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <span style="font-size:15px;font-weight:600;color:#4A4A48;">컴프카드 템플릿</span>
+    <div style="width:44px;"></div>
+  </div>
+
+  <div style="flex:1;overflow:hidden;padding:16px 20px 0;">
+    <span class="mono">Step 1 / 2 · 서식 선택</span>
+    <h1 style="margin:6px 0 4px;font-size:22px;font-weight:800;letter-spacing:-0.02em;">어떤 카드로 보낼까요?</h1>
+    <p style="margin:0 0 14px;font-size:13px;color:#8A8A86;">프로필이 그대로 채워집니다. 언제든 바꿀 수 있어요.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:11px;">
+      <!-- 클래식 (선택됨) -->
+      <div class="card on">
+        <img src="actor_head.jpg" style="width:100%;height:128px;object-fit:cover;object-position:50% 8%;">
+        <div class="cap">
+          <div class="t">클래식
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="3"><path d="m4 12 6 6L20 6"/></svg>
+          </div>
+          <div class="d">깔끔한 기본형 — 어떤 분야든</div>
+        </div>
+      </div>
+      <!-- 시네마 -->
+      <div class="card">
+        <img src="cinema_head.jpg" style="width:100%;height:128px;object-fit:cover;object-position:50% 12%;">
+        <div class="cap">
+          <div class="t">시네마</div>
+          <div class="d">묵직한 다크 톤 — 영화·드라마 배우</div>
+        </div>
+      </div>
+      <!-- 매거진 -->
+      <div class="card">
+        <img src="model_full.jpg" style="width:100%;height:128px;object-fit:cover;object-position:50% 4%;">
+        <div class="cap">
+          <div class="t">매거진</div>
+          <div class="d">화보 느낌 세리프 — 모델·화보</div>
+        </div>
+      </div>
+      <!-- 포근 -->
+      <div class="card">
+        <img src="kid_head.jpg" style="width:100%;height:128px;object-fit:cover;object-position:50% 10%;">
+        <div class="cap">
+          <div class="t">포근</div>
+          <div class="d">밝고 따뜻하게 — 아역·키즈 (보호자 정보 포함)</div>
+        </div>
+      </div>
+      <!-- 품격 -->
+      <div class="card">
+        <img src="senior_head.jpg" style="width:100%;height:128px;object-fit:cover;object-position:50% 12%;">
+        <div class="cap">
+          <div class="t">품격</div>
+          <div class="d">중후한 세리프 — 시니어·연극</div>
+        </div>
+      </div>
+      <!-- 추가 예정 -->
+      <div class="card" style="border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:170px;color:#C9C7C1;gap:6px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span style="font-size:11.5px;">새 템플릿 추가 예정</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 CTA -->
+  <div style="padding:12px 20px 30px;flex-shrink:0;border-top:1px solid #F0F0EE;">
+    <div style="background:#4F46E5;border-radius:12px;padding:16px;text-align:center;color:#FFFFFF;font-size:15px;font-weight:700;">클래식으로 미리보기</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

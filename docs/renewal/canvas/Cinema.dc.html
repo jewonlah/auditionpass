@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#FAFAF7;-webkit-font-smoothing:antialiased;}
+    a{color:#A5B4FC;text-decoration:none} a:hover{color:#C7D2FE}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .num{font-variant-numeric:tabular-nums;}
+    .spec{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid #2A2A28;font-size:13px;}
+    .spec .k{width:84px;flex-shrink:0;color:#8A8A86;font-size:12px;}
+    .spec .v{color:#FAFAF7;font-weight:600;}
+    .tag{display:inline-flex;border:1px solid #3A3A38;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;color:#C9C7C1;}
+    .frow{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #2A2A28;font-size:12.5px;align-items:baseline;}
+    .frow .y{width:38px;color:#8A8A86;flex-shrink:0;}
+    .frow .w{flex:1;font-weight:600;color:#FAFAF7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .frow .r{color:#C9C7C1;flex-shrink:0;text-align:right;}
+    img{display:block;}
+  </style>
+</helmet>
+<div style="width:794px;height:1123px;background:#161615;box-sizing:border-box;padding:48px 56px 40px;display:flex;flex-direction:column;">
+
+  <!-- 헤더 -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:1px solid #3A3A38;">
+    <div>
+      <span class="mono" style="color:#A5B4FC;">Cinema · Actor Comp Card</span>
+      <div style="font-size:38px;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-top:5px;color:#FAFAF7;">[지원자 이름] <span style="font-size:15px;font-weight:600;color:#8A8A86;letter-spacing:0;">강도윤</span></div>
+      <div style="font-size:13px;color:#C9C7C1;margin-top:6px;">배우 <span style="color:#4A4A48;">|</span> 1993년생 (만 33세) · 남 · 군필 <span style="color:#4A4A48;">|</span> 서울 활동 · 전국 로케이션 가능</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="mono" style="color:#FAFAF7;">AUDITIONPASS</div>
+      <div style="font-size:10.5px;color:#8A8A86;margin-top:4px;">당신의 다음 무대</div>
+    </div>
+  </div>
+
+  <!-- 본문 -->
+  <div style="flex:1;display:flex;gap:28px;padding-top:22px;min-height:0;">
+    <!-- 좌: 시네마틱 대형 컷 -->
+    <div style="width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;">
+      <img src="cinema_head.jpg" style="width:320px;height:436px;object-fit:cover;object-position:50% 30%;border-radius:2px;">
+      <!-- 캐릭터 키워드 -->
+      <div style="border:1px solid #3A3A38;border-radius:6px;padding:12px 14px;">
+        <span class="mono" style="color:#A5B4FC;">Character</span>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">
+          <span class="tag">형사</span><span class="tag">군인</span><span class="tag">운동선수</span><span class="tag">보디가드</span><span class="tag">직장인</span>
+        </div>
+        <p style="margin:9px 0 0;font-size:11.5px;line-height:1.6;color:#8A8A86;">단단한 인상과 낮은 목소리 — 장르물의 조력자와 대립자 양쪽을 오갑니다.</p>
+      </div>
+      <div style="border:1px solid #3A3A38;border-radius:6px;padding:10px 13px;display:flex;align-items:center;gap:10px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A5B4FC" stroke-width="1.75"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="m22 7-5 4 5 4Z"/></svg>
+        <div>
+          <div class="mono" style="color:#A5B4FC;">Showreel 3:10</div>
+          <div style="font-size:11.5px;color:#C9C7C1;margin-top:2px;">액션 시퀀스 + 생활 연기 + 독백</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우: 스펙·필모 -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+      <span class="mono" style="margin-bottom:2px;">Profile</span>
+      <div class="spec"><span class="k">키 · 몸무게</span><span class="v num">180cm · 72kg</span></div>
+      <div class="spec"><span class="k">학교 · 전공</span><span class="v">서울예술대학 연기과 졸업</span></div>
+      <div class="spec"><span class="k">소속</span><span class="v">무소속 (프리랜서)</span></div>
+      <div class="spec"><span class="k">머리 · 신체</span><span class="v">투블럭 · 삭발 가능 · 문신 없음</span></div>
+      <div class="spec" style="border-bottom:none;"><span class="k">특이사항</span><span class="v">운전면허 1종 · 여권 보유</span></div>
+
+      <span class="mono" style="margin:13px 0 7px;">Skills</span>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <span class="tag">액션 스쿨 2년</span><span class="tag">검도 3단</span><span class="tag">경상도 사투리</span><span class="tag">수트 액션</span><span class="tag">오토바이</span><span class="tag">수영</span>
+      </div>
+
+      <span class="mono" style="margin:14px 0 1px;">Filmography</span>
+      <div class="frow"><span class="y num">2026</span><span class="w">OTT 시리즈 〈야행〉</span><span class="r">조연 · 형사 역</span></div>
+      <div class="frow"><span class="y num">2026</span><span class="w">장편영화 〈검은 물〉</span><span class="r">단역</span></div>
+      <div class="frow"><span class="y num">2025</span><span class="w">단편영화 〈복도 끝〉</span><span class="r">주연 (부천 상영)</span></div>
+      <div class="frow"><span class="y num">2025</span><span class="w">드라마 〈그해 우리는〉</span><span class="r">이미지 단역</span></div>
+      <div class="frow"><span class="y num">2024</span><span class="w">웹드라마 〈퇴근 후 한 잔〉</span><span class="r">조연 · 12부작</span></div>
+      <div class="frow" style="border-bottom:none;"><span class="y num">2023</span><span class="w">연극 〈보이체크〉</span><span class="r">주연</span></div>
+
+      <span class="mono" style="margin:13px 0 5px;">About</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#C9C7C1;">장르물에 강한 배우입니다. 액션 스쿨 2년 과정과 검도 3단으로 몸을 쓰는 신에 대역 없이 들어갈 수 있고, 형사·군인·운동선수 계열 캐릭터 소화 경험이 많습니다. 촬영 일정 조율이 자유롭습니다.</p>
+
+      <div style="margin-top:auto;background:#201F1E;border:1px solid #3A3A38;border-radius:6px;padding:9px 13px;font-size:11.5px;color:#C9C7C1;line-height:1.6;">
+        <span class="mono" style="margin-right:8px;color:#A5B4FC;">Awards</span> 2025 부천국제판타스틱영화제 단편 부문 상영 (〈복도 끝〉)
+      </div>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <div style="border-top:1px solid #3A3A38;margin-top:18px;padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:12px;color:#C9C7C1;">
+      <b style="color:#FAFAF7;">연락</b> actor@example.com · 010-1234-5678
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11.5px;font-weight:700;color:#A5B4FC;">auditionpass.co.kr/p/[핸들] — 최신 프로필 · 쇼릴 보기</div>
+      <div class="mono" style="margin-top:2px;">Template · Cinema — 시네마 · 사진은 AI 샘플</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
