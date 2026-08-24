@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .num{font-variant-numeric:tabular-nums;}
+    .spec{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #EEEDE9;font-size:13.5px;}
+    .spec .k{width:88px;flex-shrink:0;color:#8A8A86;font-size:12.5px;}
+    .spec .v{color:#141414;font-weight:600;}
+    .tag{display:inline-flex;border:1px solid #E7E5E0;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600;color:#4A4A48;}
+    .frow{display:flex;gap:0;padding:7px 0;border-bottom:1px solid #EEEDE9;font-size:13px;}
+    .frow .y{width:64px;color:#8A8A86;flex-shrink:0;}
+    .frow .w{flex:1;font-weight:600;}
+    .frow .r{width:170px;color:#4A4A48;flex-shrink:0;text-align:right;}
+    .ph{background:#F1F0EC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#B4B2AC;}
+  </style>
+</helmet>
+<div style="width:794px;height:1123px;background:#FFFFFF;box-sizing:border-box;padding:52px 56px 44px;display:flex;flex-direction:column;">
+
+  <!-- 헤더 -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:18px;border-bottom:2px solid #141414;">
+    <div>
+      <span class="mono">Actor · Comp Card</span>
+      <div style="font-size:40px;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-top:6px;">[지원자 이름]</div>
+      <div style="font-size:13.5px;color:#4A4A48;margin-top:6px;">배우 · 모델 <span style="color:#C9C7C1;">|</span> 2003년생 (만 22세) · 여 · 대한민국</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="mono" style="color:#4F46E5;">AUDITIONPASS</div>
+      <div style="font-size:11px;color:#8A8A86;margin-top:4px;">당신의 다음 무대</div>
+    </div>
+  </div>
+
+  <!-- 본문 2컬럼 -->
+  <div style="flex:1;display:flex;gap:32px;padding-top:26px;">
+    <!-- 좌: 사진 -->
+    <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:12px;">
+      <div class="ph" style="width:300px;height:392px;border-radius:4px;">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+        <span style="font-size:11px;">얼굴 사진 (자동 삽입)</span>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <div class="ph" style="flex:1;height:184px;border-radius:4px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="6" r="2.5"/><path d="M12 9v6M8 12h8M9.5 21l2.5-6 2.5 6"/></svg>
+          <span style="font-size:10.5px;">전신</span>
+        </div>
+        <div class="ph" style="flex:1;height:184px;border-radius:4px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg>
+          <span style="font-size:10.5px;">자유컷</span>
+        </div>
+      </div>
+      <!-- 연기 영상 -->
+      <div style="border:1px solid #E7E5E0;border-radius:6px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="1.75"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="m22 7-5 4 5 4Z"/></svg>
+        <div>
+          <div class="mono" style="color:#4F46E5;">Showreel</div>
+          <div style="font-size:12px;color:#4A4A48;margin-top:2px;">연기 영상 링크 (자동 삽입)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우: 스펙·필모 -->
+    <div style="flex:1;display:flex;flex-direction:column;">
+      <span class="mono" style="margin-bottom:4px;">Profile</span>
+      <div class="spec"><span class="k">키 · 몸무게</span><span class="v num">165cm · 48kg</span></div>
+      <div class="spec"><span class="k">학교 · 전공</span><span class="v">한국예술대 연기과 재학</span></div>
+      <div class="spec"><span class="k">소속</span><span class="v">무소속 (프리랜서)</span></div>
+      <div class="spec"><span class="k">활동 지역</span><span class="v">서울 · 경기 (상경 가능)</span></div>
+      <div class="spec" style="border-bottom:none;"><span class="k">머리 · 시력</span><span class="v">어깨선 · 염색 가능 · 나안 0.8</span></div>
+
+      <span class="mono" style="margin:18px 0 8px;">Skills</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span class="tag">부산 사투리</span><span class="tag">보컬 (소프라노)</span><span class="tag">수영</span><span class="tag">영어 회화</span><span class="tag">클라이밍</span>
+      </div>
+
+      <span class="mono" style="margin:20px 0 2px;">Filmography</span>
+      <div class="frow"><span class="y num">2026</span><span class="w">단편 〈여름끝〉</span><span class="r">주연 · 유진 역</span></div>
+      <div class="frow"><span class="y num">2025</span><span class="w">웹드라마 〈교실의 온도〉</span><span class="r">조연 · 8부작</span></div>
+      <div class="frow" style="border-bottom:none;"><span class="y num">2025</span><span class="w">뮤직비디오 (인디밴드 온도차)</span><span class="r">단독 출연</span></div>
+
+      <span class="mono" style="margin:18px 0 6px;">About</span>
+      <p style="margin:0;font-size:13px;line-height:1.75;color:#4A4A48;">카메라 앞에서 긴장하지 않고, 현장 디렉션을 빠르게 소화합니다. 생활 연기와 사투리 연기에 강점이 있고, 학교 작품과 독립 단편으로 현장 경험을 쌓았습니다. [자기소개 200자 — 프로필에서 자동 삽입]</p>
+
+      <!-- 수상 -->
+      <div style="margin-top:auto;background:#FAFAF7;border:1px solid #E7E5E0;border-radius:6px;padding:10px 14px;font-size:12px;color:#4A4A48;">
+        <span class="mono" style="margin-right:8px;">Awards</span> 2025 전국 청소년 연극제 연기상
+      </div>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <div style="border-top:1px solid #E7E5E0;margin-top:24px;padding-top:14px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:12.5px;color:#4A4A48;">
+      <b>연락</b> actor@example.com · 010-1234-5678
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:12px;font-weight:700;color:#4F46E5;">auditionpass.co.kr/p/[핸들] — 최신 프로필·영상 보기</div>
+      <div class="mono" style="margin-top:3px;">Generated 2026-08-25 · AuditionPass Comp Card v1</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

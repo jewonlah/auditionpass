@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .num{font-variant-numeric:tabular-nums;}
+    .stat{flex:1;display:flex;flex-direction:column;gap:3px;align-items:center;padding:12px 0;}
+    .stat .sv{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
+    .stat .sk{font-size:10.5px;color:#8A8A86;}
+    .ph{background:#F1F0EC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#B4B2AC;}
+    .hrow{display:flex;gap:0;padding:7px 0;border-bottom:1px solid #EEEDE9;font-size:13px;}
+    .hrow .y{width:64px;color:#8A8A86;flex-shrink:0;}
+    .hrow .w{flex:1;font-weight:600;}
+    .hrow .r{width:150px;color:#4A4A48;flex-shrink:0;text-align:right;}
+    .tag{display:inline-flex;border:1px solid #E7E5E0;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600;color:#4A4A48;}
+  </style>
+</helmet>
+<div style="width:794px;height:1123px;background:#FFFFFF;box-sizing:border-box;padding:52px 56px 44px;display:flex;flex-direction:column;">
+
+  <!-- 헤더 -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:18px;border-bottom:2px solid #141414;">
+    <div>
+      <span class="mono">Model · Comp Card</span>
+      <div style="font-size:40px;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-top:6px;">[지원자 이름]</div>
+      <div style="font-size:13.5px;color:#4A4A48;margin-top:6px;">모델 <span style="color:#C9C7C1;">|</span> 2001년생 (만 24세) · 여 · 서울 활동</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="mono" style="color:#4F46E5;">AUDITIONPASS</div>
+      <div style="font-size:11px;color:#8A8A86;margin-top:4px;">당신의 다음 무대</div>
+    </div>
+  </div>
+
+  <!-- 사진 그리드 (모델 = 사진이 주인공) -->
+  <div style="display:flex;gap:12px;padding-top:24px;">
+    <div class="ph" style="width:398px;height:500px;border-radius:4px;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="6" r="2.5"/><path d="M12 9v6M8 12h8M9.5 21l2.5-6 2.5 6"/></svg>
+      <span style="font-size:11px;">전신 사진 (자동 삽입)</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+      <div class="ph" style="flex:1;border-radius:4px;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+        <span style="font-size:10.5px;">얼굴 클로즈업</span>
+      </div>
+      <div class="ph" style="flex:1;border-radius:4px;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg>
+        <span style="font-size:10.5px;">화보·컨셉컷</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 스탯 밴드 (프로필 자동 매핑) -->
+  <div style="display:flex;border:1px solid #141414;border-radius:6px;margin-top:16px;">
+    <div class="stat"><span class="sv num">172</span><span class="sk">키 cm</span></div>
+    <div style="width:1px;background:#E7E5E0;"></div>
+    <div class="stat"><span class="sv num">52</span><span class="sk">몸무게 kg</span></div>
+    <div style="width:1px;background:#E7E5E0;"></div>
+    <div class="stat"><span class="sv num">55</span><span class="sk">상의</span></div>
+    <div style="width:1px;background:#E7E5E0;"></div>
+    <div class="stat"><span class="sv num">26</span><span class="sk">하의</span></div>
+    <div style="width:1px;background:#E7E5E0;"></div>
+    <div class="stat"><span class="sv num">245</span><span class="sk">신발 mm</span></div>
+    <div style="width:1px;background:#E7E5E0;"></div>
+    <div class="stat"><span class="sv">쇄골 아래</span><span class="sk">머리 · 염색 가능</span></div>
+  </div>
+
+  <!-- 이력 + 부가 정보 2컬럼 -->
+  <div style="flex:1;display:flex;gap:32px;padding-top:20px;">
+    <div style="flex:1.4;">
+      <span class="mono">Experience</span>
+      <div style="margin-top:4px;">
+        <div class="hrow"><span class="y num">2026</span><span class="w">아동복 브랜드 S/S 룩북</span><span class="r">메인 모델</span></div>
+        <div class="hrow"><span class="y num">2026</span><span class="w">뷰티 브랜드 SNS 캠페인</span><span class="r">제품 화보</span></div>
+        <div class="hrow" style="border-bottom:none;"><span class="y num">2025</span><span class="w">서울패션위크 (신진 디자이너)</span><span class="r">런웨이</span></div>
+      </div>
+      <span class="mono" style="display:block;margin:16px 0 6px;">Skills</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span class="tag">런웨이 워킹</span><span class="tag">피팅</span><span class="tag">표정 연기</span><span class="tag">문신 없음</span>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <span class="mono">Portfolio · SNS</span>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">
+        <div style="border:1px solid #E7E5E0;border-radius:6px;padding:10px 12px;font-size:12.5px;"><b style="color:#4F46E5;">화보 포트폴리오</b><br><span style="color:#8A8A86;">링크 자동 삽입</span></div>
+        <div style="border:1px solid #E7E5E0;border-radius:6px;padding:10px 12px;font-size:12.5px;"><b>인스타그램</b> @handle · 팔로워 1.2만<br><span style="color:#8A8A86;">광고·협찬 이력: 동종 화장품 광고 없음</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <div style="border-top:1px solid #E7E5E0;margin-top:20px;padding-top:14px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:12.5px;color:#4A4A48;">
+      <b>연락</b> model@example.com · 010-1234-5678 <span style="color:#C9C7C1;">|</span> 소속: 무소속
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:12px;font-weight:700;color:#4F46E5;">auditionpass.co.kr/p/[핸들] — 최신 프로필·화보 보기</div>
+      <div class="mono" style="margin-top:3px;">Generated 2026-08-25 · AuditionPass Comp Card v1</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
