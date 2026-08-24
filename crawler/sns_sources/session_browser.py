@@ -478,6 +478,9 @@ def _cmd_run(args) -> None:
 if __name__ == "__main__":
     import argparse
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
+    # supabase/httpx 요청 단위 INFO 로그(수천 줄) 억제 — run_local.ps1과 동일 (로그 가독성)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("login")
