@@ -1,0 +1,32 @@
+{
+  "pages": [
+    { "id": "page-flow", "name": "플로우 기획" },
+    { "id": "page-screens", "name": "화면 목업" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "서비스 플로우 v2", "x": 0, "y": 0, "w": 1600, "h": 1080, "page": "page-flow" },
+
+    { "file": "DetailCurrent.dc.html", "title": "상세 · AS-IS (현재)", "x": 0, "y": 0, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "Detail.dc.html", "title": "상세 · TO-BE (개선안)", "x": 480, "y": 0, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "ApplySheet.dc.html", "title": "지원 게이트 시트 (케이스 ⓒ)", "x": 960, "y": 0, "w": 390, "h": 844, "page": "page-screens" },
+
+    { "file": "Signup.dc.html", "title": "회원가입", "x": 0, "y": 990, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "Onboarding.dc.html", "title": "온보딩 1/3 · 분야", "x": 480, "y": 990, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "Home.dc.html", "title": "앱 홈", "x": 960, "y": 990, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "Explore.dc.html", "title": "탐색", "x": 1440, "y": 990, "w": 390, "h": 844, "page": "page-screens" },
+
+    { "file": "Applications.dc.html", "title": "지원 탭", "x": 0, "y": 1980, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "My.dc.html", "title": "MY 허브", "x": 480, "y": 1980, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "Privacy.dc.html", "title": "개인정보 처리방침", "x": 960, "y": 1980, "w": 390, "h": 844, "page": "page-screens" },
+
+    { "file": "Profile.dc.html", "title": "프로필 작성 (공통 신청폼)", "x": 0, "y": 2970, "w": 390, "h": 844, "page": "page-screens" },
+    { "file": "MailPreview.dc.html", "title": "지원 메일 미리보기", "x": 480, "y": 2970, "w": 390, "h": 844, "page": "page-screens" }
+  ],
+  "annotations": [
+    { "id": "note-asis", "x": 0, "y": -220, "w": 400, "page": "page-screens", "text": "AS-IS 문제 진단 (실데이터 그대로)\n· 제목+잘린 150자 요약이 전부 — 모집 조건이 문장 속에 뭉개짐\n· 사진 없음, 주최사 비어 있음, 마감 미상 다수\n· '원문 링크 확인' 유도 = 이탈 지점\n→ 신청률 저하의 핵심 원인" },
+    { "id": "note-tobe", "x": 480, "y": -220, "w": 400, "page": "page-screens", "text": "TO-BE 원칙 — 같은 데이터, 다른 구조\n· 요약문을 콜시트 스펙(대상·촬영·장소·페이·지원)으로 재구성 — 크롤러 규칙 추출 확장 필요\n· 출처 검증 카드로 신뢰 신호\n· 마감 미상은 '상시'로 정직하게\n· 비슷한 오디션으로 데드엔드 제거" },
+    { "id": "note-form", "x": 960, "y": 2970, "w": 400, "page": "page-screens", "text": "공통 신청폼 근거 (35_profile-apply-plan)\n활성 공고 4,484건 실측 — 공고가 묻는 정보 순위:\n나이 > 경력 > 연락처 > 키·몸무게 > 프로필 서류 > 이름 > 영상 > 자기소개 > 거주지역 > 사진\n→ 필수(지원 가능) / 기본 스펙(원클릭 준비) / 분야별 확장(컴프카드) 3계층\n메일 규격: Reply-To=지원자, 컴프카드 PDF 첨부, 같은 공고 1일 1회" },
+    { "id": "note-flow", "x": 1720, "y": 0, "w": 320, "page": "page-flow", "text": "구현 우선순위 (12_ia-userflows §7)\nP0 여정 봉합(returnTo)\nP1 5탭 골격 + /home\nP2 지원 게이트 시트 + 온보딩\nP3 SEO 랜딩 14개 + sitemap 복구" }
+  ],
+  "launch": { "view": "canvas", "page": "page-screens" }
+}

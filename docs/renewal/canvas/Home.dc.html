@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .num{font-variant-numeric:tabular-nums;}
+    .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8A8A86;font-size:11px;}
+    .tab.on{color:#4F46E5;font-weight:600;}
+  </style>
+</helmet>
+<div style="width:390px;height:844px;background:#FFFFFF;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+
+  <!-- 루트형 네브바 -->
+  <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;">
+    <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em;">오디션패스</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.75"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+  </div>
+
+  <div style="flex:1;overflow:hidden;padding:6px 20px 0;display:flex;flex-direction:column;">
+    <!-- 원클릭 오디션 — 최상단 고정 -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <h2 style="margin:0;font-size:20px;font-weight:800;letter-spacing:-0.02em;">지금 바로 지원</h2>
+        <span class="pill" style="background:#ECFDF5;color:#059669;">원클릭</span>
+      </div>
+      <span style="font-size:13px;color:#8A8A86;">전체</span>
+    </div>
+    <div style="display:flex;gap:10px;margin:0 -20px 20px;padding:0 20px 4px;overflow:hidden;">
+      <div style="min-width:250px;border:1px solid #E7E5E0;border-radius:12px;padding:15px 16px;box-shadow:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.06);">
+        <div style="display:flex;gap:5px;margin-bottom:8px;">
+          <span class="pill" style="background:#F3F4F6;color:#4A4A48;">뮤지컬</span>
+          <span class="pill num" style="background:#EEF2FF;color:#3730A3;">D-33</span>
+        </div>
+        <div style="font-size:15px;font-weight:700;line-height:1.4;margin-bottom:6px;">창작뮤지컬 [시작] 전 배역 캐스팅</div>
+        <div style="font-size:12.5px;color:#8A8A86;">콘테스트코리아 · 이메일 접수</div>
+      </div>
+      <div style="min-width:250px;border:1px solid #E7E5E0;border-radius:12px;padding:15px 16px;box-shadow:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.06);">
+        <div style="display:flex;gap:5px;margin-bottom:8px;">
+          <span class="pill" style="background:#F3F4F6;color:#4A4A48;">키즈모델</span>
+          <span class="pill num" style="background:#FFFBEB;color:#B45309;">상시</span>
+        </div>
+        <div style="font-size:15px;font-weight:700;line-height:1.4;margin-bottom:6px;">브랜드 화보 다문화 아기모델</div>
+        <div style="font-size:12.5px;color:#8A8A86;">디바엔터테인먼트 · 이메일 접수</div>
+      </div>
+    </div>
+
+    <!-- 프로필 완성도 카드 -->
+    <div style="background:#FAFAF7;border:1px solid #E7E5E0;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px;">프로필 70% — 사진 1장이면 컴프카드 완성</div>
+        <div style="height:4px;border-radius:999px;background:#E7E5E0;overflow:hidden;"><div style="width:70%;height:100%;background:#4F46E5;"></div></div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A8A86" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+
+    <!-- 마감 임박 -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">
+      <h2 style="margin:0;font-size:20px;font-weight:800;letter-spacing:-0.02em;">놓치면 아까운 마감</h2>
+      <span style="font-size:13px;color:#8A8A86;">전체</span>
+    </div>
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F0F0EE;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">단편영화 주연 배우 모집 (20대 남녀)</div>
+          <div style="font-size:12.5px;color:#8A8A86;margin-top:2px;">스레드 @cast0003_ · 이메일 접수</div>
+        </div>
+        <span class="num" style="font-size:13px;font-weight:700;color:#F59E0B;flex-shrink:0;">D-7</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F0F0EE;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">아동복 룩북 외국인 남아·여아 각 1명</div>
+          <div style="font-size:12.5px;color:#8A8A86;margin-top:2px;">네이버카페 · 서울</div>
+        </div>
+        <span class="num" style="font-size:13px;font-weight:700;color:#EF4444;flex-shrink:0;">D-2</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 0;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">KBS 〈재난포털〉 2030 남자 배우</div>
+          <div style="font-size:12.5px;color:#8A8A86;margin-top:2px;">필메코 · 사이트 지원</div>
+        </div>
+        <span class="num" style="font-size:13px;font-weight:700;color:#F59E0B;flex-shrink:0;">D-5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5탭 바 -->
+  <div style="border-top:1px solid #F0F0EE;background:#FFFFFF;padding:8px 0 24px;display:flex;flex-shrink:0;">
+    <div class="tab on">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      홈
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      탐색
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+      지원
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M8 9h8M8 13h5"/><path d="M21 12a8 8 0 1 0-3.1 6.3L21 19l-.9-3.2A8 8 0 0 0 21 12Z"/></svg>
+      커뮤니티
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6.5 6.5 0 0 1 11 0"/></svg>
+      MY
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

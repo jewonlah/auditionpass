@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#111827;-webkit-font-smoothing:antialiased;}
+    a{color:#6366F1;text-decoration:none} a:hover{color:#4F46E5}
+    .badge{display:inline-flex;align-items:center;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;}
+  </style>
+</helmet>
+<div style="width:390px;height:844px;background:#F3F4F6;display:flex;flex-direction:column;overflow:hidden;position:relative;box-sizing:border-box;">
+
+  <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:12px;">
+    <!-- 뒤로가기 -->
+    <div style="display:flex;align-items:center;gap:4px;color:#9CA3AF;font-size:14px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+      <span>뒤로가기</span>
+    </div>
+
+    <!-- 헤더 카드 -->
+    <div style="background:#FFFFFF;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.04),0 4px 16px rgba(99,102,241,0.06);">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <span class="badge" style="background:#FDF4FF;color:#A21CAF;border:1px solid #F5D0FE;">모델</span>
+        <span class="badge" style="background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;">원클릭 지원</span>
+      </div>
+      <div style="font-size:20px;font-weight:700;line-height:1.35;margin-bottom:14px;">브랜드 촬영 68~89cm 다문화아기모델 모집해요.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:#6B7280;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z"/></svg>
+          <span>네이버카페:아주모</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상세 정보 카드 — 잘린 150자 요약 -->
+    <div style="background:#FFFFFF;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.04),0 4px 16px rgba(99,102,241,0.06);">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;">상세 정보</div>
+      <p style="margin:0;font-size:14px;line-height:1.7;color:#374151;">회사명: 디바엔터테인먼트 모집 대상키 68~89cm 국내, 다문화 아기들(성별무관) 브랜드 : 추후 공개 촬영 일정: 9월 예정장소: 서울 소요 시간: 약 3시간 예정 페이: 캐스팅 후 개별 안내지원 방법이메일: divaent@naver.com...</p>
+      <p style="margin:12px 0 0;padding-top:12px;border-top:1px solid #F3F4F6;font-size:12.5px;line-height:1.6;color:#9CA3AF;">— 출처: 네이버 카페 '아주모' 게시글 (요약만 수집 — 전문·지원 방법은 원문 링크 확인)</p>
+    </div>
+
+    <!-- 원문 링크 -->
+    <div style="background:#FFFFFF;border-radius:16px;padding:15px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);font-size:14px;font-weight:600;color:#6366F1;">
+      원문 공고 보기
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+    </div>
+  </div>
+
+  <!-- 하단 고정 지원 버튼 -->
+  <div style="border-top:1px solid #F3F4F6;background:rgba(255,255,255,0.95);padding:12px 16px 28px;">
+    <div style="background:#6366F1;border-radius:12px;padding:15px;text-align:center;color:#FFFFFF;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(99,102,241,0.3);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+      원클릭 지원하기
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;}
+    .f{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F0F0EE;font-size:14px;}
+    .f:last-child{border-bottom:none;}
+    .f .k{width:84px;flex-shrink:0;color:#8A8A86;font-size:13px;}
+    .f .v{flex:1;color:#141414;font-weight:500;}
+    .f .v.empty{color:#C9C7C1;font-weight:400;}
+    .sect{border:1px solid #E7E5E0;border-radius:10px;padding:4px 14px;margin-bottom:14px;}
+    .shead{display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px;}
+    .shead .t{font-size:14px;font-weight:800;letter-spacing:-0.01em;}
+  </style>
+</helmet>
+<div style="width:390px;height:844px;background:#FFFFFF;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+
+  <!-- 태스크형 헤더 -->
+  <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid #F0F0EE;flex-shrink:0;">
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#4A4A48;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </div>
+    <span style="font-size:15px;font-weight:600;color:#4A4A48;">프로필</span>
+    <span style="font-size:15px;font-weight:700;color:#4F46E5;padding:0 16px;">저장</span>
+  </div>
+
+  <div style="flex:1;overflow:hidden;padding:14px 20px 0;">
+    <!-- 완성도 3단계 -->
+    <div style="background:#FAFAF7;border:1px solid #E7E5E0;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="mono">프로필 = 지원서</span>
+        <span style="font-size:12px;color:#4A4A48;">사진 1장이면 <b style="color:#4F46E5;">원클릭 준비 완료</b></span>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <div style="flex:1;height:4px;border-radius:999px;background:#10B981;"></div>
+        <div style="flex:1;height:4px;border-radius:999px;background:#4F46E5;"></div>
+        <div style="flex:1;height:4px;border-radius:999px;background:#E7E5E0;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10.5px;color:#8A8A86;">
+        <span style="color:#059669;font-weight:700;">지원 가능</span><span style="color:#3730A3;font-weight:700;">원클릭 준비</span><span>컴프카드</span>
+      </div>
+    </div>
+
+    <!-- 1. 지원 필수 -->
+    <div class="shead" style="margin-top:0;">
+      <span class="t">지원 필수</span>
+      <span class="pill" style="background:#ECFDF5;color:#059669;">완료</span>
+    </div>
+    <div class="sect">
+      <div class="f"><span class="k">이름</span><span class="v">[지원자 이름]</span></div>
+      <div class="f"><span class="k">출생연도</span><span class="v">2003년 · 여</span></div>
+      <div class="f"><span class="k">분야</span><span class="v">배우 · 모델</span></div>
+    </div>
+
+    <!-- 2. 표준 (공고가 가장 많이 묻는 것) -->
+    <div class="shead">
+      <span class="t">기본 스펙</span>
+      <span style="font-size:11.5px;color:#8A8A86;">공고 대부분이 묻는 정보</span>
+    </div>
+    <div class="sect">
+      <div class="f"><span class="k">연락처</span><span class="v">010-1234-5678</span></div>
+      <div class="f"><span class="k">키·몸무게</span><span class="v">165cm · 48kg</span></div>
+      <div class="f"><span class="k">활동 지역</span><span class="v">서울 · 경기</span></div>
+      <div class="f"><span class="k">경력</span><span class="v">단편 〈여름끝〉 주연 외 2편</span></div>
+      <div class="f" style="align-items:flex-start;"><span class="k" style="padding-top:4px;">사진</span>
+        <div style="display:flex;gap:8px;">
+          <div style="width:64px;height:80px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;color:#4F46E5;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+          </div>
+          <div style="width:64px;height:80px;border-radius:8px;border:1.5px dashed #C9C7C1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8A8A86;font-size:10.5px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            전신
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 분야별 확장 -->
+    <div class="shead">
+      <span class="t">배우 포트폴리오</span>
+      <span class="pill" style="background:#FFFBEB;color:#B45309;">선택</span>
+    </div>
+    <div class="sect" style="margin-bottom:0;">
+      <div class="f"><span class="k">연기 영상</span><span class="v empty">링크 추가 (유튜브·드라이브)</span></div>
+      <div class="f"><span class="k">자기소개</span><span class="v empty">200자 이내</span></div>
+    </div>
+  </div>
+
+  <!-- 하단 안내 -->
+  <div style="padding:12px 20px 30px;flex-shrink:0;">
+    <div style="font-size:11.5px;line-height:1.6;color:#8A8A86;text-align:center;">신체 정보·사진은 <b>지원서 발송 시에만</b> 캐스팅 담당자에게 전달되고,<br>탈퇴하면 즉시 삭제됩니다.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

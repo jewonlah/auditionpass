@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .num{font-variant-numeric:tabular-nums;}
+    .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;}
+    .chip{border:1px solid #E7E5E0;background:#FFFFFF;border-radius:999px;padding:8px 14px;font-size:13.5px;font-weight:600;color:#4A4A48;white-space:nowrap;}
+    .chip.on{border-color:#141414;background:#141414;color:#FAFAF7;}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8A8A86;font-size:11px;}
+    .tab.on{color:#4F46E5;font-weight:600;}
+    .li{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F0F0EE;}
+    .li-t{font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .li-m{font-size:12.5px;color:#8A8A86;margin-top:3px;display:flex;align-items:center;gap:6px;}
+  </style>
+</helmet>
+<div style="width:390px;height:844px;background:#FFFFFF;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+
+  <!-- 루트형 네브바 + 검색 -->
+  <div style="padding:10px 20px 0;flex-shrink:0;">
+    <h1 style="margin:0 0 12px;font-size:28px;font-weight:800;letter-spacing:-0.02em;">탐색</h1>
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;background:#F3F4F6;border-radius:10px;padding:11px 14px;color:#8A8A86;font-size:14px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        작품·분야·지역 검색
+      </div>
+      <div style="width:44px;height:44px;border:1px solid #E7E5E0;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#4A4A48;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 카테고리 칩 -->
+  <div style="display:flex;gap:7px;padding:14px 20px 12px;overflow:hidden;flex-shrink:0;">
+    <span class="chip on">전체</span>
+    <span class="chip">배우</span>
+    <span class="chip">모델</span>
+    <span class="chip">키즈모델</span>
+    <span class="chip">뮤지컬</span>
+    <span class="chip">가수</span>
+  </div>
+
+  <!-- 결과 헤더 -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 20px 6px;flex-shrink:0;">
+    <span class="num" style="font-size:13px;color:#8A8A86;">활성 공고 5,930건</span>
+    <span style="font-size:13px;color:#4A4A48;font-weight:600;">최신순</span>
+  </div>
+
+  <!-- 리스트 -->
+  <div style="flex:1;overflow:hidden;padding:0 20px;">
+    <div class="li">
+      <div style="flex:1;min-width:0;">
+        <div class="li-t">창작뮤지컬 [시작] 전 배역 캐스팅</div>
+        <div class="li-m"><span class="pill" style="background:#ECFDF5;color:#059669;">원클릭</span>콘테스트코리아 · 뮤지컬</div>
+      </div>
+      <span class="num" style="font-size:13px;font-weight:700;color:#4F46E5;flex-shrink:0;">D-33</span>
+    </div>
+    <div class="li">
+      <div style="flex:1;min-width:0;">
+        <div class="li-t">단편영화 주연 배우 모집 (20대 남녀)</div>
+        <div class="li-m"><span class="pill" style="background:#ECFDF5;color:#059669;">원클릭</span>스레드 · 배우</div>
+      </div>
+      <span class="num" style="font-size:13px;font-weight:700;color:#F59E0B;flex-shrink:0;">D-7</span>
+    </div>
+    <div class="li">
+      <div style="flex:1;min-width:0;">
+        <div class="li-t">KBS 〈재난포털〉 2030 남자 배우 모집</div>
+        <div class="li-m"><span class="pill" style="background:#F3F4F6;color:#6B7280;">사이트</span>필메코 · 배우</div>
+      </div>
+      <span class="num" style="font-size:13px;font-weight:700;color:#F59E0B;flex-shrink:0;">D-5</span>
+    </div>
+    <div class="li">
+      <div style="flex:1;min-width:0;">
+        <div class="li-t">브랜드 화보 다문화 아기모델 (68~89cm)</div>
+        <div class="li-m"><span class="pill" style="background:#ECFDF5;color:#059669;">원클릭</span>디바엔터테인먼트 · 키즈모델</div>
+      </div>
+      <span class="num" style="font-size:13px;font-weight:700;color:#8A8A86;flex-shrink:0;">상시</span>
+    </div>
+    <div class="li">
+      <div style="flex:1;min-width:0;">
+        <div class="li-t">국립극단 2027-28 시즌단원 오디션</div>
+        <div class="li-m"><span class="pill" style="background:#F3F4F6;color:#6B7280;">사이트</span>국립극단 · 연극</div>
+      </div>
+      <span class="num" style="font-size:13px;font-weight:700;color:#4F46E5;flex-shrink:0;">D-19</span>
+    </div>
+    <div class="li" style="border-bottom:none;">
+      <div style="flex:1;min-width:0;">
+        <div class="li-t">성균관대 〈황금산도 식후경〉 외국인 보조출연</div>
+        <div class="li-m"><span class="pill" style="background:#F3F4F6;color:#6B7280;">사이트</span>필메코 · 보조출연</div>
+      </div>
+      <span class="num" style="font-size:13px;font-weight:700;color:#EF4444;flex-shrink:0;">D-3</span>
+    </div>
+  </div>
+
+  <!-- 5탭 바 -->
+  <div style="border-top:1px solid #F0F0EE;background:#FFFFFF;padding:8px 0 24px;display:flex;flex-shrink:0;">
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      홈
+    </div>
+    <div class="tab on">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      탐색
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+      지원
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M8 9h8M8 13h5"/><path d="M21 12a8 8 0 1 0-3.1 6.3L21 19l-.9-3.2A8 8 0 0 0 21 12Z"/></svg>
+      커뮤니티
+    </div>
+    <div class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6.5 6.5 0 0 1 11 0"/></svg>
+      MY
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

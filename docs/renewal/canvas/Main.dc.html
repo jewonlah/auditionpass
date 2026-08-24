@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    :root{--paper:#FAFAF7;--surface:#FFFFFF;--ink:#141414;--ink70:#4A4A48;--ink40:#8A8A86;--line:#E7E5E0;--primary:#4F46E5;--primary-ink:#3730A3;--success:#10B981;--warning:#F59E0B;--danger:#EF4444;}
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .card{background:#FFFFFF;border:1px solid #E7E5E0;border-radius:8px;padding:18px 20px;box-shadow:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.06);}
+    .step-title{font-size:17px;font-weight:700;letter-spacing:-0.02em;margin:6px 0 10px;}
+    .bul{font-size:13px;line-height:1.65;color:#4A4A48;margin:0;padding:0;list-style:none;}
+    .bul li{padding-left:14px;position:relative;}
+    .bul li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:#C9C7C1;}
+    .chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;}
+    .subbox{border:1px solid #E7E5E0;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.5;color:#4A4A48;background:#FAFAF7;}
+    .arrow{display:flex;align-items:center;justify-content:center;color:#8A8A86;flex-shrink:0;width:36px;}
+  </style>
+</helmet>
+<div style="width:1600px;min-height:1080px;background:#FAFAF7;box-sizing:border-box;padding:44px 48px 40px;display:flex;flex-direction:column;gap:28px;">
+
+  <!-- 헤더 -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid #E7E5E0;padding-bottom:18px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <span class="mono">AUDITIONPASS · SERVICE FLOW · V2</span>
+      <h1 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-0.03em;">서비스 전체 플로우 — 가입부터 개인정보까지</h1>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+      <span class="mono">기준 문서 12_IA-USERFLOWS · 2026-08-25</span>
+      <span style="font-size:13px;color:#4A4A48;">원칙: 여정은 끊기지 않는다(returnTo) · 지원은 1급 시민 · 게이트는 그 자리 위의 시트</span>
+    </div>
+  </div>
+
+  <!-- 스파인 1행: 유입 → 가입 → 온보딩 → 홈 -->
+  <div style="display:flex;align-items:stretch;gap:0;">
+    <div class="card" style="flex:1;">
+      <span class="mono">Step 01 · 유입</span>
+      <div class="step-title">비로그인 표면 (SEO 자산)</div>
+      <ul class="bul">
+        <li>랜딩 <b>/</b> — 콜시트 에디토리얼</li>
+        <li>검색 유입 → 카테고리 랜딩 ×14</li>
+        <li>SNS(인스타·스레드) 프로필 링크</li>
+        <li>공고 상세는 비로그인도 전부 공개</li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">숨기지 않는다 — 콘텐츠는 열고, <b>쓰기 행동만</b> 게이트</div>
+    </div>
+    <div class="arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="card" style="flex:1;">
+      <span class="mono">Step 02 · 회원가입</span>
+      <div class="step-title">구글 OAuth 원탭</div>
+      <ul class="bul">
+        <li>구글로 계속하기(주) · 이메일(보조)</li>
+        <li>이메일 더블 옵트인 제거 → 이탈 0</li>
+        <li><b>returnTo</b> 파라미터로 진입 맥락 보존</li>
+        <li>약관·개인정보 동의는 가입 화면에서 1회</li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">지원 의도는 <b>?apply=1</b>로 세션 넘어 보존</div>
+    </div>
+    <div class="arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="card" style="flex:1;">
+      <span class="mono">Step 03 · 온보딩 (3스텝 · 스킵 가능)</span>
+      <div class="step-title">3분 만에 지원 가능 상태로</div>
+      <ul class="bul">
+        <li><b>①</b> 분야 선택 — 14카테고리 다중 선택</li>
+        <li><b>②</b> 미니 프로필 — 이름·출생연도·성별</li>
+        <li><b>③</b> 첫 추천 3~5건 + "바로 지원 가능"</li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">스킵 시 홈 <b>완성도 카드</b>가 잔여 스텝 회수 · returnTo 있으면 원래 공고로 복귀</div>
+    </div>
+    <div class="arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="card" style="flex:1;border-color:#4F46E5;">
+      <span class="mono" style="color:#4F46E5;">Step 04 · 앱 홈 /home</span>
+      <div class="step-title">개인화 허브 (로그인 착지점)</div>
+      <ul class="bul">
+        <li><b>원클릭 오디션 — 최상단 상시 고정</b></li>
+        <li>프로필 완성도 카드</li>
+        <li>마감 임박 · 내 분야 신규</li>
+        <li>지원 현황 요약</li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">5탭: 홈 · 탐색 · 지원 · 커뮤니티 · MY</div>
+    </div>
+  </div>
+
+  <!-- 스파인 2행: 탐색·상세 → 지원 게이트 → 지원 후 → MY·개인정보 -->
+  <div style="display:flex;align-items:stretch;gap:0;">
+    <div class="card" style="flex:1;">
+      <span class="mono">Step 05 · 탐색 → 상세</span>
+      <div class="step-title">공고 이해 → 지원 결정</div>
+      <ul class="bul">
+        <li>검색 + 카테고리 칩 + 필터 바텀시트</li>
+        <li>무한스크롤 · 뒤로가기 스크롤 보존</li>
+        <li>상세: D-day·검증 배지·<b>구조화 정보</b></li>
+        <li>마감 공고엔 "비슷한 오디션" 3건</li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">상세 개선안 — 화면 목업 페이지 AS-IS/TO-BE 비교 참조</div>
+    </div>
+    <div class="arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="card" style="flex:1.25;border-color:#10B981;">
+      <span class="mono" style="color:#059669;">Step 06 · 지원 게이트 바텀시트</span>
+      <div class="step-title">이탈 0 — 그 자리에서 지원</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="subbox"><b>ⓐ 비로그인</b> → 시트 안에서 구글 로그인 → returnTo 복귀 → 시트 자동 재오픈</div>
+        <div class="subbox"><b>ⓑ 프로필 부족</b> → 부족 필드만 인라인 입력 → 즉시 지원 진행</div>
+        <div class="subbox"><b>ⓒ 완비</b> → 프로필 요약 확인 → <b>지원서 발송</b> (R2: 컴프카드 첨부)</div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:#4A4A48;">금지: 에러 토스트 + 강제 리다이렉트. 게이트는 반드시 현재 화면 위의 시트.</div>
+    </div>
+    <div class="arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="card" style="flex:1;">
+      <span class="mono">Step 07 · 지원 후</span>
+      <div class="step-title">지원 탭 /applications</div>
+      <ul class="bul">
+        <li>완료 시트: "지원 내역" · "비슷한 오디션"</li>
+        <li>상태칩: 발송됨 → 열람됨 → 회신</li>
+        <li>세그먼트: 지원함 / 찜</li>
+        <li>엠티 상태 → "다음 무대 찾기" 추천</li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">지원자 보드 /board/[token] — CD가 메일 링크로 열람(noindex)</div>
+    </div>
+    <div class="arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="card" style="flex:1;">
+      <span class="mono">Step 08 · MY · 개인정보</span>
+      <div class="step-title">계정·설정 허브 /my</div>
+      <ul class="bul">
+        <li>프로필 2섹션: 지원 필수 / 포트폴리오</li>
+        <li>상태 배지: "지원 가능 ✓ / 컴프카드"</li>
+        <li>내가 쓴 글 · 공지 · FAQ · 약관</li>
+        <li><b>개인정보 처리방침 · 계정 삭제</b></li>
+      </ul>
+      <div style="margin-top:10px;" class="subbox">로그아웃은 MY 하단에만 · 삭제는 중앙 모달 confirm</div>
+    </div>
+  </div>
+
+  <!-- 하단: 시스템 규칙 3 + 상태 매트릭스 -->
+  <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:20px;">
+    <div class="card" style="background:#161615;border-color:#161615;color:#FAFAF7;">
+      <span class="mono" style="color:#9E9C96;">Rule · returnTo</span>
+      <div class="step-title" style="color:#FAFAF7;">여정 봉합 시스템</div>
+      <p style="margin:0;font-size:12.5px;line-height:1.65;color:#C9C7C1;">내부 경로만 허용(오픈 리다이렉트 방어). 가입→온보딩→복귀까지 릴레이. 폴백: 로그인=<b style="color:#FAFAF7;">/home</b> · 신규=온보딩 · 로그아웃=랜딩. /auditions를 폴백으로 쓰지 않는다.</p>
+    </div>
+    <div class="card">
+      <span class="mono">Rule · 게이트 UI</span>
+      <div class="step-title">시트 vs 모달 vs 페이지</div>
+      <p style="margin:0;font-size:12.5px;line-height:1.65;color:#4A4A48;"><b>바텀시트</b> = 맥락 유지 짧은 입력(지원 게이트·필터·로그인 유도) · <b>모달</b> = 파괴적 확인만(삭제·로그아웃·탈퇴) · <b>페이지</b> = 3필드 초과 독립 태스크(프로필 편집·글쓰기·온보딩)</p>
+    </div>
+    <div class="card">
+      <span class="mono">Rule · 상태 × 노출</span>
+      <div class="step-title">비로그인 매트릭스</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#4A4A48;">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #F0F0EE;padding-bottom:5px;"><span>탐색·상세·커뮤니티 읽기</span><span class="chip" style="background:#ECFDF5;color:#059669;">공개</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #F0F0EE;padding-bottom:5px;"><span>지원·찜·댓글·MY</span><span class="chip" style="background:#EEF2FF;color:#3730A3;">시트 ⓐ</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>죽은 버튼(무반응)</span><span class="chip" style="background:#FEF2F2;color:#DC2626;">전면 금지</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <span class="mono">Rule · 개인정보</span>
+      <div class="step-title">수집 최소화 원칙</div>
+      <p style="margin:0;font-size:12.5px;line-height:1.65;color:#4A4A48;">지원 필수 = 이름·출생연도·성별·분야 4개뿐. 포트폴리오는 선택. 처리방침에 수집 항목·보유 기간·제3자 제공(발송 메일의 수신 CD) 명시 + <b>계정 삭제 셀프서비스</b> 제공.</p>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

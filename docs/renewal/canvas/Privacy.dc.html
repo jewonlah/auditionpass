@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    h3{margin:0 0 8px;font-size:15px;font-weight:700;}
+    p{margin:0;font-size:14px;line-height:1.7;color:#4A4A48;}
+    .sec{padding:13px 0;border-bottom:1px solid #F0F0EE;}
+    .trow{display:flex;font-size:13px;line-height:1.55;padding:6px 0;border-bottom:1px solid #F0F0EE;}
+    .trow:last-child{border-bottom:none;}
+    .trow .k{width:80px;flex-shrink:0;color:#8A8A86;}
+    .trow .v{color:#141414;}
+  </style>
+</helmet>
+<div style="width:390px;height:844px;background:#FFFFFF;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+
+  <!-- 상세형 네브바 -->
+  <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid #F0F0EE;flex-shrink:0;">
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#141414;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <span style="font-size:15px;font-weight:600;color:#4A4A48;">개인정보 처리방침</span>
+    <div style="width:44px;"></div>
+  </div>
+
+  <div style="flex:1;overflow:hidden;padding:20px;">
+    <span class="mono">Privacy · 시행 2026-09-01</span>
+    <h1 style="margin:8px 0 4px;font-size:22px;font-weight:800;letter-spacing:-0.02em;">꼭 필요한 것만 받고,<br>어디에 쓰는지 말씀드려요</h1>
+
+    <div class="sec">
+      <h3>1. 수집하는 정보</h3>
+      <div style="border:1px solid #E7E5E0;border-radius:8px;padding:4px 14px;margin-top:4px;">
+        <div class="trow"><span class="k">가입 시 (필수)</span><span class="v">이메일, 이름, 출생연도, 성별, 활동 분야</span></div>
+        <div class="trow"><span class="k">프로필 (선택)</span><span class="v">사진, 신체 정보, 경력, SNS 링크, 소속사</span></div>
+        <div class="trow"><span class="k">자동 수집</span><span class="v">접속 기록, 기기 정보 (안정 운영 목적)</span></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>2. 이렇게 사용해요</h3>
+      <p>오디션 지원 시 <b>지원자 본인이 발송을 확인한 경우에만</b> 프로필과 사진이 공고의 캐스팅 담당자 이메일로 전달됩니다. 그 외 목적의 제3자 제공은 없습니다.</p>
+    </div>
+
+    <div class="sec">
+      <h3>3. 보관과 삭제</h3>
+      <p>탈퇴 즉시 프로필·지원 이력은 삭제됩니다. 법령상 보관 의무가 있는 기록(전자상거래 등)만 해당 기간 동안 분리 보관됩니다.</p>
+    </div>
+
+    <div class="sec" style="border-bottom:none;">
+      <h3>4. 문의</h3>
+      <p>개인정보 보호책임자 · support@auditionpass.co.kr</p>
+    </div>
+
+    <!-- 계정 삭제 셀프서비스 -->
+    <div style="border:1px solid #E7E5E0;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;margin-top:8px;">
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:2px;">계정 삭제</div>
+        <div style="font-size:12.5px;color:#8A8A86;">모든 프로필·지원 이력이 즉시 삭제됩니다</div>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:#EF4444;flex-shrink:0;">삭제하기</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
