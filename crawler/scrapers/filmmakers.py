@@ -116,6 +116,7 @@ class FilmmakersScraper(BaseScraper):
 
         if not href:
             return None
+        href = href.replace("\\/", "/")  # onclick 속성이 JSON 이스케이프(\/)된 URL을 담고 있음
         if not href.startswith("http"):
             href = self.base_url + ("" if href.startswith("/") else "/") + href
 
