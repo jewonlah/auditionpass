@@ -1,0 +1,271 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { getAdminGate } from "@/lib/admin/auth";
+import { createAdminServiceClient } from "@/lib/admin/service";
+
+export const dynamic = "force-dynamic";
+
+// 오늘 홈 (39 §1 ①): "행동 필요한 것"만 4분면 — 마감 임박 pending / quarantine 신규 /
+// 소스 상태(3일 무저장) / 3일+ 묵은 pending. 상태 지표는 하단 축소.
+
+interface SlimRow {
+  id: string;
+  title: string;
+  source_name: string | null;
+  deadline: string | null;
+  created_at: string;
+}
+
+function dday(deadline: string | null): string {
+  if (!deadline) return "상시";
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const diff = Math.round(
+    (new Date(deadline).getTime() - new Date(today).getTime()) / 86400000
+  );
+  return diff === 0 ? "D-Day" : diff > 0 ? `D-${diff}` : `마감+${-diff}`;
+}
+
+export default async function AdminTodayPage() {
+  const gate = await getAdminGate();
+  if (gate.status === "anon") redirect("/login?returnTo=/admin");
+  if (gate.status === "forbidden") notFound();
+
+  const supabase = createAdminServiceClient();
+  const now = Date.now();
+  const kstDate = new Date(now + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const soon = new Date(new Date(kstDate).getTime() + 3 * 86400000)
+    .toISOString()
+    .slice(0, 10);
+  const threeDaysAgo = new Date(now - 3 * 86400000).toISOString();
+  const oneDayAgo = new Date(now - 86400000).toISOString();
+
+  const [
+    urgent,
+    quarantineRecent,
+    quarantineCount,
+    stalePending,
+    pendingCount,
+    activeCount,
+    new24h,
+    crawlLogs,
+    actions24h,
+  ] = await Promise.all([
+    supabase
+      .from("auditions")
+      .select("id, title, source_name, deadline, created_at")
+      .eq("review_status", "pending")
+      .not("deadline", "is", null)
+      .gte("deadline", kstDate)
+      .lte("deadline", soon)
+      .order("deadline", { ascending: true })
+      .limit(7),
+    supabase
+      .from("auditions")
+      .select("id, title, source_name, deadline, created_at")
+      .eq("review_status", "quarantine")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("auditions")
+      .select("id", { count: "exact", head: true })
+      .eq("review_status", "quarantine"),
+    supabase
+      .from("auditions")
+      .select("id, title, source_name, deadline, created_at")
+      .eq("review_status", "pending")
+      .lt("created_at", threeDaysAgo)
+      .limit(500),
+    supabase
+      .from("auditions")
+      .select("id", { count: "exact", head: true })
+      .eq("review_status", "pending"),
+    supabase
+      .from("auditions")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabase
+      .from("auditions")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", oneDayAgo),
+    supabase
+      .from("crawl_logs")
+      .select("source_name, run_date, total_saved")
+      .order("run_date", { ascending: false })
+      .limit(300),
+    supabase
+      .from("admin_actions")
+      .select("id", { count: "exact", head: true })
+      .eq("action", "approve")
+      .gte("created_at", oneDayAgo),
+  ]);
+
+  const urgentRows = (urgent.data ?? []) as SlimRow[];
+  const quarantineRows = (quarantineRecent.data ?? []) as SlimRow[];
+
+  // 3일+ pending을 출처별 집계
+  const staleBySource = new Map<string, number>();
+  for (const r of (stalePending.data ?? []) as SlimRow[]) {
+    const key = (r.source_name ?? "출처 미상").split(":")[0].trim();
+    staleBySource.set(key, (staleBySource.get(key) ?? 0) + 1);
+  }
+  const staleTop = [...staleBySource.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const staleTotal = (stalePending.data ?? []).length;
+
+  // 소스 상태: 최근 crawl_logs에서 소스별 마지막 저장>0 날짜 → 3일+ 무저장 소스
+  let sourceAlerts: { source: string; lastSaved: string | null }[] = [];
+  const crawlLogsUnavailable = Boolean(crawlLogs.error);
+  if (!crawlLogsUnavailable) {
+    const lastSaved = new Map<string, string>();
+    const seen = new Set<string>();
+    for (const l of (crawlLogs.data ?? []) as {
+      source_name: string;
+      run_date: string;
+      total_saved: number;
+    }[]) {
+      seen.add(l.source_name);
+      if (l.total_saved > 0 && !lastSaved.has(l.source_name)) {
+        lastSaved.set(l.source_name, l.run_date);
+      }
+    }
+    const cutoff = new Date(new Date(kstDate).getTime() - 3 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    sourceAlerts = [...seen]
+      .map((s) => ({ source: s, lastSaved: lastSaved.get(s) ?? null }))
+      .filter((s) => !s.lastSaved || s.lastSaved < cutoff)
+      .slice(0, 5);
+  }
+
+  const mono =
+    "font-mono text-[10.5px] font-semibold tracking-[0.08em] text-[#8A8A86] uppercase";
+  const card = "rounded-[10px] border border-[#E7E5E0] bg-white shadow-sm";
+  const cardHead =
+    "flex items-center gap-2 border-b border-[#F0F0EE] px-4 py-3 text-sm font-bold";
+  const row =
+    "flex items-baseline gap-3 border-b border-[#F0F0EE] px-4 py-2.5 text-[13.5px] last:border-b-0";
+  const pill = (cls: string) =>
+    `inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${cls}`;
+
+  return (
+    <main className="flex flex-col gap-4 p-5 lg:p-7">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-[22px] font-extrabold tracking-tight">
+          오늘 — 행동이 필요한 것
+        </h1>
+        <span className={mono}>{kstDate}</span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {/* 1. 마감 임박 pending */}
+        <section className={card}>
+          <div className={cardHead}>
+            <span className={pill("bg-[#FEF2F2] text-[#DC2626]")}>{urgentRows.length}</span>
+            마감 임박 pending — 오늘 승인 안 하면 죽는 공고
+            <Link href="/admin/queue" className="ml-auto text-[12.5px] font-bold text-primary">
+              큐에서 열기 →
+            </Link>
+          </div>
+          {urgentRows.length === 0 && (
+            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">3일 내 마감 pending 없음</p>
+          )}
+          {urgentRows.map((r) => (
+            <div key={r.id} className={row}>
+              <span className="w-12 shrink-0 font-bold text-[#EF4444] tabular-nums">
+                {dday(r.deadline)}
+              </span>
+              <span className="min-w-0 truncate">{r.title}</span>
+              <span className="ml-auto shrink-0 text-[12px] text-[#8A8A86]">
+                {r.source_name?.split(":")[0]}
+              </span>
+            </div>
+          ))}
+        </section>
+
+        {/* 2. quarantine 신규 */}
+        <section className={card}>
+          <div className={cardHead}>
+            <span className={pill("bg-[#FEF2F2] text-[#DC2626]")}>
+              {quarantineCount.count ?? 0}
+            </span>
+            격리(quarantine) — 확인 필요
+          </div>
+          {quarantineRows.length === 0 && (
+            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">격리된 공고 없음</p>
+          )}
+          {quarantineRows.map((r) => (
+            <div key={r.id} className={row}>
+              <span className="min-w-0 truncate">{r.title}</span>
+              <span className="ml-auto shrink-0 text-[12px] text-[#8A8A86]">
+                {r.source_name?.split(":")[0]} · {r.created_at.slice(0, 10)}
+              </span>
+            </div>
+          ))}
+        </section>
+
+        {/* 3. 소스 상태 */}
+        <section className={card}>
+          <div className={cardHead}>
+            <span className={pill("bg-[#FFFBEB] text-[#B45309]")}>{sourceAlerts.length}</span>
+            소스 상태 — 3일+ 무저장
+          </div>
+          {crawlLogsUnavailable ? (
+            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">
+              crawl_logs 테이블 조회 불가 — 008/010 마이그레이션 라이브 적용 확인 필요
+            </p>
+          ) : sourceAlerts.length === 0 ? (
+            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">모든 소스 정상 저장 중</p>
+          ) : (
+            sourceAlerts.map((s) => (
+              <div key={s.source} className={row}>
+                <span>{s.source}</span>
+                <span className="ml-auto text-[12.5px] text-[#8A8A86]">
+                  {s.lastSaved ? `마지막 저장 ${s.lastSaved}` : "저장 이력 없음"}
+                </span>
+              </div>
+            ))
+          )}
+        </section>
+
+        {/* 4. 3일+ 묵은 pending */}
+        <section className={card}>
+          <div className={cardHead}>
+            <span className={pill("bg-[#EEF2FF] text-[#3730A3]")}>{staleTotal}</span>
+            3일+ 묵은 pending — 출처별
+            <Link href="/admin/queue" className="ml-auto text-[12.5px] font-bold text-primary">
+              큐에서 열기 →
+            </Link>
+          </div>
+          {staleTop.length === 0 && (
+            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">묵은 pending 없음</p>
+          )}
+          {staleTop.map(([source, count]) => (
+            <div key={source} className={row}>
+              <span>{source}</span>
+              <span className="ml-auto tabular-nums text-[#8A8A86]">{count}건</span>
+            </div>
+          ))}
+        </section>
+      </div>
+
+      {/* 하단 상태 지표 (축소) */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-[10px] border border-[#E7E5E0] bg-white px-4 py-3 text-[12.5px] text-[#4A4A48]">
+        <span className={mono}>상태</span>
+        <span>
+          활성 <b className="tabular-nums">{activeCount.count ?? 0}</b>
+        </span>
+        <span>
+          24h 신규 <b className="tabular-nums">{new24h.count ?? 0}</b>
+        </span>
+        <span>
+          24h 승인 <b className="tabular-nums">{actions24h.count ?? 0}</b>
+        </span>
+        <span>
+          검수 백로그 <b className="tabular-nums">{pendingCount.count ?? 0}</b>
+        </span>
+        <span>
+          격리 <b className="tabular-nums">{quarantineCount.count ?? 0}</b>
+        </span>
+      </div>
+    </main>
+  );
+}

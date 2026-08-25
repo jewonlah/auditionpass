@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 // Next.js 16: middleware 컨벤션이 proxy로 개명됨 (기능 동일)
-const PROTECTED_ROUTES = ["/home", "/applications", "/profile", "/my"];
+const PROTECTED_ROUTES = ["/home", "/applications", "/profile", "/my", "/admin"];
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
@@ -52,5 +52,7 @@ export const config = {
     "/applications/:path*",
     "/profile/:path*",
     "/my/:path*",
+    "/admin/:path*",
+    "/admin",
   ],
 };
