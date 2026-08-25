@@ -10,10 +10,11 @@ import { evaluateSingle } from "@/lib/admin/queue";
 // 승인 = 게시만(publish only). 원클릭·trust 승격은 이 API에 없음 (승인 범위 3분리).
 
 type ActionBody = {
-  action: "approve" | "reject" | "quarantine" | "unpublish" | "undo";
+  action: "approve" | "reject" | "quarantine" | "unpublish" | "undo" | "merge";
   auditionId?: string;
   actionId?: number;
   confirmed?: boolean;
+  targetId?: string; // merge: 승자(남길 공고) id
 };
 
 // unpublish(게시중지)는 pending으로 내려 재검토 대열로 보낸다 (R1b 긴급 쓰기).
@@ -85,6 +86,79 @@ export async function POST(req: Request) {
           .eq("id", original.id);
       }
       return NextResponse.json({ success: true });
+    }
+
+    // merge (39 §2 `3`키): 현재 카드(패자)를 rejected로 내리고, 승자의 빈 핵심 필드를 백필.
+    // undo는 패자 상태만 복원 — 승자 백필은 note에 기록되고 유지된다.
+    if (body.action === "merge") {
+      if (!body.auditionId || !body.targetId || body.auditionId === body.targetId) {
+        return NextResponse.json({ error: "auditionId와 targetId가 필요합니다." }, { status: 400 });
+      }
+      const [{ data: loser }, { data: winner }] = await Promise.all([
+        supabase.from("auditions").select("*").eq("id", body.auditionId).maybeSingle(),
+        supabase.from("auditions").select("*").eq("id", body.targetId).maybeSingle(),
+      ]);
+      if (!loser || !winner) {
+        return NextResponse.json({ error: "공고를 찾을 수 없습니다." }, { status: 404 });
+      }
+      // dedup-lite 기준과 동일: 같은 지원 이메일끼리만 병합
+      if (!loser.apply_email || loser.apply_email !== winner.apply_email) {
+        return NextResponse.json(
+          { error: "지원 이메일이 다른 공고는 병합할 수 없습니다." },
+          { status: 409 }
+        );
+      }
+
+      const backfill: Record<string, unknown> = {};
+      for (const field of ["deadline", "requirements", "description", "company"]) {
+        if (!winner[field] && loser[field]) backfill[field] = loser[field];
+      }
+      if (Object.keys(backfill).length > 0) {
+        const { error: backfillError } = await supabase
+          .from("auditions")
+          .update(backfill)
+          .eq("id", winner.id);
+        if (backfillError) {
+          return NextResponse.json(
+            { error: `승자 백필 실패: ${backfillError.message}` },
+            { status: 500 }
+          );
+        }
+      }
+
+      const prev = { review_status: loser.review_status, is_active: loser.is_active };
+      const next = { review_status: "rejected", is_active: false };
+      const { error: mergeError } = await supabase
+        .from("auditions")
+        .update(next)
+        .eq("id", loser.id);
+      if (mergeError) {
+        return NextResponse.json({ error: `병합 실패: ${mergeError.message}` }, { status: 500 });
+      }
+
+      const backfilled = Object.keys(backfill);
+      const { data: logRow, error: logError } = await supabase
+        .from("admin_actions")
+        .insert({
+          actor_email: admin,
+          action: "merge",
+          audition_id: loser.id,
+          audition_title: loser.title,
+          prev,
+          next,
+          note:
+            `merge → ${winner.id} (${String(winner.title).slice(0, 40)})` +
+            (backfilled.length ? ` · 백필: ${backfilled.join(",")}` : ""),
+        })
+        .select("id")
+        .maybeSingle();
+
+      return NextResponse.json({
+        success: true,
+        actionId: logRow?.id ?? null,
+        backfilled,
+        ...(logError ? { logWarning: "액션 로그 기록 실패 — 013 마이그레이션 적용 여부 확인" } : {}),
+      });
     }
 
     // approve / reject / quarantine / unpublish

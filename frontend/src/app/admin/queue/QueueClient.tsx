@@ -45,6 +45,8 @@ const ACTION_LABEL: Record<string, string> = {
   approve: "승인",
   reject: "거절",
   quarantine: "격리",
+  unpublish: "게시중지",
+  merge: "병합",
   undo: "되돌림",
 };
 
@@ -79,6 +81,7 @@ export function QueueClient() {
     input: "",
     error: null,
   });
+  const [mergeOpen, setMergeOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -162,6 +165,52 @@ export function QueueClient() {
     [current, busy, items.length]
   );
 
+  // 병합 (39 §2 `3`키): 현재 카드를 패자로, 선택한 dedup 후보를 승자로
+  const merge = useCallback(
+    async (targetId: string) => {
+      if (!current || busy) return;
+      setBusy(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "merge", auditionId: current.id, targetId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "병합 실패");
+        setMergeOpen(false);
+        setItems((prev) => prev.filter((it) => it.id !== current.id));
+        setIdx((prev) => Math.min(prev, Math.max(0, items.length - 2)));
+        setProcessed((p) => p + 1);
+        if (data.actionId) {
+          setRecent((prev) => [
+            {
+              id: data.actionId,
+              action: "merge",
+              audition_id: current.id,
+              audition_title: current.title,
+              undone_by: null,
+              created_at: new Date().toISOString(),
+            },
+            ...prev,
+          ]);
+        }
+        if (data.logWarning) setError(data.logWarning);
+        showToast(
+          data.actionId,
+          `병합 — ${current.title}` +
+            (data.backfilled?.length ? ` (승자에 ${data.backfilled.join(",")} 백필)` : "")
+        );
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "병합 실패");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [current, busy, items.length]
+  );
+
   const undo = useCallback(
     async (actionId: number) => {
       if (busy) return;
@@ -192,13 +241,16 @@ export function QueueClient() {
       const target = e.target as HTMLElement;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (bulk.open) return;
+      if (bulk.open || mergeOpen) return;
       switch (e.key) {
         case "1":
           act("approve");
           break;
         case "2":
           act("reject");
+          break;
+        case "3":
+          if (current && current.gate.dedup.length > 0) setMergeOpen(true);
           break;
         case "4":
           act("quarantine");
@@ -219,7 +271,7 @@ export function QueueClient() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [act, undo, current, items.length, recent, bulk.open]);
+  }, [act, undo, current, items.length, recent, bulk.open, mergeOpen]);
 
   const safeCount = items.filter((i) => i.gate.decision === "SAFE").length;
 
@@ -422,14 +474,23 @@ export function QueueClient() {
               {/* dedup 후보 — 있으면 승인보다 강조 */}
               {current.gate.dedup.length > 0 && (
                 <div className="mb-3 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-4 py-2.5 text-[12.5px] text-[#4A4A48]">
-                  <b className="text-[#B45309]">중복 후보 {current.gate.dedup.length}건 (동일 지원 이메일)</b>
+                  <div className="flex items-baseline gap-2">
+                    <b className="text-[#B45309]">중복 후보 {current.gate.dedup.length}건 (동일 지원 이메일)</b>
+                    <button
+                      onClick={() => setMergeOpen(true)}
+                      className="ml-auto hidden font-bold text-primary lg:inline"
+                      disabled={busy}
+                    >
+                      병합 (3)
+                    </button>
+                  </div>
                   {current.gate.dedup.slice(0, 3).map((d) => (
                     <div key={d.id} className="mt-1">
                       · {d.title} — {d.review_status}
                       {d.deadline ? ` · 마감 ${d.deadline}` : ""}
                     </div>
                   ))}
-                  <div className="mt-1 text-[11.5px] text-[#8A8A86]">병합 확정(3)은 R1b — 지금은 원문 대조 후 거절/승인으로 처리</div>
+                  <div className="mt-1 text-[11.5px] text-[#8A8A86]">병합 = 현재 카드를 거절하고 선택한 공고를 남긴다 (빈 필드 백필)</div>
                 </div>
               )}
 
@@ -531,10 +592,10 @@ export function QueueClient() {
           </span>
           <div className="mt-2.5 flex flex-col gap-1.5 text-[12.5px] text-[#4A4A48]">
             <div>1 승인 (SAFE만 즉시)</div>
-            <div>2 거절 · 4 격리</div>
+            <div>2 거절 · 3 병합 · 4 격리</div>
             <div>5 원문 · s 스킵</div>
             <div>u 되돌리기</div>
-            <div className="text-[#C9C7C1]">3 병합 (R1b) · o 원클릭 (M2)</div>
+            <div className="text-[#C9C7C1]">o 원클릭 (M2)</div>
           </div>
         </div>
         <div className="flex-1 rounded-[10px] border border-[#E7E5E0] bg-white px-4 py-3.5">
@@ -574,6 +635,45 @@ export function QueueClient() {
           목표 60건/30분 페이스
         </div>
       </aside>
+
+      {/* 병합 모달 (39 §2 `3`키) — 승자 선택 → 현재 카드 거절 + 승자 백필 */}
+      {mergeOpen && current && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-[#E7E5E0] bg-white p-5 shadow-lg">
+            <h3 className="text-[15px] font-extrabold">병합 — 남길 공고 선택</h3>
+            <p className="mt-1.5 text-[12.5px] text-[#8A8A86]">
+              현재 카드 「{current.title}」는 <b className="text-[#DC2626]">거절 처리</b>되고, 선택한
+              공고에 빈 핵심 필드(마감·제출물·본문·주최)가 백필된다. 되돌리기는 현재 카드 상태만
+              복원한다.
+            </p>
+            <div className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto">
+              {current.gate.dedup.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => merge(d.id)}
+                  disabled={busy}
+                  className="rounded-lg border border-[#E7E5E0] px-3.5 py-2.5 text-left text-[13px] hover:border-primary hover:bg-[#EEF2FF] disabled:opacity-50"
+                >
+                  <b className="line-clamp-1">{d.title}</b>
+                  <span className="text-[12px] text-[#8A8A86]">
+                    {d.review_status}
+                    {["approved", "auto"].includes(d.review_status) ? " · 게재 중" : ""}
+                    {d.deadline ? ` · 마감 ${d.deadline}` : " · 마감 없음"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 text-right">
+              <button
+                onClick={() => setMergeOpen(false)}
+                className="rounded-lg border border-[#E7E5E0] px-4 py-2 text-[13.5px] font-semibold"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 일괄 승인 모달 — 건수 숫자 직접 입력 확인 (39 §3) */}
       {bulk.open && bulkSource && (

@@ -5,7 +5,7 @@
 create table if not exists admin_actions (
   id bigserial primary key,
   actor_email text not null,
-  action text not null check (action in ('approve', 'reject', 'quarantine', 'undo', 'unpublish')),
+  action text not null check (action in ('approve', 'reject', 'quarantine', 'undo', 'unpublish', 'merge')),
   audition_id uuid references auditions(id) on delete set null,
   audition_title text,          -- 로그 화면 표시용 스냅샷 (공고 삭제 후에도 유지)
   prev jsonb,                   -- 변경 전 {review_status, is_active} — undo 복원 근거
