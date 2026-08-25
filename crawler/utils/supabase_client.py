@@ -122,6 +122,10 @@ def trusted_sources() -> set[str]:
     return _trusted
 
 
+# 011 제약이 'quarantine'을 아직 안 받음 — 012_quarantine_status.sql 라이브 적용 후 'quarantine'으로 변경
+QUARANTINE_STATUS = "rejected"
+
+
 def _review_fields(source_name: str | None, score: float | None,
                    title: str = "", description: str | None = None) -> dict:
     """게재 결정 (auto-triage v0, 플랜 37 §1). 011 미적용이면 빈 dict(기존 동작 유지).
@@ -134,7 +138,7 @@ def _review_fields(source_name: str | None, score: float | None,
     if r_score >= 7:
         classify_stats["quarantine"] = classify_stats.get("quarantine", 0) + 1
         logger.info(f"  격리(위험 {r_score}): {title[:40]} — {', '.join(r_reasons)}")
-        return {"review_status": "quarantine", "is_active": False}
+        return {"review_status": QUARANTINE_STATUS, "is_active": False}
 
     trusted = (source_name or "") in trusted_sources()
     ok = trusted and (score is None or score >= AUTO_MIN_SCORE) and r_score < 4

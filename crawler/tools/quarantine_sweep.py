@@ -15,7 +15,7 @@ import re
 import sys
 
 from utils.risk import risk_score
-from utils.supabase_client import supabase as sb
+from utils.supabase_client import QUARANTINE_STATUS, supabase as sb
 
 _MINOR = re.compile(r"아역|키즈|유아|아기|어린이|청소년|초등|중학생|고등학생|\b남아\b|\b여아\b")
 _MINOR_DANGER = {"신분증·금융정보 요구", "성인·노출", "비용 징수 문맥"}
@@ -58,7 +58,7 @@ def main() -> None:
     n = 0
     for r, _ in targets:
         sb.table("auditions").update(
-            {"is_active": False, "review_status": "quarantine"}
+            {"is_active": False, "review_status": QUARANTINE_STATUS}
         ).eq("id", r["id"]).execute()
         n += 1
     print(f"\n격리 반영: {n}건")
