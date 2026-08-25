@@ -101,11 +101,12 @@ class Casting114Scraper(BaseScraper):
             desc_parts.append(content)
 
         phone = body.get("phone") or None
-        description = self.build_description(
-            "\n".join(desc_parts) if desc_parts else "",
-            phone,
-            None,
-        )
+        joined = "\n".join(desc_parts) if desc_parts else ""
+        description = self.build_description(joined, phone, None)
+
+        # email 필드가 비어도 본문(content)에 적힌 접수 이메일이 많다 (실측 19건 갭)
+        if not apply_email:
+            apply_email = self.extract_email(joined)
 
         # source_url
         item_seq = item.get("item_seq", "")
