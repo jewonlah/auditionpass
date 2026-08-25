@@ -2,7 +2,8 @@
   "pages": [
     { "id": "page-flow", "name": "플로우 기획" },
     { "id": "page-screens", "name": "화면 목업" },
-    { "id": "page-portfolio", "name": "컴프카드 서식" }
+    { "id": "page-portfolio", "name": "컴프카드 서식" },
+    { "id": "page-admin", "name": "어드민" }
   ],
   "artboards": [
     { "file": "Main.dc.html", "title": "서비스 플로우 v2", "x": 0, "y": 0, "w": 1600, "h": 1080, "page": "page-flow" },
@@ -30,14 +31,18 @@
     { "file": "Cozy.dc.html", "title": "포근 · 아역", "x": 0, "y": 2500, "w": 794, "h": 1123, "page": "page-portfolio", "print": "fixed" },
     { "file": "Dignity.dc.html", "title": "품격 · 시니어", "x": 890, "y": 2500, "w": 794, "h": 1123, "page": "page-portfolio", "print": "fixed" },
 
-    { "file": "TemplatePicker.dc.html", "title": "템플릿 선택", "x": 1440, "y": 2970, "w": 390, "h": 844, "page": "page-screens" }
+    { "file": "TemplatePicker.dc.html", "title": "템플릿 선택", "x": 1440, "y": 2970, "w": 390, "h": 844, "page": "page-screens" },
+
+    { "file": "AdminToday.dc.html", "title": "어드민 · 오늘 (아침 3분)", "x": 0, "y": 0, "w": 1440, "h": 900, "page": "page-admin" },
+    { "file": "AdminQueue.dc.html", "title": "어드민 · 검수 큐 (게이트 3단)", "x": 0, "y": 1030, "w": 1440, "h": 900, "page": "page-admin" }
   ],
   "annotations": [
     { "id": "note-asis", "x": 0, "y": -220, "w": 400, "page": "page-screens", "text": "AS-IS 문제 진단 (실데이터 그대로)\n· 제목+잘린 150자 요약이 전부 — 모집 조건이 문장 속에 뭉개짐\n· 사진 없음, 주최사 비어 있음, 마감 미상 다수\n· '원문 링크 확인' 유도 = 이탈 지점\n→ 신청률 저하의 핵심 원인" },
     { "id": "note-tobe", "x": 480, "y": -220, "w": 400, "page": "page-screens", "text": "TO-BE 원칙 — 같은 데이터, 다른 구조\n· 요약문을 콜시트 스펙(대상·촬영·장소·페이·지원)으로 재구성 — 크롤러 규칙 추출 확장 필요\n· 출처 검증 카드로 신뢰 신호\n· 마감 미상은 '상시'로 정직하게\n· 비슷한 오디션으로 데드엔드 제거" },
     { "id": "note-form", "x": 960, "y": 2970, "w": 400, "page": "page-screens", "text": "공통 신청폼 근거 (35_profile-apply-plan)\n활성 공고 4,484건 실측 — 공고가 묻는 정보 순위:\n나이(322) > 학교·학력(315) > 경력(182) > 연락처(178) > 키·몸무게(93) > 소속사(65) > 의상 사이즈(52) > 특기(26) …\n→ 학력·소속사·특기를 기본 스펙으로 승격 (사용자 지시: 공고 내는 입장 고려)\n계층: 필수(지원 가능) / 기본 스펙(원클릭 준비) / 공통 선택·분야별 확장(컴프카드)\n메일 규격: Reply-To=지원자, 컴프카드 PDF 첨부, 같은 공고 1일 1회" },
     { "id": "note-comp", "x": 0, "y": -230, "w": 460, "page": "page-portfolio", "text": "오디션패스 컴프카드 — 템플릿 갤러리 5종 (유저가 선택, 프로필 자동 채움)\n· 클래식 — 깔끔한 기본형, 전 분야 (배우·모델 2예시)\n· 시네마 — 다크 톤, 영화·드라마 배우\n· 매거진 — 세리프 에디토리얼, 모델·화보\n· 포근 — 따뜻한 톤, 아역·키즈 (보호자·법정대리인 동의 표기)\n· 품격 — 중후한 세리프, 시니어·연극 (연대기 중심)\n모든 값은 프로필 필드 자동 삽입 ([대괄호]=슬롯, 이름·사진·이력은 AI 샘플)\n하단 프로필 링크가 CD 유입 루프 · 선택 UI는 화면 목업 페이지 '템플릿 선택'" },
+    { "id": "note-admin", "x": 1520, "y": 0, "w": 380, "page": "page-admin", "text": "어드민 R1 (39_admin — Codex P1 5건 수용)\n· 승인 게이트 3단: SAFE(1키 즉시)/CHECK(사유 확인)/BLOCKED(비활성)\n· 승인 범위 3분리: 게시 ≠ 원클릭 ≠ trust 승격\n· 일괄은 'SAFE 후보 게시 승인'만 — 건수 직접 입력 확인\n· undo·액션 로그 필수 / 모바일은 모니터링·긴급 격리 전용\n· R1 웹 = 오늘+검수 큐, 신고·소스·인테이크는 조회+긴급 쓰기 3종" },
     { "id": "note-flow", "x": 1720, "y": 0, "w": 320, "page": "page-flow", "text": "구현 우선순위 (12_ia-userflows §7)\nP0 여정 봉합(returnTo)\nP1 5탭 골격 + /home\nP2 지원 게이트 시트 + 온보딩\nP3 SEO 랜딩 14개 + sitemap 복구" }
   ],
-  "launch": { "view": "canvas", "page": "page-portfolio" }
+  "launch": { "view": "canvas", "page": "page-admin" }
 }

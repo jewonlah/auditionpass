@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;color:#141414;-webkit-font-smoothing:antialiased;}
+    a{color:#4F46E5;text-decoration:none} a:hover{color:#3730A3}
+    .mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A86;font-weight:600;}
+    .num{font-variant-numeric:tabular-nums;}
+    .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;}
+    .qi{padding:10px 14px;border-bottom:1px solid #F0F0EE;font-size:12.5px;cursor:default;}
+    .qi.on{background:#EEF2FF;border-left:3px solid #4F46E5;padding-left:11px;}
+    .f{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid #F0F0EE;font-size:13.5px;align-items:baseline;}
+    .f:last-child{border-bottom:none;}
+    .f .k{width:86px;flex-shrink:0;color:#8A8A86;font-size:12.5px;}
+    .key{display:inline-flex;min-width:20px;height:20px;align-items:center;justify-content:center;border:1px solid #DDD9D0;border-bottom-width:2px;border-radius:5px;font-size:11px;font-weight:700;color:#4A4A48;background:#FFFFFF;padding:0 4px;}
+  </style>
+</helmet>
+<div style="width:1440px;height:900px;background:#FAFAF7;display:flex;box-sizing:border-box;">
+
+  <!-- 좌: 큐 리스트 -->
+  <div style="width:300px;flex-shrink:0;background:#FFFFFF;border-right:1px solid #E7E5E0;display:flex;flex-direction:column;">
+    <div style="padding:16px 16px 10px;">
+      <div style="font-size:16px;font-weight:800;letter-spacing:-0.02em;">검수 큐 <span class="num" style="color:#8A8A86;font-weight:600;">61</span></div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <span class="pill" style="background:#141414;color:#FAFAF7;">빠른 레인 22</span>
+        <span class="pill" style="background:#F3F4F6;color:#4A4A48;">수동 레인 39</span>
+      </div>
+    </div>
+    <div style="flex:1;overflow:hidden;">
+      <div class="qi on"><b>창작뮤지컬 〈시작〉 전 배역</b><br><span style="color:#8A8A86;">콘테스트코리아 · D-1 · </span><span class="pill" style="background:#ECFDF5;color:#059669;">SAFE</span></div>
+      <div class="qi"><b>단편영화 주연 (20대 남녀)</b><br><span style="color:#8A8A86;">스레드 @cast0003_ · D-1 · </span><span class="pill" style="background:#FFFBEB;color:#B45309;">CHECK</span></div>
+      <div class="qi"><b>국립극단 시즌단원 오디션</b><br><span style="color:#8A8A86;">국립극단 · D-19 · </span><span class="pill" style="background:#ECFDF5;color:#059669;">SAFE</span></div>
+      <div class="qi"><b>유튜브 웹예능 남성 출연자</b><br><span style="color:#8A8A86;">필메코 · 상시 · </span><span class="pill" style="background:#FFFBEB;color:#B45309;">CHECK</span></div>
+      <div class="qi"><b>여아 아역모델 섭외</b><br><span style="color:#8A8A86;">네이버카페 · 상시 · </span><span class="pill" style="background:#FEF2F2;color:#DC2626;">BLOCKED</span></div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #F0F0EE;font-size:12px;color:#8A8A86;">
+      일괄: <a href="#">이 출처의 SAFE 후보 일괄 승인</a><br><span style="font-size:11px;">(원클릭·trust 승격 제외 · 건수 입력 확인)</span>
+    </div>
+  </div>
+
+  <!-- 중: 검수 카드 -->
+  <div style="flex:1;padding:22px 26px;display:flex;flex-direction:column;min-width:0;">
+    <div style="background:#FFFFFF;border:1px solid #E7E5E0;border-radius:12px;box-shadow:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.06);flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <!-- 결정 배지 + 위험 (상단 고정) -->
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid #F0F0EE;background:#F7FBF8;">
+        <span class="pill" style="background:#10B981;color:#FFFFFF;font-size:12px;padding:5px 12px;">SAFE — 1키 즉시 승인 가능</span>
+        <span style="font-size:12.5px;color:#4A4A48;">위험 플래그 없음 · 신뢰 출처(콘테스트코리아 · 티어 B) · dedup 무충돌</span>
+        <span class="mono" style="margin-left:auto;">2 / 61</span>
+      </div>
+
+      <div style="padding:18px 20px;flex:1;overflow:hidden;">
+        <h2 style="margin:0 0 4px;font-size:19px;font-weight:800;letter-spacing:-0.02em;">✉ 창작뮤지컬 [시작] 전 배역 캐스팅</h2>
+        <div style="font-size:12.5px;color:#8A8A86;margin-bottom:14px;">콘테스트코리아 · 수집 8/24 · 품질 0.95 · <a href="#">원문 열기 (5)</a></div>
+
+        <!-- 핵심 필드 4 -->
+        <div style="border:1px solid #E7E5E0;border-radius:8px;padding:2px 16px;margin-bottom:12px;">
+          <div class="f"><span class="k">마감</span><b class="num">2026-09-27 (D-33)</b><span class="pill" style="background:#ECFDF5;color:#059669;">verified 0.94</span></div>
+          <div class="f"><span class="k">지원 방식</span><b>이메일 — musical.start@naver.com</b><span class="pill" style="background:#ECFDF5;color:#059669;">verified 0.98</span></div>
+          <div class="f"><span class="k">제출물</span><b>프로필 · 노래 영상 링크</b><span class="pill" style="background:#EEF2FF;color:#3730A3;">evidence 0.86</span></div>
+          <div class="f"><span class="k">대상·페이</span><b>전 배역 · 회차비 협의</b><span class="pill" style="background:#FFFBEB;color:#B45309;">ambiguous 0.51</span></div>
+        </div>
+
+        <!-- 근거 -->
+        <div style="background:#FAFAF7;border-radius:8px;padding:11px 14px;font-size:12.5px;line-height:1.7;color:#4A4A48;margin-bottom:12px;">
+          <span class="mono" style="margin-right:6px;">근거</span>
+          마감: "접수기간: 2026.08.13 ~ 2026.09.27" · 지원: "프로필과 노래 영상 링크를 메일로 접수" · 페이: <span style="color:#DC2626;font-weight:700;">근거 없음 — 원문 확인</span>
+        </div>
+
+        <!-- 승인 범위 분리 -->
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1.2;background:#4F46E5;border-radius:10px;padding:13px;text-align:center;color:#FFFFFF;font-size:14px;font-weight:700;">게시 승인 <span class="key" style="border-color:#818CF8;color:#E0E7FF;background:transparent;">1</span></div>
+          <div style="flex:1;border:1px solid #E7E5E0;border-radius:10px;padding:13px;text-align:center;font-size:14px;font-weight:600;color:#4A4A48;">거절 <span class="key">2</span></div>
+          <div style="flex:1;border:1px solid #E7E5E0;border-radius:10px;padding:13px;text-align:center;font-size:14px;font-weight:600;color:#4A4A48;">격리 <span class="key">4</span></div>
+          <div style="flex:1.4;border:1.5px dashed #C9C7C1;border-radius:10px;padding:13px;text-align:center;font-size:13px;font-weight:600;color:#8A8A86;">원클릭 활성화 — 별도 검토 <span class="key">o</span></div>
+        </div>
+        <div style="font-size:11.5px;color:#8A8A86;margin-top:8px;">승인 = 게시만. 원클릭·출처 trust 승격은 이 버튼에 묶이지 않는다 (39 §2).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우: 단축키 + 최근 액션 -->
+  <div style="width:230px;flex-shrink:0;padding:22px 20px 22px 0;display:flex;flex-direction:column;gap:14px;">
+    <div style="background:#FFFFFF;border:1px solid #E7E5E0;border-radius:10px;padding:14px 16px;">
+      <span class="mono">단축키</span>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;font-size:12.5px;color:#4A4A48;">
+        <div><span class="key">1</span> 승인 <span style="color:#C9C7C1;">(SAFE만 즉시)</span></div>
+        <div><span class="key">2</span> 거절 · <span class="key">3</span> 병합 · <span class="key">4</span> 격리</div>
+        <div><span class="key">5</span> 원문 · <span class="key">s</span> 스킵</div>
+        <div><span class="key">u</span> 되돌리기 · <span class="key">o</span> 원클릭 후보</div>
+      </div>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E7E5E0;border-radius:10px;padding:14px 16px;flex:1;">
+      <span class="mono">최근 액션 · undo</span>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px;font-size:12px;color:#4A4A48;line-height:1.5;">
+        <div>✔ 승인 — 국립극단 시즌단원<br><span style="color:#C9C7C1;">14:52 · </span><a href="#">되돌리기</a></div>
+        <div>✖ 거절 — 바이럴 릴스 체험단<br><span style="color:#C9C7C1;">14:51 · </span><a href="#">되돌리기</a></div>
+        <div>⛔ 격리 — 참가비 오디션<br><span style="color:#C9C7C1;">14:49 · 로그 기록됨</span></div>
+      </div>
+    </div>
+    <div style="background:#161615;border-radius:10px;padding:12px 16px;font-size:11.5px;color:#C9C7C1;line-height:1.6;">
+      오늘 처리 <b class="num" style="color:#FAFAF7;">23</b>건 · 평균 <b class="num" style="color:#FAFAF7;">26초</b><br>목표 60건/30분 페이스
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
