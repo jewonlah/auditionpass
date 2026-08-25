@@ -122,12 +122,22 @@ def trusted_sources() -> set[str]:
     return _trusted
 
 
-def _review_fields(source_name: str | None, score: float | None) -> dict:
-    """게재 결정. 011 미적용이면 빈 dict(기존 동작 유지)."""
+def _review_fields(source_name: str | None, score: float | None,
+                   title: str = "", description: str | None = None) -> dict:
+    """게재 결정 (auto-triage v0, 플랜 37 §1). 011 미적용이면 빈 dict(기존 동작 유지).
+    위험 점수 ≥7 → quarantine(비활성, 신뢰 출처여도), 4~6 → pending 강등."""
     if not review_available():
         return {}
+
+    from utils.risk import risk_score
+    r_score, r_reasons = risk_score(title, description)
+    if r_score >= 7:
+        classify_stats["quarantine"] = classify_stats.get("quarantine", 0) + 1
+        logger.info(f"  격리(위험 {r_score}): {title[:40]} — {', '.join(r_reasons)}")
+        return {"review_status": "quarantine", "is_active": False}
+
     trusted = (source_name or "") in trusted_sources()
-    ok = trusted and (score is None or score >= AUTO_MIN_SCORE)
+    ok = trusted and (score is None or score >= AUTO_MIN_SCORE) and r_score < 4
     if ok:
         return {"review_status": "auto", "is_active": True}
     classify_stats["pending"] = classify_stats.get("pending", 0) + 1
@@ -212,7 +222,8 @@ def upsert_auditions(auditions: list) -> int:
             "is_active": True,
         }
         # 검수 큐: 저품질·미신뢰 출처는 pending(비활성). 기존 행 업데이트 경로에서는 상태를 건드리지 않는다(아래에서 제거)
-        data.update(_review_fields(data["source_name"], data.get("quality_score")))
+        data.update(_review_fields(data["source_name"], data.get("quality_score"),
+                                   data.get("title", ""), data.get("description")))
 
         try:
             # 1) 제목+주최사+마감일로 기존 중복 확인
