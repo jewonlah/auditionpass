@@ -122,8 +122,8 @@ def trusted_sources() -> set[str]:
     return _trusted
 
 
-# 011 제약이 'quarantine'을 아직 안 받음 — 012_quarantine_status.sql 라이브 적용 후 'quarantine'으로 변경
-QUARANTINE_STATUS = "rejected"
+# 012_quarantine_status.sql 라이브 적용 완료(2026-08-25) — 격리는 운영자 거절(rejected)과 구분
+QUARANTINE_STATUS = "quarantine"
 
 
 def _review_fields(source_name: str | None, score: float | None,
