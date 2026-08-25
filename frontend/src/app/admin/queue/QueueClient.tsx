@@ -74,6 +74,11 @@ export function QueueClient() {
   const [confirmReasons, setConfirmReasons] = useState<string[] | null>(null);
   const [toast, setToast] = useState<{ actionId: number | null; label: string } | null>(null);
   const [processed, setProcessed] = useState(0);
+  const [bulk, setBulk] = useState<{ open: boolean; input: string; error: string | null }>({
+    open: false,
+    input: "",
+    error: null,
+  });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -187,6 +192,7 @@ export function QueueClient() {
       const target = e.target as HTMLElement;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (bulk.open) return;
       switch (e.key) {
         case "1":
           act("approve");
@@ -213,9 +219,48 @@ export function QueueClient() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [act, undo, current, items.length, recent]);
+  }, [act, undo, current, items.length, recent, bulk.open]);
 
   const safeCount = items.filter((i) => i.gate.decision === "SAFE").length;
+
+  // 일괄 승인 (39 §3): 현재 카드의 출처 기준 SAFE 후보만 — 조건은 서버가 재검증·강제
+  const bulkSource = current?.source_name ?? null;
+  const bulkTargets = bulkSource
+    ? items.filter((i) => i.source_name === bulkSource && i.gate.decision === "SAFE").length
+    : 0;
+  const bulkExcluded = bulkSource
+    ? items.filter((i) => i.source_name === bulkSource).length - bulkTargets
+    : 0;
+
+  const submitBulk = async () => {
+    if (!bulkSource || busy) return;
+    const expected = parseInt(bulk.input, 10);
+    if (Number.isNaN(expected)) {
+      setBulk((b) => ({ ...b, error: "승인할 건수를 숫자로 입력하세요." }));
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/bulk-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: bulkSource, expectedCount: expected }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBulk((b) => ({ ...b, error: data.error || "일괄 승인 실패" }));
+        return;
+      }
+      setBulk({ open: false, input: "", error: null });
+      setProcessed((p) => p + data.approvedCount);
+      showToast(null, `일괄 승인 ${data.approvedCount}건 — ${bulkSource}`);
+      await load();
+    } catch (e) {
+      setBulk((b) => ({ ...b, error: e instanceof Error ? e.message : "일괄 승인 실패" }));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) {
     return <p className="p-8 text-sm text-[#8A8A86]">검수 큐 불러오는 중…</p>;
@@ -265,8 +310,19 @@ export function QueueClient() {
             <p className="px-4 py-6 text-[13px] text-[#8A8A86]">검수할 pending 공고가 없습니다.</p>
           )}
         </div>
-        <div className="border-t border-[#F0F0EE] px-4 py-2.5 text-[11px] text-[#8A8A86]">
-          일괄 승인(SAFE·건수 입력 확인)은 R1b에서 제공
+        <div className="hidden border-t border-[#F0F0EE] px-4 py-2.5 text-[11.5px] lg:block">
+          {bulkSource && bulkTargets > 0 ? (
+            <button
+              onClick={() => setBulk({ open: true, input: "", error: null })}
+              className="font-bold text-primary"
+            >
+              이 출처의 SAFE 후보 일괄 승인 ({bulkTargets}건)
+            </button>
+          ) : (
+            <span className="text-[#8A8A86]">일괄: 현재 출처에 SAFE 후보 없음</span>
+          )}
+          <br />
+          <span className="text-[10.5px] text-[#8A8A86]">(원클릭·trust 승격 제외 · 건수 입력 확인)</span>
         </div>
       </aside>
 
@@ -518,6 +574,53 @@ export function QueueClient() {
           목표 60건/30분 페이스
         </div>
       </aside>
+
+      {/* 일괄 승인 모달 — 건수 숫자 직접 입력 확인 (39 §3) */}
+      {bulk.open && bulkSource && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl border border-[#E7E5E0] bg-white p-5 shadow-lg">
+            <h3 className="text-[15px] font-extrabold">이 출처의 SAFE 후보 일괄 승인</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-[#4A4A48]">
+              출처 <b>{bulkSource}</b>
+              <br />
+              대상 <b className="tabular-nums">{bulkTargets}</b>건 (SAFE만) · 제외{" "}
+              <b className="tabular-nums">{bulkExcluded}</b>건 (CHECK/BLOCKED)
+              <br />
+              <span className="text-[11.5px] text-[#8A8A86]">
+                원클릭·trust 승격은 포함되지 않는다. 신뢰 출처·승인율 조건은 서버가 재검증한다.
+              </span>
+            </p>
+            {bulk.error && (
+              <p className="mt-2 rounded-lg bg-[#FEF2F2] px-3 py-2 text-[12.5px] text-[#DC2626]">
+                {bulk.error}
+              </p>
+            )}
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                value={bulk.input}
+                onChange={(e) => setBulk((b) => ({ ...b, input: e.target.value }))}
+                placeholder={`승인 건수 "${bulkTargets}" 직접 입력`}
+                className="flex-1 rounded-lg border border-[#E7E5E0] px-3 py-2.5 text-[14px] tabular-nums"
+                inputMode="numeric"
+                autoFocus
+              />
+              <button
+                onClick={submitBulk}
+                disabled={busy || bulk.input.trim() === ""}
+                className="rounded-lg bg-primary px-4 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-40"
+              >
+                일괄 승인
+              </button>
+              <button
+                onClick={() => setBulk({ open: false, input: "", error: null })}
+                className="rounded-lg border border-[#E7E5E0] px-4 py-2.5 text-[13.5px] font-semibold"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 5초 undo 토스트 */}
       {toast && (

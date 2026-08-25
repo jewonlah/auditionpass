@@ -21,11 +21,34 @@ function isTrusted(sourceName: string | null, trusted: Set<string>): boolean {
   return trusted.has(head);
 }
 
+type SuppressionRule = { kind: string; value: string };
+
+// 크롤러(crawler/utils/supabase_client.py suppression_hit)와 동일 규칙 — 한쪽 수정 시 같이 갱신
+function suppressionHit(row: AdminAuditionRow, rules: SuppressionRule[]): string | null {
+  const email = (row.apply_email ?? "").toLowerCase();
+  const url = (row.source_url ?? "").toLowerCase();
+  const name = row.source_name ?? "";
+  const head = name.split(":")[0].trim();
+  for (const r of rules) {
+    if (r.kind === "email" && email === r.value) return `email:${r.value}`;
+    if (r.kind === "domain" && (email.endsWith(`@${r.value}`) || url.includes(r.value)))
+      return `domain:${r.value}`;
+    if (r.kind === "source" && (name === r.value || head === r.value)) return `source:${r.value}`;
+  }
+  return null;
+}
+
+// 014 미적용이면 빈 목록 (게이트에서 suppression 판정 생략)
+async function fetchSuppressionRules(supabase: SupabaseClient): Promise<SuppressionRule[]> {
+  const { data } = await supabase.from("suppression").select("kind, value");
+  return (data ?? []) as SuppressionRule[];
+}
+
 export async function fetchQueueItems(
   supabase: SupabaseClient,
   limit = 200
 ): Promise<QueueItem[]> {
-  const [{ data: rows, error }, { data: trustedRows }] = await Promise.all([
+  const [{ data: rows, error }, { data: trustedRows }, suppressionRules] = await Promise.all([
     supabase
       .from("auditions")
       .select(QUEUE_COLUMNS)
@@ -34,6 +57,7 @@ export async function fetchQueueItems(
       .order("created_at", { ascending: false })
       .limit(limit),
     supabase.from("trusted_sources").select("source_name"),
+    fetchSuppressionRules(supabase),
   ]);
   if (error) throw new Error(`검수 큐 조회 실패: ${error.message}`);
 
@@ -63,7 +87,11 @@ export async function fetchQueueItems(
     );
     return {
       ...row,
-      gate: evaluateGate(row, { trusted: isTrusted(row.source_name, trusted), dedup }),
+      gate: evaluateGate(row, {
+        trusted: isTrusted(row.source_name, trusted),
+        dedup,
+        suppressionHit: suppressionHit(row, suppressionRules),
+      }),
     };
   });
 }
@@ -81,9 +109,10 @@ export async function evaluateSingle(
   if (!row) return null;
 
   const typed = row as AdminAuditionRow;
-  const { data: trustedRows } = await supabase
-    .from("trusted_sources")
-    .select("source_name");
+  const [{ data: trustedRows }, suppressionRules] = await Promise.all([
+    supabase.from("trusted_sources").select("source_name"),
+    fetchSuppressionRules(supabase),
+  ]);
   const trusted = new Set(
     ((trustedRows ?? []) as { source_name: string }[]).map((t) => t.source_name)
   );
@@ -100,6 +129,10 @@ export async function evaluateSingle(
 
   return {
     row: typed,
-    gate: evaluateGate(typed, { trusted: isTrusted(typed.source_name, trusted), dedup }),
+    gate: evaluateGate(typed, {
+      trusted: isTrusted(typed.source_name, trusted),
+      dedup,
+      suppressionHit: suppressionHit(typed, suppressionRules),
+    }),
   };
 }

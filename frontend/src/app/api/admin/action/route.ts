@@ -10,16 +10,19 @@ import { evaluateSingle } from "@/lib/admin/queue";
 // 승인 = 게시만(publish only). 원클릭·trust 승격은 이 API에 없음 (승인 범위 3분리).
 
 type ActionBody = {
-  action: "approve" | "reject" | "quarantine" | "undo";
+  action: "approve" | "reject" | "quarantine" | "unpublish" | "undo";
   auditionId?: string;
   actionId?: number;
   confirmed?: boolean;
 };
 
+// unpublish(게시중지)는 pending으로 내려 재검토 대열로 보낸다 (R1b 긴급 쓰기).
+// approved 유지 시 크롤러 재발견 로직(supabase_client.py — auto|approved 재활성화)이 되살리기 때문.
 const TRANSITIONS: Record<string, { review_status: string; is_active: boolean }> = {
   approve: { review_status: "approved", is_active: true },
   reject: { review_status: "rejected", is_active: false },
   quarantine: { review_status: "quarantine", is_active: false },
+  unpublish: { review_status: "pending", is_active: false },
 };
 
 export async function POST(req: Request) {
@@ -84,7 +87,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // approve / reject / quarantine
+    // approve / reject / quarantine / unpublish
     if (!body.auditionId || !TRANSITIONS[body.action]) {
       return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
     }
@@ -94,6 +97,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "공고를 찾을 수 없습니다." }, { status: 404 });
     }
     const { row, gate } = evaluated;
+
+    if (body.action === "unpublish" && !row.is_active) {
+      return NextResponse.json({ error: "이미 비활성 공고입니다." }, { status: 409 });
+    }
 
     if (body.action === "approve") {
       if (gate.decision === "BLOCKED") {

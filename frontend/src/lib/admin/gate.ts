@@ -50,7 +50,7 @@ function isPastDeadline(deadline: string | null): boolean {
 
 export function evaluateGate(
   row: AdminAuditionRow,
-  opts: { trusted: boolean; dedup: DedupHit[] }
+  opts: { trusted: boolean; dedup: DedupHit[]; suppressionHit?: string | null }
 ): GateResult {
   const risk = riskScore(row.title, row.description);
   const blocked: string[] = [];
@@ -58,6 +58,7 @@ export function evaluateGate(
 
   // --- BLOCKED 조건 (39 §2) ---
   if (row.review_status === "quarantine") blocked.push("격리 상태 — 큐에서 승인 불가");
+  if (opts.suppressionHit) blocked.push(`suppression 차단 중 (${opts.suppressionHit})`);
   if (risk.score >= 7) blocked.push(`위험 점수 ${risk.score} (격리 기준 7+)`);
   if (risk.reasons.includes("비용 징수 문맥")) blocked.push("금전 요구");
   if (risk.minor && (risk.reasons.includes("성인·노출") || risk.reasons.includes("신분증·금융정보 요구")))

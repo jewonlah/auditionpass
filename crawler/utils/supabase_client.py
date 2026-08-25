@@ -122,6 +122,41 @@ def trusted_sources() -> set[str]:
     return _trusted
 
 
+_suppression: list[tuple[str, str]] | None = None
+
+
+def suppression_rules() -> list[tuple[str, str]]:
+    """suppression 긴급 차단 목록(014, 캐시). 테이블 미적용이면 빈 목록."""
+    global _suppression
+    if _suppression is None:
+        try:
+            rows = supabase.table("suppression").select("kind, value").execute().data or []
+            _suppression = [(r["kind"], r["value"]) for r in rows]
+            if _suppression:
+                logger.info(f"suppression 차단 규칙 {len(_suppression)}건 로드")
+        except Exception:
+            _suppression = []
+    return _suppression
+
+
+def suppression_hit(apply_email: str | None, source_url: str | None,
+                    source_name: str | None) -> str | None:
+    """차단 규칙 매치 사유 or None (플랜 36 §4 — 히트 시 게재 금지·재활성화 금지).
+    어드민 sweep(frontend/src/app/api/admin/suppression)과 동일 규칙 — 한쪽 수정 시 같이 갱신."""
+    email = (apply_email or "").lower()
+    url = (source_url or "").lower()
+    name = source_name or ""
+    head = name.split(":")[0].strip()
+    for kind, value in suppression_rules():
+        if kind == "email" and email == value:
+            return f"email:{value}"
+        if kind == "domain" and (email.endswith("@" + value) or value in url):
+            return f"domain:{value}"
+        if kind == "source" and (name == value or head == value):
+            return f"source:{value}"
+    return None
+
+
 # 012_quarantine_status.sql 라이브 적용 완료(2026-08-25) — 격리는 운영자 거절(rejected)과 구분
 QUARANTINE_STATUS = "quarantine"
 
@@ -225,6 +260,12 @@ def upsert_auditions(auditions: list) -> int:
             "apply_type": "email" if audition.apply_email else "external",
             "is_active": True,
         }
+        # suppression 히트 → 저장·재활성화 모두 스킵 (기존 행은 어드민 sweep이 이미 내렸고, 여기서 되살리지 않는다)
+        hit = suppression_hit(data["apply_email"], data["source_url"], data["source_name"])
+        if hit:
+            logger.info(f"  suppression 차단({hit}), 스킵: {data['title'][:40]}")
+            continue
+
         # 검수 큐: 저품질·미신뢰 출처는 pending(비활성). 기존 행 업데이트 경로에서는 상태를 건드리지 않는다(아래에서 제거)
         data.update(_review_fields(data["source_name"], data.get("quality_score"),
                                    data.get("title", ""), data.get("description")))
