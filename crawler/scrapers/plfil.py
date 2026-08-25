@@ -4,6 +4,7 @@
 URL 패턴: plfil.com/casting/{id}
 """
 
+import re
 import time
 import logging
 import requests
@@ -74,6 +75,15 @@ class PlfilScraper(BaseScraper):
 
         return results
 
+    @staticmethod
+    def _clean_title(title: str) -> str:
+        """목록 카드 전체 텍스트가 제목으로 들어오는 오염 정리 (실측 9/9건):
+        '연극진행중[오디션 공고] …페이 : 10만원 ~ 10만원D-11/2026-09-05마감작성일2026-08-25'
+        → 카테고리+진행중 접두 제거, 페이/디데이/작성일 메타 이후 절단."""
+        t = re.sub(r"^(연극|영화|드라마|CF|뮤지컬|웹드라마|기타)\s*(?:진행중|마감)", "", title).strip()
+        t = re.split(r"페이\s*[:：]|D-\d+/|작성일\s*\d{4}", t)[0].strip()
+        return t[:150]
+
     def _fetch_and_parse(self, url: str, list_title: str) -> AuditionData | None:
         try:
             resp = requests.get(url, timeout=30, headers=_HEADERS)
@@ -88,6 +98,7 @@ class PlfilScraper(BaseScraper):
             "h1, h2, .casting-title, .title, .post-title, [class*='title']"
         )
         title = title_el.get_text(strip=True) if title_el else list_title
+        title = self._clean_title(title)
         if not title or len(title) < 3:
             return None
 
