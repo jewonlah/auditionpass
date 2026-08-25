@@ -16,6 +16,10 @@ $env:PYTHONIOENCODING = "utf-8"   # cp949 콘솔에서 한글 로그 깨짐 방�
 & $Py -u main.py 2>&1 | ForEach-Object { "$_" } | Out-File $Log -Append -Encoding utf8
 "===== 종료 코드 $LASTEXITCODE =====" | Out-File $Log -Append -Encoding utf8
 
+# 인테이크 파이프라인(플랜 38): 크롤 직후 잔여물(이메일·마감 없음) 규칙 재가공 — 비카페 30건/회, LLM 없음
+"===== ingest process 시작 =====" | Out-File $Log -Append -Encoding utf8
+& $Py -u -m tools.ingest process --limit 30 2>&1 | ForEach-Object { "$_" } | Out-File $Log -Append -Encoding utf8
+
 # 14일 지난 로그 삭제
 Get-ChildItem $LogDir -Filter "crawl_*.log" | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-14) } | Remove-Item -Force
 exit $LASTEXITCODE
