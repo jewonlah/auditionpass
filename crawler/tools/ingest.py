@@ -8,9 +8,14 @@ evidence(원문 스니펫 80~160자)를 반드시 넣는다. evidence 없는 LLM
 전문 저장 금지: 원문은 필드 추출에만 쓰고 폐기, 후보에는 사실 필드+근거 스니펫만 남는다.
 
 사용:
-    python -m tools.ingest parse --text-file 공고.txt [--source-url URL] [--source-type user_submitted_text]
-    python -m tools.ingest parse --url https://...        # 공개 단일 페이지만 (robots/로그인 벽 거부)
-    python -m tools.ingest upsert crawler/intake/<id>.json # pending/quarantine 으로만 투입
+  [파이프라인 모드 — 크롤러 잔여물 자동 가공 (기본 흐름)]
+    python -m tools.ingest queue                 # 가공 필요분 선별(마감·이메일·폼 전부 없는 공고 등)
+    python -m tools.ingest process --limit 50    # 원문 재조회(공개 경로만) → 규칙 재추출 → 필드 업데이트
+    → process 후에도 남는 잔여물 = 에이전트 배치 대상 (/ingest 스킬 큐 모드)
+  [수동 투입 모드 — 운영자/유저가 직접 주는 자료]
+    python -m tools.ingest parse --text-file 공고.txt [--source-url URL]
+    python -m tools.ingest parse --url https://...
+    python -m tools.ingest upsert crawler/intake/<id>.json
 """
 
 import argparse
@@ -32,6 +37,19 @@ _FORM_RE = re.compile(
     r"https?://(?:forms\.gle|docs\.google\.com/forms|naver\.me|form\.naver\.com|tally\.so|typeform\.com|moaform\.com|smore\.im)[^\s\"'<)\]]+"
 )
 _NO_PROXY_RE = re.compile(r"대리\s*(?:지원|접수|발송)\s*(?:불가|금지)|본인\s*직접\s*(?:지원|접수)")
+# 접수처가 아닌 메일: 게시판 플랫폼 운영 메일 + 운영성 로컬파트 (staff@filmmakers 오탐 실측)
+_EMAIL_REJECT = re.compile(
+    r"^(?:staff|admin|webmaster|help|cs|master|no-?reply|privacy)@"
+    r"|@(?:filmmakers\.co\.kr|castingnara\.|casting114\.|megaphonekorea\.|auditionpass\.)", re.I)
+
+
+def _valid_apply_email(email: str | None) -> str | None:
+    if not email:
+        return None
+    email = email.strip().lower()
+    if _EMAIL_REJECT.search(email):
+        return None
+    return email
 _LINE_EVIDENCE = 160
 
 
@@ -66,7 +84,7 @@ def extract_fields(text: str) -> dict:
     fields["title"] = _field(title, "verified_rule" if title else "missing",
                              0.7 if title else 0.0, title)
 
-    email = BaseScraper.extract_email(text)
+    email = _valid_apply_email(BaseScraper.extract_email(text))
     fields["apply_email"] = _field(email, "verified_rule" if email else "missing",
                                    0.95 if email else 0.0,
                                    _evidence_line(text, email) if email else "")
@@ -295,9 +313,110 @@ def cmd_upsert(args) -> None:
     print("승격: python -m tools.review list / approve  (운영자)")
 
 
+def _residual_rows(limit: int = 2000) -> list[dict]:
+    """가공 필요 잔여물: 활성·pending 중 지원 액션(이메일)도 마감도 없는 공고."""
+    from utils.supabase_client import supabase as sb
+    rows: list[dict] = []
+    for status_filter in ({"col": "is_active", "val": True}, {"col": "review_status", "val": "pending"}):
+        off = 0
+        while off < limit * 2:
+            q = (sb.table("auditions")
+                 .select("id,title,source_name,source_url,apply_email,deadline,description")
+                 .eq(status_filter["col"], status_filter["val"])
+                 .is_("apply_email", "null").is_("deadline", "null")
+                 .range(off, off + 999).execute().data)
+            if not q:
+                break
+            rows += q
+            off += 1000
+    seen, out = set(), []
+    for r in rows:
+        if r["id"] not in seen:
+            seen.add(r["id"])
+            out.append(r)
+    return out[:limit]
+
+
+def cmd_queue(args) -> None:
+    from collections import Counter
+    rows = _residual_rows()
+    by_src = Counter(r["source_name"].split(":")[0] for r in rows)
+    cafe = sum(1 for r in rows if "cafe.naver.com" in (r["source_url"] or ""))
+    print(f"가공 필요 잔여물(이메일·마감 모두 없음): {len(rows)}건")
+    for s, n in by_src.most_common(12):
+        print(f"  {n:5d}  {s}")
+    print(f"\n경로: 네이버카페 {cafe}건(cafe API — 백필과 중복 주의) / 기타 공개 URL {len(rows)-cafe}건")
+    print("다음: python -m tools.ingest process --limit 50 [--include-cafe]")
+
+
+def cmd_process(args) -> None:
+    """잔여물 규칙 재가공 — 공개 경로만 재조회, LLM 없음. 남는 것이 에이전트 배치 대상."""
+    import time, random
+    from utils.supabase_client import supabase as sb
+
+    rows = _residual_rows()
+    if not args.include_cafe:
+        rows = [r for r in rows if "cafe.naver.com" not in (r["source_url"] or "")]
+    rows = [r for r in rows if (r["source_url"] or "").startswith("http")][: args.limit]
+
+    stats = {"tried": 0, "fetched": 0, "email": 0, "deadline": 0, "blocked": 0}
+    agent_residual: list[dict] = []
+    for r in rows:
+        stats["tried"] += 1
+        url = r["source_url"]
+        if "cafe.naver.com" in url:
+            from sns_sources.cafe_body import fetch_article, _URL_RE as CAFE_RE
+            m = CAFE_RE.search(url)
+            text = None
+            if m:
+                import requests as rq
+                sess = rq.Session()
+                sess.headers.update({"User-Agent": "Mozilla/5.0 (Linux; Android 14) Chrome/131 Mobile Safari/537.36"})
+                res = fetch_article(sess, m.group(1), m.group(2), with_text=True)
+                text = res.get("text")
+        else:
+            text = fetch_public_url(url)
+        if not text:
+            stats["blocked"] += 1
+            agent_residual.append({"id": r["id"], "title": r["title"][:60], "url": url, "reason": "원문 접근 실패"})
+            time.sleep(1.5)
+            continue
+        stats["fetched"] += 1
+        f = extract_fields(text)
+        update = {}
+        if f["apply_email"]["value"] and not r["apply_email"]:
+            update["apply_email"] = f["apply_email"]["value"]
+            update["apply_type"] = "email"
+            stats["email"] += 1
+        if f["deadline"]["value"] and not r["deadline"]:
+            update["deadline"] = f["deadline"]["value"]
+            stats["deadline"] += 1
+        if update:
+            sb.table("auditions").update(update).eq("id", r["id"]).execute()
+        else:
+            agent_residual.append({"id": r["id"], "title": r["title"][:60], "url": url, "reason": "규칙 추출 실패(본문 있음)"})
+        time.sleep(2.0 + random.random())
+
+    print(f"\nprocess 결과: 시도 {stats['tried']} | 원문 확보 {stats['fetched']} | "
+          f"이메일 +{stats['email']} | 마감 +{stats['deadline']} | 접근 실패 {stats['blocked']}")
+    if agent_residual:
+        INTAKE_DIR.mkdir(exist_ok=True)
+        qpath = INTAKE_DIR / "agent_queue.json"
+        qpath.write_text(json.dumps(agent_residual, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"에이전트 배치 대상 {len(agent_residual)}건 → {qpath}")
+        print("처리: Claude Code에서 '/ingest 큐 처리' (규칙이 못 푼 잔여물을 에이전트가 전사·보정)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="ingest")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    q = sub.add_parser("queue")
+    q.set_defaults(func=cmd_queue)
+    pr = sub.add_parser("process")
+    pr.add_argument("--limit", type=int, default=50)
+    pr.add_argument("--include-cafe", action="store_true",
+                    help="카페 API 재조회 포함 (cafe_body 백필과 동시 실행 금지)")
+    pr.set_defaults(func=cmd_process)
     p = sub.add_parser("parse")
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--text-file")

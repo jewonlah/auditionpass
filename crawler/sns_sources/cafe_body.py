@@ -69,10 +69,12 @@ def _find_email(text: str) -> str | None:
     return None
 
 
-def fetch_article(sess: requests.Session, cafe: str, article: str) -> dict:
-    """1건 조회 → 측정 결과 dict (본문은 반환하지 않음)."""
+def fetch_article(sess: requests.Session, cafe: str, article: str,
+                  with_text: bool = False) -> dict:
+    """1건 조회 → 측정 결과 dict. with_text=True면 정제 텍스트를 포함(호출자가 추출 후 폐기 —
+    저장 금지). 기본은 텍스트 미반환(파일럿·백필 측정용)."""
     out = {"status": None, "body_len": 0, "email": None, "form_url": None,
-           "has_phone": False, "has_kakao": False, "has_deadline_hint": False}
+           "has_phone": False, "has_kakao": False, "has_deadline_hint": False, "text": None}
     try:
         r = sess.get(_API.format(cafe=cafe, article=article), timeout=15)
         out["status"] = r.status_code
@@ -88,6 +90,8 @@ def fetch_article(sess: requests.Session, cafe: str, article: str) -> dict:
         out["has_phone"] = bool(_PHONE_RE.search(text))
         out["has_kakao"] = bool(_KAKAO_RE.search(text))
         out["has_deadline_hint"] = bool(_DEADLINE_RE.search(text))
+        if with_text:
+            out["text"] = text[:20000]
     except (requests.RequestException, ValueError) as e:
         out["status"] = f"err:{type(e).__name__}"
     return out

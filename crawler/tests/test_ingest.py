@@ -68,6 +68,16 @@ GOLDEN = [
         "email": None, "quarantine": True,
     },
     {
+        "name": "플랫폼_운영메일_기각",
+        "text": "웹드라마 배우 모집\n문의는 사이트 하단 참조\nCopyright staff@filmmakers.co.kr All rights reserved",
+        "email": None, "quarantine": False,
+    },
+    {
+        "name": "대문자_메일_정규화",
+        "text": "뮤직비디오 출연자 모집\n지원: RAMORU@NAVER.COM\n마감 2026-09-08",
+        "email": "ramoru@naver.com", "deadline": date(2026, 9, 8), "quarantine": False,
+    },
+    {
         "name": "쇼호스트_정상",
         "text": "라이브커머스 쇼호스트 모집\n(주)커머스랩. 주 2회 고정, 회당 15만원 지급\n이력서와 진행 영상을 recruit@commercelab.co.kr 로 접수\n마감: 2026년 9월 15일",
         "email": "recruit@commercelab.co.kr", "deadline": date(2026, 9, 15), "quarantine": False,
