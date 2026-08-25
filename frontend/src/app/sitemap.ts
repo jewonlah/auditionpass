@@ -49,18 +49,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
 
     const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고가 sitemap에 잔류
+    // auditions에는 updated_at 컬럼이 없다(created_at만) — updated_at 조회 시 쿼리 전체가
+    // 에러로 죽어 sitemap이 정적 4개 URL로 굳는다 (2026-08-25 배포 실측)
     const { data } = await supabase
       .from("auditions")
-      .select("id, updated_at")
+      .select("id, created_at")
       .eq("is_active", true)
       .or(`deadline.gte.${today},deadline.is.null`)
-      .order("updated_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(500);
 
     if (data) {
       auditionPages = data.map((a) => ({
         url: `${BASE_URL}/audition/${a.id}`,
-        lastModified: new Date(a.updated_at),
+        lastModified: new Date(a.created_at),
         changeFrequency: "daily" as const,
         priority: 0.8,
       }));
