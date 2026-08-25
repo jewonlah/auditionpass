@@ -137,6 +137,7 @@ def run_pilot(limit: int = 400, apply: bool = False) -> dict:
         "phone": 0, "kakao": 0, "deadline": 0, "cat": defaultdict(int)})
     findings: list[dict] = []
     consecutive_429 = 0
+    applied_now = 0
 
     print(f"파일럿 시작: {len(sample)}건 (카페 {len(per_cafe)}곳, 요청 간 ~3초)")
     for i, (row, cafe, article) in enumerate(sample, 1):
@@ -163,6 +164,15 @@ def run_pilot(limit: int = 400, apply: bool = False) -> dict:
                     "email": res["email"], "form_url": res["form_url"],
                     "had_email_before": bool(row.get("apply_email")),
                 })
+                # --apply: 장시간 실행 중단 대비 즉시 반영
+                if apply and res["email"] and not row.get("apply_email"):
+                    try:
+                        sb.table("auditions").update(
+                            {"apply_email": res["email"], "apply_type": "email"}
+                        ).eq("id", row["id"]).execute()
+                        applied_now += 1
+                    except Exception as e:
+                        logger.warning(f"apply 실패 {row['id']}: {e}")
         elif res["status"] in (401, 403):
             s["acl"] += 1
         else:
@@ -223,15 +233,8 @@ def run_pilot(limit: int = 400, apply: bool = False) -> dict:
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"\n리포트 저장: {out_path}")
 
-    if apply and findings:
-        n = 0
-        for f in findings:
-            if f["email"] and not f["had_email_before"]:
-                sb.table("auditions").update(
-                    {"apply_email": f["email"], "apply_type": "email"}
-                ).eq("id", f["id"]).execute()
-                n += 1
-        print(f"apply_email 반영: {n}건")
+    if apply:
+        print(f"apply_email 반영(즉시): {applied_now}건")
     elif findings:
         print("(반영하려면 --apply)")
     return report
