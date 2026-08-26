@@ -8,10 +8,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Flag, ShieldAlert } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { REPORT_REASONS } from "@/lib/reports";
+import { createClient } from "@/lib/supabase/client";
+import { REPORT_REASONS, STATUS_LABEL, type ReportStatus } from "@/lib/reports";
 import { withReturnTo } from "@/lib/utils";
 
 type Result = { kind: "done"; severe: boolean } | { kind: "error"; message: string } | null;
+
+const STATUS_HINT: Record<ReportStatus, string> = {
+  received: "접수된 신고를 운영자가 확인하고 있습니다.",
+  actioned: "확인 후 이 공고를 조치했습니다.",
+  dismissed: "확인했지만 문제가 없어 그대로 두었습니다.",
+};
 
 export function ReportButton({
   auditionId,
@@ -26,12 +33,34 @@ export function ReportButton({
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<Result>(null);
+  const [existing, setExisting] = useState<ReportStatus | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  // 이미 신고한 공고면 폼 대신 처리 상태를 보여준다 (RLS로 본인 신고만 조회됨)
+  const openModal = async () => {
+    setOpen(true);
+    if (!isLoggedIn) return;
+    setChecking(true);
+    try {
+      const { data } = await createClient()
+        .from("reports")
+        .select("status")
+        .eq("audition_id", auditionId)
+        .maybeSingle();
+      setExisting((data?.status as ReportStatus) ?? null);
+    } catch {
+      // 조회 실패는 무시 — 접수 시 서버가 중복을 막는다
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const close = () => {
     setOpen(false);
     setReason(null);
     setDetail("");
     setResult(null);
+    setExisting(null);
   };
 
   const submit = async () => {
@@ -59,7 +88,7 @@ export function ReportButton({
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={openModal}
         className="mt-3 flex w-full items-center justify-center gap-1.5 py-3 text-[13px] font-medium text-gray-400 transition-colors hover:text-gray-600"
       >
         <Flag size={14} />
@@ -82,6 +111,24 @@ export function ReportButton({
             >
               확인
             </button>
+          </div>
+        ) : checking ? (
+          <p className="py-6 text-center text-sm text-gray-400">확인 중…</p>
+        ) : existing ? (
+          <div className="text-center">
+            <ShieldAlert size={32} className="mx-auto mb-3 text-primary" />
+            <p className="text-[15px] font-bold text-gray-900">
+              이미 신고한 공고입니다 · {STATUS_LABEL[existing]}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              {STATUS_HINT[existing]}
+            </p>
+            <Link
+              href="/my/reports"
+              className="mt-5 block w-full rounded-xl bg-primary py-3 text-center text-sm font-bold text-white"
+            >
+              내 신고 내역 보기
+            </Link>
           </div>
         ) : !isLoggedIn ? (
           <div>

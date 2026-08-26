@@ -13,6 +13,7 @@ import {
   Mail,
   Loader2,
   PenSquare,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -87,6 +88,12 @@ export default function MyPage() {
       icon: PenSquare,
       label: "내가 쓴 글",
       desc: "커뮤니티 작성글 관리",
+    },
+    {
+      href: "/my/reports",
+      icon: ShieldAlert,
+      label: "내 신고 내역",
+      desc: "신고한 공고의 처리 결과",
     },
   ];
 
