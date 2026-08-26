@@ -25,19 +25,27 @@ function dday(deadline: string | null): string {
   return diff === 0 ? "D-Day" : diff > 0 ? `D-${diff}` : `마감+${-diff}`;
 }
 
+// 요청 시각 기준 조회 창. 컴포넌트 본문에서 직접 Date.now()를 부르면
+// React Compiler purity 규칙에 걸리므로 모듈 스코프 함수로 분리한다 (force-dynamic 페이지).
+function queryWindows() {
+  const now = Date.now();
+  const kstDate = new Date(now + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  return {
+    now,
+    kstDate,
+    soon: new Date(new Date(kstDate).getTime() + 3 * 86400000).toISOString().slice(0, 10),
+    threeDaysAgo: new Date(now - 3 * 86400000).toISOString(),
+    oneDayAgo: new Date(now - 86400000).toISOString(),
+  };
+}
+
 export default async function AdminTodayPage() {
   const gate = await getAdminGate();
   if (gate.status === "anon") redirect("/login?returnTo=/admin");
   if (gate.status === "forbidden") notFound();
 
   const supabase = createAdminServiceClient();
-  const now = Date.now();
-  const kstDate = new Date(now + 9 * 3600 * 1000).toISOString().slice(0, 10);
-  const soon = new Date(new Date(kstDate).getTime() + 3 * 86400000)
-    .toISOString()
-    .slice(0, 10);
-  const threeDaysAgo = new Date(now - 3 * 86400000).toISOString();
-  const oneDayAgo = new Date(now - 86400000).toISOString();
+  const { now, kstDate, soon, threeDaysAgo, oneDayAgo } = queryWindows();
 
   const [
     urgent,
