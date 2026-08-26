@@ -83,6 +83,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // 심각 신고 자동 조치 — 운영자 확인 전까지 대리 발송 금지 (36 §4)
+    if (audition.oneclick_blocked) {
+      return NextResponse.json(
+        {
+          error: "신고가 접수되어 지원이 일시 중지된 공고입니다. 확인 후 다시 열립니다.",
+          code: "ONECLICK_BLOCKED",
+        },
+        { status: 409 }
+      );
+    }
+
     // 5. 이메일 발송
     await sendApplicationEmail({ audition, profile });
 

@@ -49,6 +49,7 @@ export default async function AdminTodayPage() {
     new24h,
     crawlLogs,
     actions24h,
+    openReports,
   ] = await Promise.all([
     supabase
       .from("auditions")
@@ -97,6 +98,12 @@ export default async function AdminTodayPage() {
       .select("id", { count: "exact", head: true })
       .eq("action", "approve")
       .gte("created_at", oneDayAgo),
+    supabase
+      .from("reports")
+      .select("id, severity, sla_due_at")
+      .eq("status", "received")
+      .order("sla_due_at", { ascending: true })
+      .limit(50),
   ]);
 
   const urgentRows = (urgent.data ?? []) as SlimRow[];
@@ -110,6 +117,16 @@ export default async function AdminTodayPage() {
   }
   const staleTop = [...staleBySource.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   const staleTotal = (stalePending.data ?? []).length;
+
+  // 신고 — 015 미적용이면 조회 실패로 강등 표시
+  const reportsUnavailable = Boolean(openReports.error);
+  const reports = (openReports.data ?? []) as {
+    id: number;
+    severity: string;
+    sla_due_at: string;
+  }[];
+  const severeReports = reports.filter((r) => r.severity === "severe").length;
+  const overdueReports = reports.filter((r) => new Date(r.sla_due_at).getTime() < now).length;
 
   // 소스 상태: 최근 crawl_logs에서 소스별 마지막 저장>0 날짜 → 3일+ 무저장 소스
   let sourceAlerts: { source: string; lastSaved: string | null }[] = [];
@@ -226,15 +243,39 @@ export default async function AdminTodayPage() {
           )}
         </section>
 
-        {/* 4. 3일+ 묵은 pending */}
+        {/* 4. 신고 + 3일+ 묵은 pending */}
         <section className={card}>
           <div className={cardHead}>
             <span className={pill("bg-[#EEF2FF] text-[#3730A3]")}>{staleTotal}</span>
-            3일+ 묵은 pending — 출처별
+            3일+ 묵은 pending · 신고
             <Link href="/admin/queue" className="ml-auto text-[12.5px] font-bold text-primary">
               큐에서 열기 →
             </Link>
           </div>
+          {reportsUnavailable ? (
+            <div className={row}>
+              <span className="text-[#8A8A86]">
+                신고 조회 불가 — 015 마이그레이션 라이브 적용 필요
+              </span>
+            </div>
+          ) : reports.length > 0 ? (
+            <div className={row}>
+              <span className="font-bold text-[#DC2626]">
+                미처리 신고 {reports.length}건
+                {severeReports > 0 ? ` (심각 ${severeReports})` : ""}
+              </span>
+              {overdueReports > 0 && (
+                <span className={pill("bg-[#FEF2F2] text-[#DC2626]")}>SLA 초과 {overdueReports}</span>
+              )}
+              <Link href="/admin/reports" className="ml-auto text-[12.5px] font-bold text-primary">
+                신고 처리 →
+              </Link>
+            </div>
+          ) : (
+            <div className={row}>
+              <span className="text-[#8A8A86]">미처리 신고 없음</span>
+            </div>
+          )}
           {staleTop.length === 0 && (
             <p className="px-4 py-3 text-[13px] text-[#8A8A86]">묵은 pending 없음</p>
           )}
@@ -265,6 +306,11 @@ export default async function AdminTodayPage() {
         <span>
           격리 <b className="tabular-nums">{quarantineCount.count ?? 0}</b>
         </span>
+        {!reportsUnavailable && (
+          <span>
+            미처리 신고 <b className="tabular-nums">{reports.length}</b>
+          </span>
+        )}
       </div>
     </main>
   );

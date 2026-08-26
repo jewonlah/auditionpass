@@ -40,6 +40,8 @@ export interface Audition {
   source_name: string | null;
   apply_type: 'email' | 'external';
   is_active: boolean;
+  /** 심각 신고 접수 시 자동 차단 (36 §4) — 015 미적용 라이브에서는 undefined */
+  oneclick_blocked?: boolean;
   crawled_at: string;
   created_at: string;
 }

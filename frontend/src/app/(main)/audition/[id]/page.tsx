@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ApplyButton } from "@/components/audition/ApplyButton";
 import { DescriptionRenderer } from "@/components/audition/DescriptionRenderer";
+import { ReportButton } from "@/components/audition/ReportButton";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDday, getDday, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -177,12 +178,25 @@ export default function AuditionDetailPage({
         </a>
       )}
 
+      {/* 신고 (36 §4) */}
+      <ReportButton auditionId={audition.id} isLoggedIn={!!user} />
+
       {/* 지원 버튼 (고정 하단) */}
       <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 py-3">
         <div className="mx-auto max-w-md">
           {isExpired ? (
             <div className="rounded-xl bg-gray-100 py-3.5 text-center text-sm font-semibold text-gray-400">
               마감된 오디션입니다
+            </div>
+          ) : audition.oneclick_blocked ? (
+            // 심각 신고 접수 → 확인 전까지 대리 지원 중지 (36 §4)
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+              <p className="text-sm font-bold text-amber-700">
+                신고가 접수되어 지원이 일시 중지되었습니다
+              </p>
+              <p className="mt-0.5 text-xs text-amber-600">
+                확인이 끝날 때까지 원문에서 직접 확인해 주세요.
+              </p>
             </div>
           ) : audition.apply_type === "external" && audition.source_url ? (
             <a
