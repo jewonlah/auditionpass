@@ -72,8 +72,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // sweep: 매칭 활성 공고 즉시 게시중지
-    let sweep = supabase.from("auditions").update({ is_active: false }).eq("is_active", true);
+    // sweep: 매칭 활성 공고 즉시 게시중지 + 대리 발송 차단.
+    // is_active만 내리면 이미 열어둔 상세 페이지에서 지원이 나갈 수 있어 둘 다 건다.
+    let sweep = supabase
+      .from("auditions")
+      .update({ is_active: false, oneclick_blocked: true })
+      .eq("is_active", true);
     if (kind === "email") {
       // 저장된 주소에 대문자가 섞여 있어도 잡아야 한다 (게이트·크롤러는 소문자로 비교)
       sweep = sweep.ilike("apply_email", value);

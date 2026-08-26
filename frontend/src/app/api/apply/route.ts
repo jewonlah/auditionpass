@@ -83,6 +83,19 @@ export async function POST(req: Request) {
       );
     }
 
+    // 내려간 공고로는 발송하지 않는다. 상세 페이지는 id로 직접 열리므로,
+    // 이미 열어둔 화면·저장한 링크에서 마감·게시중지·격리·suppression된 공고에
+    // 그대로 지원이 나가는 경로가 있다.
+    if (!audition.is_active) {
+      return NextResponse.json(
+        {
+          error: "지금은 지원할 수 없는 공고입니다. 마감되었거나 확인 중입니다.",
+          code: "NOT_ACTIVE",
+        },
+        { status: 409 }
+      );
+    }
+
     // 심각 신고 자동 조치 — 운영자 확인 전까지 대리 발송 금지 (36 §4)
     if (audition.oneclick_blocked) {
       return NextResponse.json(

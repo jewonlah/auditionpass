@@ -71,9 +71,13 @@ export default async function AdminSourcesPage({
     fetchSourceHealth(supabase),
   ]);
 
-  const trusted = new Set(
-    ((trustedRes.data ?? []) as { source_name: string }[]).map((t) => t.source_name)
+  const trustedNames = ((trustedRes.data ?? []) as { source_name: string }[]).map(
+    (t) => t.source_name
   );
+  // trusted_sources는 '네이버카페:빛이 모이는 곳'처럼 하위 출처 단위로 저장된다.
+  // 표는 접두("네이버카페")로 묶으므로, 그 접두의 하위 출처가 하나라도 신뢰면 신뢰로 본다.
+  const isGroupTrusted = (head: string) =>
+    trustedNames.some((n) => n === head || n.startsWith(`${head}:`));
 
   const lastSaved = new Map<string, string>();
   if (!logsRes.error) {
@@ -98,7 +102,7 @@ export default async function AdminSourcesPage({
         active: 0,
         pending: 0,
         quarantine: 0,
-        trusted: trusted.has(head),
+        trusted: isGroupTrusted(head),
         lastSaved: lastSaved.get(head) ?? null,
       } as SourceStat);
     if (r.is_active) stat.active += 1;

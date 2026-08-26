@@ -72,7 +72,9 @@ export function evaluateGate(
   if (!row.source_url) blocked.push("공개 출처 없음 (원문 URL 부재)");
   if (!row.deadline) blocked.push("마감 missing");
   else if (isPastDeadline(row.deadline)) blocked.push("마감 과거 (이미 지남)");
-  if (!row.apply_email) blocked.push("지원처 불명 (이메일 없음)");
+  // 이메일이 없어도 원문 URL이 있으면 '사이트 지원' 공고로 정상이다(apply_type='external').
+  // 여기서 막으면 외부 지원 공고가 전부 승인 불가로 큐에 영구히 쌓인다.
+  // 원문 URL까지 없는 경우는 위에서 이미 BLOCKED.
   // dedup 확정 충돌: 이미 게재(approved/auto)된 공고와 같은 이메일 + 같은 마감
   const hardDup = opts.dedup.filter(
     (d) =>
@@ -87,6 +89,7 @@ export function evaluateGate(
   }
 
   // --- CHECK 조건 (Guarded) ---
+  if (!row.apply_email) check.push("사이트 지원 공고(이메일 없음) — 원문에서 지원 방법 확인");
   if ((row.reports_count ?? 0) > 0) check.push(`신고 ${row.reports_count}건 접수 이력 — 원문 확인`);
   if (!opts.trusted) check.push("신규·미신뢰 출처");
   if (risk.score > 0) check.push(`위험 신호 ${risk.score}점: ${risk.reasons.join(", ")}`);
