@@ -68,6 +68,8 @@
 **배포 게이트**: 마이그레이션 `013` → `014` → `015` 적용 + `ADMIN_EMAILS` 환경변수 설정.
 적용 확인은 `database/checks/010_016_status.sql`. 미적용 시 화면은 안내 문구로 강등된다.
 
+**회귀 테스트**: `cd frontend && npm test` (node --test + tsx, 31건). 게이트·risk 포팅·신뢰 배지의 경계 조건이 들어 있다 — 아래 불변식을 깨면 여기서 먼저 깨진다.
+
 **설계 불변식** — 이후 수정 시 깨뜨리지 말 것:
 - 승인 게이트는 UI가 아니라 **서버가 재판정해 강제**한다(`lib/admin/gate.ts` + `api/admin/action`). BLOCKED는 403, CHECK는 `confirmed` 없이 409.
 - 게시중지는 approved 유지가 아니라 **pending 강등** — 크롤러가 재발견 시 `auto|approved`를 재활성화하기 때문.
