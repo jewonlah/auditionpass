@@ -46,3 +46,27 @@
 3. M2 연동: 발송 로그 면 + 원클릭 활성화 액션(발송 코어와 함께)
 
 *화면 시안: 디자인 캔버스 「어드민」 페이지 — 오늘 대시보드·검수 큐 2종(데스크톱 1440).*
+
+## 6. 구현 현황 (2026-08-26)
+
+| 항목 | 상태 | 위치 |
+|---|---|---|
+| ① 오늘 홈 (행동 필요 4분면 + 상태 지표) | ✅ | `/admin` |
+| ② 검수 큐 (게이트 3단·키보드 1/2/3/4/5/s/u·undo) | ✅ | `/admin/queue` |
+| ③ 신고 (SLA 타이머·조치 3종·처리 메모) | ✅ | `/admin/reports` |
+| ④ 소스 (출처 현황 + suppression 긴급 차단) | ✅ | `/admin/sources` |
+| 공고 검색·긴급 조치 (게시중지·격리) | ✅ | `/admin/auditions` |
+| 일괄 SAFE 승인 (신뢰 출처·승인율 90%·신고 급증·건수 입력) | ✅ | 검수 큐 좌하단 |
+| 병합 (`3`키 — 동일 이메일 한정, 패자 거절 + 승자 백필) | ✅ | 검수 큐 |
+| 신뢰 배지 3단계 (36 §4) | ✅ | `lib/trust.ts` — 카드·상세 |
+| ⑤ 인테이크 | ⏸ | agent_queue가 로컬 JSON이라 웹에서 조회 불가 — 선행 작업 필요 |
+| ⑥ 발송 로그 · 원클릭 활성화(`o`) | ⏸ M2 | 발송 코어와 함께 |
+| 심각 신고 시 기존 지원자 주의 알림 발송 | ⏸ M2 | 현재는 어드민에 대상 인원수만 표시(외부 발송이라 유보) |
+
+**배포 게이트**: 마이그레이션 `013` → `014` → `015` 적용 + `ADMIN_EMAILS` 환경변수 설정.
+적용 확인은 `database/checks/010_015_status.sql`. 미적용 시 화면은 안내 문구로 강등된다.
+
+**설계 불변식** — 이후 수정 시 깨뜨리지 말 것:
+- 승인 게이트는 UI가 아니라 **서버가 재판정해 강제**한다(`lib/admin/gate.ts` + `api/admin/action`). BLOCKED는 403, CHECK는 `confirmed` 없이 409.
+- 게시중지는 approved 유지가 아니라 **pending 강등** — 크롤러가 재발견 시 `auto|approved`를 재활성화하기 때문.
+- 규칙 이중 유지: risk는 `crawler/utils/risk.py` ↔ `frontend/src/lib/admin/risk.ts`, suppression은 `crawler/utils/supabase_client.py suppression_hit` ↔ `frontend/src/lib/admin/queue.ts`.
