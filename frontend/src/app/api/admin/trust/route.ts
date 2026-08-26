@@ -26,16 +26,21 @@ export async function DELETE(req: Request) {
 
     const supabase = createAdminServiceClient();
 
-    // 접두 표기("네이버카페: xx")로 등록된 하위 출처까지 함께 해제
-    const { data: removed, error } = await supabase
-      .from("trusted_sources")
-      .delete()
-      .or(`source_name.eq.${source},source_name.like.${source}:%`)
-      .select("source_name");
-    if (error) {
-      return NextResponse.json({ error: `강등 실패: ${error.message}` }, { status: 500 });
+    // trusted_sources는 '네이버카페:빛이 모이는 곳'처럼 하위 출처 단위로 등록된다.
+    // 정확 일치와 하위 출처를 각각 지운다 — 하위 출처를 빼면 강등해도 자동 게재가 계속된다.
+    // (or() 안에서 한글·공백·콜론이 섞인 값의 파싱을 신뢰하지 않는다. 와일드카드는 '*')
+    const removed: string[] = [];
+    for (const step of [
+      (q: ReturnType<typeof supabase.from>) => q.delete().eq("source_name", source),
+      (q: ReturnType<typeof supabase.from>) => q.delete().like("source_name", `${source}:*`),
+    ]) {
+      const { data, error } = await step(supabase.from("trusted_sources")).select("source_name");
+      if (error) {
+        return NextResponse.json({ error: `강등 실패: ${error.message}` }, { status: 500 });
+      }
+      for (const r of (data ?? []) as { source_name: string }[]) removed.push(r.source_name);
     }
-    if (!removed || removed.length === 0) {
+    if (removed.length === 0) {
       return NextResponse.json(
         { error: "이미 신뢰 출처가 아닙니다." },
         { status: 409 }

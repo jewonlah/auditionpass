@@ -74,20 +74,41 @@ export async function POST(req: Request) {
 
     // sweep: 매칭 활성 공고 즉시 게시중지 + 대리 발송 차단.
     // is_active만 내리면 이미 열어둔 상세 페이지에서 지원이 나갈 수 있어 둘 다 건다.
-    let sweep = supabase
-      .from("auditions")
-      .update({ is_active: false, oneclick_blocked: true })
-      .eq("is_active", true);
+    // 필터를 or()에 몰지 않고 조건별로 나눠 실행한다. or() 안에서는 한글·공백·콜론이 섞인
+    // 출처명이 안전하게 파싱된다고 보장하기 어렵고, PostgREST 와일드카드는 '*'다.
+    const swept = new Set<string>();
+    const sweepErrors: string[] = [];
+
+    const runSweep = async (
+      apply: (
+        q: ReturnType<typeof supabase.from>
+      ) => ReturnType<ReturnType<typeof supabase.from>["update"]>
+    ) => {
+      const { data, error } = await apply(supabase.from("auditions")).select("id");
+      if (error) sweepErrors.push(error.message);
+      for (const r of (data ?? []) as { id: string }[]) swept.add(r.id);
+    };
+
+    const patch = { is_active: false, oneclick_blocked: true };
     if (kind === "email") {
       // 저장된 주소에 대문자가 섞여 있어도 잡아야 한다 (게이트·크롤러는 소문자로 비교)
-      sweep = sweep.ilike("apply_email", value);
+      await runSweep((q) => q.update(patch).eq("is_active", true).ilike("apply_email", value));
     } else if (kind === "domain") {
-      sweep = sweep.or(`apply_email.ilike.%@${value},source_url.ilike.%${value}%`);
+      await runSweep((q) =>
+        q.update(patch).eq("is_active", true).ilike("apply_email", `*@${value}`)
+      );
+      await runSweep((q) =>
+        q.update(patch).eq("is_active", true).ilike("source_url", `*${value}*`)
+      );
     } else {
-      sweep = sweep.or(`source_name.eq.${value},source_name.ilike.${value}:%`);
+      // 정확 일치와 하위 출처('네이버카페:빛이 모이는 곳')를 모두 내린다.
+      // 하위 출처를 빼면 긴급 차단이 사실상 아무것도 못 내리는 경우가 생긴다.
+      await runSweep((q) => q.update(patch).eq("is_active", true).eq("source_name", value));
+      await runSweep((q) =>
+        q.update(patch).eq("is_active", true).ilike("source_name", `${value}:*`)
+      );
     }
-    const { data: swept, error: sweepError } = await sweep.select("id");
-    const sweptCount = swept?.length ?? 0;
+    const sweptCount = swept.size;
 
     await supabase.from("admin_actions").insert({
       actor_email: admin,
@@ -102,7 +123,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       sweptCount,
-      ...(sweepError ? { sweepWarning: `sweep 일부 실패: ${sweepError.message}` } : {}),
+      ...(sweepErrors.length > 0
+        ? { sweepWarning: `sweep 일부 실패: ${sweepErrors.join(" / ")}` }
+        : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "차단 등록 실패";

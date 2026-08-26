@@ -59,9 +59,9 @@ select '015 auditions.reports_count 존재',
        exists (select 1 from information_schema.columns
                where table_schema='public' and table_name='auditions' and column_name='reports_count')
 union all
-select '015 reports RLS 정책 2종(본인 조회·생성) 존재',
-       (select count(*) from pg_policies
-        where schemaname='public' and tablename='reports') >= 2
+-- 정책 개수는 016에서 2개(select+insert) → 1개(select)로 줄었다. 아래 016 항목이 정본.
+select '015 reports RLS 활성',
+       coalesce((select relrowsecurity from pg_class where oid = to_regclass('public.reports')), false)
 union all
 select '015 reports 중복신고 방지 인덱스 존재',
        exists (select 1 from pg_indexes
