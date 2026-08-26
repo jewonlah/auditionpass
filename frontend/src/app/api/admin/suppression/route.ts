@@ -108,6 +108,18 @@ export async function POST(req: Request) {
         q.update(patch).eq("is_active", true).ilike("source_name", `${value}:*`)
       );
     }
+    // 내린 행은 pending으로 강등한다. auto|approved로 남겨두면 차단을 해제한 뒤
+    // (또는 크롤러 캐시가 만료되기 전에) upsert_auditions가 같은 URL을 재발견하면서
+    // is_active를 되살린다 — "해제해도 자동 재게시하지 않는다"는 약속이 깨진다.
+    // 운영자 판정인 quarantine·rejected는 덮지 않는다.
+    if (swept.size > 0) {
+      const { error: demoteError } = await supabase
+        .from("auditions")
+        .update({ review_status: "pending" })
+        .in("id", [...swept])
+        .in("review_status", ["auto", "approved"]);
+      if (demoteError) sweepErrors.push(demoteError.message);
+    }
     const sweptCount = swept.size;
 
     await supabase.from("admin_actions").insert({

@@ -62,6 +62,30 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "복원 정보가 없습니다." }, { status: 409 });
       }
 
+      // 이 액션 뒤에 다른 조치가 있었다면 되돌리지 않는다.
+      // 예: 승인 → 격리 순서일 때 오래된 승인 로그를 되돌리면 격리가 지워진다.
+      // next 스냅샷에 담긴 필드가 현재 값과 모두 같을 때만 복원한다.
+      const { data: currentRow } = await supabase
+        .from("auditions")
+        .select("review_status, is_active, oneclick_blocked")
+        .eq("id", original.audition_id)
+        .maybeSingle();
+      const next = (original.next ?? {}) as Record<string, unknown>;
+      const drifted =
+        !currentRow ||
+        Object.keys(next).some(
+          (k) => (currentRow as Record<string, unknown>)[k] !== next[k]
+        );
+      if (drifted) {
+        return NextResponse.json(
+          {
+            error:
+              "이 액션 이후에 다른 조치가 있어 되돌릴 수 없습니다. 최근 액션부터 되돌리세요.",
+          },
+          { status: 409 }
+        );
+      }
+
       const { error: revertError } = await supabase
         .from("auditions")
         .update(original.prev)
