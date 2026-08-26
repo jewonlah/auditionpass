@@ -277,9 +277,13 @@ export function QueueClient() {
 
   // 일괄 승인 (39 §3): 현재 카드의 출처 기준 SAFE 후보만 — 조건은 서버가 재검증·강제
   const bulkSource = current?.source_name ?? null;
-  const bulkTargets = bulkSource
-    ? items.filter((i) => i.source_name === bulkSource && i.gate.decision === "SAFE").length
-    : 0;
+  // 화면에 보이는 SAFE 후보 id를 그대로 서버에 보낸다 — 서버는 이 목록 밖을 승인하지 않는다
+  const bulkIds = bulkSource
+    ? items
+        .filter((i) => i.source_name === bulkSource && i.gate.decision === "SAFE")
+        .map((i) => i.id)
+    : [];
+  const bulkTargets = bulkIds.length;
   const bulkExcluded = bulkSource
     ? items.filter((i) => i.source_name === bulkSource).length - bulkTargets
     : 0;
@@ -296,7 +300,7 @@ export function QueueClient() {
       const res = await fetch("/api/admin/bulk-approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: bulkSource, expectedCount: expected }),
+        body: JSON.stringify({ source: bulkSource, expectedCount: expected, ids: bulkIds }),
       });
       const data = await res.json();
       if (!res.ok) {

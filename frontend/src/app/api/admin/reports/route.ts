@@ -8,7 +8,8 @@ import { syncReportsCount } from "@/lib/admin/reportsCount";
 
 type Body = {
   reportId?: number;
-  decision?: "unpublish" | "quarantine" | "dismiss" | "note";
+  // unblock: 신고 상태와 무관하게 원클릭 차단만 해제 (조치 후 공고를 되살릴 때의 유일한 출구)
+  decision?: "unpublish" | "quarantine" | "dismiss" | "note" | "unblock";
   note?: string;
   unblockOneclick?: boolean; // 유지(dismiss) 시 자동 차단 해제 여부
 };
@@ -88,6 +89,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "신고를 찾을 수 없습니다." }, { status: 404 });
     }
 
+    // 원클릭 차단만 해제 — 신고 상태는 건드리지 않는다.
+    // (조치 완료된 신고는 dismiss 경로를 못 쓰므로 이게 없으면 차단이 영구 고착된다)
+    if (body.decision === "unblock") {
+      const { error } = await supabase
+        .from("auditions")
+        .update({ oneclick_blocked: false })
+        .eq("id", report.audition_id);
+      if (error) {
+        return NextResponse.json({ error: `해제 실패: ${error.message}` }, { status: 500 });
+      }
+      await supabase.from("admin_actions").insert({
+        actor_email: admin,
+        action: "undo",
+        audition_id: report.audition_id,
+        audition_title: null,
+        prev: { oneclick_blocked: true },
+        next: { oneclick_blocked: false },
+        note: `신고 #${report.id} — 원클릭 차단 해제`,
+      });
+      return NextResponse.json({ success: true, actionLabel: "원클릭 차단 해제" });
+    }
+
     // 메모만 남기는 경우 — 상태는 그대로
     if (body.decision === "note") {
       const { error } = await supabase
@@ -133,8 +156,9 @@ export async function POST(req: Request) {
         prev: {
           review_status: audition.review_status,
           is_active: audition.is_active,
+          oneclick_blocked: audition.oneclick_blocked ?? false,
         },
-        next: { review_status: next.review_status, is_active: false },
+        next: { review_status: next.review_status, is_active: false, oneclick_blocked: true },
         note: `신고 #${report.id} 처리`,
       });
     } else {

@@ -18,10 +18,26 @@ export async function POST(req: Request) {
     const admin = await getAdminEmail();
     if (!admin) return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
 
-    const body = (await req.json()) as { source?: string; expectedCount?: number };
+    const body = (await req.json()) as {
+      source?: string;
+      expectedCount?: number;
+      ids?: string[];
+    };
     const source = body.source?.trim();
-    if (!source || typeof body.expectedCount !== "number") {
-      return NextResponse.json({ error: "source와 expectedCount가 필요합니다." }, { status: 400 });
+    // ids = 운영자가 화면에서 실제로 본 SAFE 후보. 서버는 이 목록 밖의 건을 절대 승인하지 않는다.
+    // (서버가 더 넓은 창에서 재계산하면 운영자가 본 적 없는 건까지 승인되어 "건수 확인"이 무의미해진다)
+    const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : null;
+    if (!source || typeof body.expectedCount !== "number" || !ids) {
+      return NextResponse.json(
+        { error: "source·expectedCount·ids가 필요합니다." },
+        { status: 400 }
+      );
+    }
+    if (ids.length !== body.expectedCount) {
+      return NextResponse.json(
+        { error: "화면 목록과 입력 건수가 일치하지 않습니다. 새로고침 후 다시 시도하세요." },
+        { status: 409 }
+      );
     }
 
     const supabase = createAdminServiceClient();
@@ -44,22 +60,27 @@ export async function POST(req: Request) {
     // 조건 2: 최근 30건 승인율 90%+ (표본 10건 미만이면 이력 부족으로 불가)
     const { data: history, error: historyError } = await supabase
       .from("admin_actions")
-      .select("action, auditions!inner(source_name)")
+      .select("action, note, auditions!inner(source_name)")
       .in("action", ["approve", "reject"])
       .eq("auditions.source_name", source)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(200);
     if (historyError) {
       return NextResponse.json(
         { error: `승인율 조회 실패 (013 적용 확인): ${historyError.message}` },
         { status: 500 }
       );
     }
-    const total = history?.length ?? 0;
-    const approves = (history ?? []).filter((h) => h.action === "approve").length;
+    // 일괄 승인 이력은 제외 — 포함하면 첫 일괄이 최근 창을 전부 approve로 채워
+    // 승인율이 영구 100%로 고정되는 자기 인증이 된다.
+    const manual = (history ?? [])
+      .filter((h) => !(h.note ?? "").startsWith("bulk:"))
+      .slice(0, 30);
+    const total = manual.length;
+    const approves = manual.filter((h) => h.action === "approve").length;
     if (total < 10) {
       return NextResponse.json(
-        { error: `일괄 불가 — 이 출처의 검수 이력이 ${total}건뿐입니다 (10건 이상 필요). 개별 검수로 이력을 쌓으세요.` },
+        { error: `일괄 불가 — 이 출처의 개별 검수 이력이 ${total}건뿐입니다 (10건 이상 필요). 개별 검수로 이력을 쌓으세요.` },
         { status: 403 }
       );
     }
@@ -100,28 +121,33 @@ export async function POST(req: Request) {
       );
     }
 
-    // 대상: 이 출처의 SAFE 후보 (SAFE 정의가 공개 출처·무충돌·유효 마감·위험 0 포함)
+    // 대상 = (운영자가 화면에서 본 ids) ∩ (지금도 이 출처의 SAFE 후보).
+    // 교집합이라 서버가 더 넓게 조회해도 목록 밖 공고는 승인되지 않는다.
     const items = await fetchQueueItems(supabase, 500);
-    const sourceItems = items.filter((it) => it.source_name === source);
-    const targets = sourceItems.filter((it) => it.gate.decision === "SAFE");
-    const excluded = sourceItems.length - targets.length;
+    const safeById = new Map(
+      items
+        .filter((it) => it.source_name === source && it.gate.decision === "SAFE")
+        .map((it) => [it.id, it])
+    );
+    const targets = ids.map((id) => safeById.get(id)).filter((it) => it !== undefined);
+    const stale = ids.length - targets.length;
 
     if (targets.length === 0) {
-      return NextResponse.json({ error: "이 출처에 SAFE 후보가 없습니다." }, { status: 409 });
+      return NextResponse.json(
+        { error: "승인 대상이 없습니다. 목록이 오래되었을 수 있으니 새로고침 후 다시 시도하세요." },
+        { status: 409 }
+      );
     }
-    // 건수 직접 입력 확인 — 불일치면 현재 건수를 돌려주고 재확인
-    if (body.expectedCount !== targets.length) {
+    // 화면에 있던 건이 그사이 SAFE가 아니게 됐다면 전량 중단 — 부분 승인은 하지 않는다
+    if (stale > 0) {
       return NextResponse.json(
         {
-          error: `건수 불일치 — 현재 SAFE 후보는 ${targets.length}건입니다 (제외 ${excluded}건). 다시 확인하세요.`,
-          currentCount: targets.length,
-          excluded,
+          error: `목록이 변경되었습니다 — ${stale}건이 더 이상 SAFE가 아닙니다. 새로고침 후 다시 확인하세요.`,
         },
         { status: 409 }
       );
     }
 
-    const ids = targets.map((t) => t.id);
     const { data: updated, error: updateError } = await supabase
       .from("auditions")
       .update({ review_status: "approved", is_active: true })
@@ -142,7 +168,11 @@ export async function POST(req: Request) {
           action: "approve",
           audition_id: t.id,
           audition_title: t.title,
-          prev: { review_status: "pending", is_active: t.is_active },
+          prev: {
+            review_status: "pending",
+            is_active: t.is_active,
+            oneclick_blocked: t.oneclick_blocked ?? false,
+          },
           next: { review_status: "approved", is_active: true },
           note: `bulk:${source}`,
         }))
@@ -151,7 +181,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       approvedCount: updatedIds.size,
-      excluded,
       ...(logError ? { logWarning: "액션 로그 기록 실패" } : {}),
     });
   } catch (error) {

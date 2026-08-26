@@ -19,11 +19,15 @@ type ActionBody = {
 
 // unpublish(게시중지)는 pending으로 내려 재검토 대열로 보낸다 (R1b 긴급 쓰기).
 // approved 유지 시 크롤러 재발견 로직(supabase_client.py — auto|approved 재활성화)이 되살리기 때문.
-const TRANSITIONS: Record<string, { review_status: string; is_active: boolean }> = {
+const TRANSITIONS: Record<
+  string,
+  { review_status: string; is_active: boolean; oneclick_blocked?: boolean }
+> = {
   approve: { review_status: "approved", is_active: true },
   reject: { review_status: "rejected", is_active: false },
-  quarantine: { review_status: "quarantine", is_active: false },
-  unpublish: { review_status: "pending", is_active: false },
+  // 격리·게시중지는 대리 발송도 함께 막는다
+  quarantine: { review_status: "quarantine", is_active: false, oneclick_blocked: true },
+  unpublish: { review_status: "pending", is_active: false, oneclick_blocked: true },
 };
 
 export async function POST(req: Request) {
@@ -105,6 +109,15 @@ export async function POST(req: Request) {
       if (!loser.apply_email || loser.apply_email !== winner.apply_email) {
         return NextResponse.json(
           { error: "지원 이메일이 다른 공고는 병합할 수 없습니다." },
+          { status: 409 }
+        );
+      }
+      // 승자가 이미 죽은 건이면 병합은 멀쩡한 공고를 죽이는 결과가 된다 (dedup 후보에는 뜬다)
+      if (["rejected", "quarantine"].includes(winner.review_status)) {
+        return NextResponse.json(
+          {
+            error: `남길 공고가 ${winner.review_status} 상태입니다. 살아 있는 공고를 승자로 선택하세요.`,
+          },
           { status: 409 }
         );
       }
@@ -192,7 +205,12 @@ export async function POST(req: Request) {
     }
 
     const next = TRANSITIONS[body.action];
-    const prev = { review_status: row.review_status, is_active: row.is_active };
+    // oneclick_blocked도 스냅샷에 담아야 undo가 차단 상태까지 되돌린다
+    const prev = {
+      review_status: row.review_status,
+      is_active: row.is_active,
+      oneclick_blocked: row.oneclick_blocked ?? false,
+    };
 
     const { error: updateError } = await supabase
       .from("auditions")

@@ -8,6 +8,35 @@ export const dynamic = "force-dynamic";
 // 소스 면 (39 §1 ④, R1b 최소판): 출처별 현황 조회 + suppression 긴급 차단.
 // trust 승격/강등은 완전 별도 절차(§3)라 이 화면에 두지 않는다. 티어 A~X는 R2.
 
+type StatRow = {
+  source_name: string | null;
+  review_status: string;
+  is_active: boolean;
+};
+
+// PostgREST는 응답 행 수에 상한(기본 1000)이 있어 .limit(20000)이 조용히 잘린다.
+// 잘린 표본으로 집계하면 긴급 차단 판단의 근거 숫자가 틀리므로 range로 전량을 훑는다.
+const PAGE = 1000;
+const MAX_PAGES = 50;
+
+async function fetchAllAuditionRows(
+  supabase: ReturnType<typeof createAdminServiceClient>
+): Promise<{ data: StatRow[]; error: { message: string } | null }> {
+  const all: StatRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const { data, error } = await supabase
+      .from("auditions")
+      .select("source_name, review_status, is_active")
+      .order("id", { ascending: true })
+      .range(page * PAGE, page * PAGE + PAGE - 1);
+    if (error) return { data: all, error };
+    const rows = (data ?? []) as StatRow[];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return { data: all, error: null };
+}
+
 interface SourceStat {
   source: string;
   active: number;
@@ -30,10 +59,7 @@ export default async function AdminSourcesPage({
   const { block } = await searchParams;
 
   const [rowsRes, trustedRes, logsRes] = await Promise.all([
-    supabase
-      .from("auditions")
-      .select("source_name, review_status, is_active")
-      .limit(20000),
+    fetchAllAuditionRows(supabase),
     supabase.from("trusted_sources").select("source_name"),
     supabase
       .from("crawl_logs")
@@ -60,11 +86,7 @@ export default async function AdminSourcesPage({
   }
 
   const bySource = new Map<string, SourceStat>();
-  for (const r of (rowsRes.data ?? []) as {
-    source_name: string | null;
-    review_status: string;
-    is_active: boolean;
-  }[]) {
+  for (const r of rowsRes.data) {
     const head = (r.source_name ?? "출처 미상").split(":")[0].trim();
     const stat =
       bySource.get(head) ??

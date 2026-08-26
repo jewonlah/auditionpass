@@ -76,7 +76,7 @@ export function ReportsClient() {
 
   const decide = async (
     report: Report,
-    decision: "unpublish" | "quarantine" | "dismiss" | "note",
+    decision: "unpublish" | "quarantine" | "dismiss" | "note" | "unblock",
     unblockOneclick = false
   ) => {
     if (busy) return;
@@ -244,15 +244,25 @@ export function ReportsClient() {
                   >
                     유지 (신고 반려)
                   </button>
-                  {r.audition?.oneclick_blocked && (
-                    <button
-                      onClick={() => decide(r, "dismiss", true)}
-                      disabled={busy}
-                      className="rounded-lg border border-[#E7E5E0] px-3.5 py-2 text-[13px] font-semibold text-[#059669] disabled:opacity-50"
-                    >
-                      유지 + 원클릭 차단 해제
-                    </button>
-                  )}
+                  {r.audition?.oneclick_blocked &&
+                    (r.status === "received" ? (
+                      <button
+                        onClick={() => decide(r, "dismiss", true)}
+                        disabled={busy}
+                        className="rounded-lg border border-[#E7E5E0] px-3.5 py-2 text-[13px] font-semibold text-[#059669] disabled:opacity-50"
+                      >
+                        유지 + 원클릭 차단 해제
+                      </button>
+                    ) : (
+                      // 이미 처리된 신고 — 공고를 되살릴 때 쓰는 유일한 해제 경로
+                      <button
+                        onClick={() => decide(r, "unblock")}
+                        disabled={busy}
+                        className="rounded-lg border border-[#E7E5E0] px-3.5 py-2 text-[13px] font-semibold text-[#059669] disabled:opacity-50"
+                      >
+                        원클릭 차단 해제
+                      </button>
+                    ))}
                   <button
                     onClick={() => decide(r, "note")}
                     disabled={busy}

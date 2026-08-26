@@ -1,6 +1,7 @@
 import html
 import os
 import logging
+import time
 from datetime import date, datetime, timezone
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -123,12 +124,16 @@ def trusted_sources() -> set[str]:
 
 
 _suppression: list[tuple[str, str]] | None = None
+_suppression_at: float = 0.0
+# 스케줄러가 장기 실행이면 영구 캐시는 위험하다 — 운영자가 방금 등록한 긴급 차단이
+# 프로세스 재시작 전까지 반영되지 않아 차단된 공고가 계속 새로 수집된다.
+SUPPRESSION_TTL_SEC = 300
 
 
 def suppression_rules() -> list[tuple[str, str]]:
-    """suppression 긴급 차단 목록(014, 캐시). 테이블 미적용이면 빈 목록."""
-    global _suppression
-    if _suppression is None:
+    """suppression 긴급 차단 목록(014, 5분 캐시). 테이블 미적용이면 빈 목록."""
+    global _suppression, _suppression_at
+    if _suppression is None or (time.time() - _suppression_at) > SUPPRESSION_TTL_SEC:
         try:
             rows = supabase.table("suppression").select("kind, value").execute().data or []
             _suppression = [(r["kind"], r["value"]) for r in rows]
@@ -136,6 +141,7 @@ def suppression_rules() -> list[tuple[str, str]]:
                 logger.info(f"suppression 차단 규칙 {len(_suppression)}건 로드")
         except Exception:
             _suppression = []
+        _suppression_at = time.time()
     return _suppression
 
 

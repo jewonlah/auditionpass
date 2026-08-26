@@ -21,6 +21,9 @@ export interface AdminAuditionRow {
   review_status: string;
   is_active: boolean;
   created_at: string;
+  // 015 미적용 라이브에서는 undefined로 들어온다 (판정에서 자동 생략)
+  oneclick_blocked?: boolean | null;
+  reports_count?: number | null;
 }
 
 export interface DedupHit {
@@ -59,6 +62,9 @@ export function evaluateGate(
   // --- BLOCKED 조건 (39 §2) ---
   if (row.review_status === "quarantine") blocked.push("격리 상태 — 큐에서 승인 불가");
   if (opts.suppressionHit) blocked.push(`suppression 차단 중 (${opts.suppressionHit})`);
+  // 신고로 원클릭이 차단된 건은 큐에서 승인하지 않는다 — 신고 면에서 처리·해제해야 한다.
+  // (이 가드가 없으면 심각 신고로 강등된 공고가 SAFE로 떠서 일괄 승인에 쓸려 들어간다)
+  if (row.oneclick_blocked) blocked.push("심각 신고 접수 — 신고 면에서 처리 후 해제 필요");
   if (risk.score >= 7) blocked.push(`위험 점수 ${risk.score} (격리 기준 7+)`);
   if (risk.reasons.includes("비용 징수 문맥")) blocked.push("금전 요구");
   if (risk.minor && (risk.reasons.includes("성인·노출") || risk.reasons.includes("신분증·금융정보 요구")))
@@ -81,6 +87,7 @@ export function evaluateGate(
   }
 
   // --- CHECK 조건 (Guarded) ---
+  if ((row.reports_count ?? 0) > 0) check.push(`신고 ${row.reports_count}건 접수 이력 — 원문 확인`);
   if (!opts.trusted) check.push("신규·미신뢰 출처");
   if (risk.score > 0) check.push(`위험 신호 ${risk.score}점: ${risk.reasons.join(", ")}`);
   if (opts.dedup.length > 0) check.push(`중복 후보 ${opts.dedup.length}건 — 병합 검토`);

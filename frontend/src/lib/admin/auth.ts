@@ -24,6 +24,9 @@ export async function getAdminGate(): Promise<AdminGateResult> {
   if (!email || allowlist.length === 0 || !allowlist.includes(email)) {
     return { status: "forbidden" };
   }
+  // 이메일 미인증 계정은 어드민으로 인정하지 않는다 —
+  // 화이트리스트 주소가 아직 미가입이면 누구나 그 주소로 가입해 선점할 수 있다.
+  if (!user.email_confirmed_at) return { status: "forbidden" };
   return { status: "ok", email };
 }
 

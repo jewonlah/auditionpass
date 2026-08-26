@@ -7,6 +7,12 @@ import { syncReportsCount } from "@/lib/admin/reportsCount";
 // 공고 신고 접수 (36 §4). 로그인 필수 — 중복·장난 신고를 막고 처리 결과를 돌려주기 위함.
 // 심각 4종은 접수 즉시 자동 조치: 원클릭 차단 + 검수 강등(pending), 비신뢰 출처면 비활성.
 
+const DAILY_REPORT_LIMIT = 5;
+
+// 자동 강등을 적용해도 되는 상태 — 운영자가 이미 내린 판정(quarantine·rejected)은 덮지 않는다.
+// 덮으면 격리 표식이 사라져 검수 큐에 일반 pending으로 되살아나고 BLOCKED 게이트를 우회한다.
+const DOWNGRADABLE = ["auto", "approved", "pending"];
+
 export async function POST(req: Request) {
   try {
     const supabase = await createServerClient();
@@ -30,6 +36,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "신고 사유를 선택해 주세요." }, { status: 400 });
     }
     const detail = (body.detail ?? "").trim().slice(0, 1000) || null;
+
+    // 남용 방지: 계정당 24시간 신고 건수 제한.
+    // 없으면 계정 1개로 목록의 공고 id를 훑어 사이트 전체를 내릴 수 있다
+    // (unique 인덱스는 "같은 공고 재신고"만 막는다).
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { count: recentCount } = await supabase
+      .from("reports")
+      .select("id", { count: "exact", head: true })
+      .eq("reporter_id", user.id)
+      .gte("created_at", since);
+    if ((recentCount ?? 0) >= DAILY_REPORT_LIMIT) {
+      return NextResponse.json(
+        {
+          error: `하루에 신고할 수 있는 횟수(${DAILY_REPORT_LIMIT}건)를 넘었습니다. 급한 위험 신고는 고객센터로 알려주세요.`,
+          code: "RATE_LIMITED",
+        },
+        { status: 429 }
+      );
+    }
 
     const slaDue = new Date(Date.now() + slaHours(reason.severity) * 3600 * 1000);
 
@@ -80,11 +105,14 @@ export async function POST(req: Request) {
             .maybeSingle();
           const trusted = Boolean(trustedRow);
 
-          const update: Record<string, unknown> = {
-            oneclick_blocked: true,
-            review_status: "pending", // 강등 — 검수 큐로 되돌린다
-          };
-          if (!trusted) update.is_active = false;
+          const update: Record<string, unknown> = { oneclick_blocked: true };
+          // 강등은 자동 게재·승인 건에만. 격리·거절 건은 운영자 판정이라 그대로 둔다.
+          if (DOWNGRADABLE.includes(audition.review_status)) {
+            update.review_status = "pending";
+            if (!trusted) update.is_active = false;
+          } else {
+            update.is_active = false; // 이미 내려간 건은 계속 내려둔다
+          }
 
           const { error: actionError } = await service
             .from("auditions")
