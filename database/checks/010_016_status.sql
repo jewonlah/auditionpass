@@ -1,4 +1,4 @@
--- 010~015 적용 여부 실측 (어드민 R1 배포 게이트)
+-- 010~016 적용 여부 실측 (어드민 R1 배포 게이트)
 -- Supabase SQL 편집기에서 그대로 실행. ok=false 인 행이 아직 적용되지 않은 항목이다.
 -- to_regclass()를 쓰므로 테이블이 없어도 에러 없이 false를 반환한다.
 
@@ -66,4 +66,14 @@ union all
 select '015 reports 중복신고 방지 인덱스 존재',
        exists (select 1 from pg_indexes
                where schemaname='public' and tablename='reports'
-                 and indexname='idx_reports_unique_reporter');
+                 and indexname='idx_reports_unique_reporter')
+union all
+-- 016: 신고 삽입은 서버(service role) 전용. INSERT 정책이 남아 있으면
+-- 클라이언트가 /api/report의 등급·SLA·한도 검증을 우회할 수 있다.
+select '016 reports INSERT 정책 제거됨 (서버 전용)',
+       not exists (select 1 from pg_policies
+                   where schemaname='public' and tablename='reports' and cmd='INSERT')
+union all
+select '016 reports SELECT 정책은 유지 (본인 신고 조회)',
+       exists (select 1 from pg_policies
+               where schemaname='public' and tablename='reports' and cmd='SELECT');

@@ -58,8 +58,12 @@ export async function POST(req: Request) {
 
     const slaDue = new Date(Date.now() + slaHours(reason.severity) * 3600 * 1000);
 
-    // 본인 명의로 접수 (RLS: reporter_id = auth.uid())
-    const { error: insertError } = await supabase.from("reports").insert({
+    // 삽입은 service role로만 한다(016에서 클라이언트 insert 정책을 제거).
+    // 세션 클라이언트로 넣으면 사용자가 이 라우트를 건너뛰고 직접 넣어
+    // 등급·상태·SLA를 스스로 정하고 위 한도도 우회할 수 있다.
+    // reporter_id는 서버가 검증한 세션에서만 채운다.
+    const service = createServiceRoleClient();
+    const { error: insertError } = await service.from("reports").insert({
       audition_id: body.auditionId,
       reporter_id: user.id,
       reason: reason.code,
@@ -85,7 +89,6 @@ export async function POST(req: Request) {
     // (운영자 검토 전까지 피해 확산을 막는다 — 36 §4)
     let autoAction: string | null = null;
     try {
-      const service = createServiceRoleClient();
       await syncReportsCount(service, body.auditionId);
 
       if (reason.severity === "severe") {

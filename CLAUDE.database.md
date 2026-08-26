@@ -1,6 +1,6 @@
 # DB 에이전트 — Supabase 스키마 & 마이그레이션
 
-> 2026-08-26 갱신. 마이그레이션은 `database/migrations/001~015` 순서 적용이 정본. **`daily_apply_count`·지원 제한 함수는 009에서 DROP**, `subscriptions`는 미사용 잔존(신규 로직 금지, R3 결제 재설계 시 신규 스키마).
+> 2026-08-26 갱신. 마이그레이션은 `database/migrations/001~016` 순서 적용이 정본. **`daily_apply_count`·지원 제한 함수는 009에서 DROP**, `subscriptions`는 미사용 잔존(신규 로직 금지, R3 결제 재설계 시 신규 스키마).
 
 ## 역할
 스키마 설계, `database/migrations/NNN_*.sql` 작성(Supabase SQL 편집기 실행 전제), RLS·인덱스·pg_cron. 마이그레이션 거버넌스는 Phase 2-7에서 Supabase CLI로 전환 예정 — 그 전까지 **적용 여부를 파일만 보고 단정하지 말고 실측**(information_schema 조회).
@@ -15,18 +15,19 @@
 | 005_apply_type | auditions.apply_type ('email'\|'external') | ✅ |
 | 006_community | community_posts·comments·likes + RLS + 인덱스 | ✅ |
 | 007_category_system | auditions.category·sub_category·category_confidence·classify_method, genre CHECK 15종 | ✅ **2026-08-21 적용 + 백필 완료**(2,630건, 활성 1,854건 14카테고리 실저장). 분류기 2-1 연결 완료. `category`=한글 라벨, `genre`=레거시 3분류 유지 |
-| 008_crawl_logs | crawl_logs (미기록 상태, Phase 2-4) | ❌ **라이브 미적용 (2026-08-21 실측 — 테이블 없음)** |
+| 008_crawl_logs | crawl_logs (Phase 2-4) | ✅ **적용됨 (2026-08-26 실측 — `crawl_logs.details` 존재).** 2026-08-21 "미적용" 기록은 그 뒤에 해소됨 |
 | **009_renewal_apply_flow** | profiles.birth_year(+age nullable) · applications.status/opened_at · **bookmarks** · daily_apply_count·함수 DROP | ❓ 009a 적용 완료, **009b(DROP)는 Phase 1 배포 직후 실행 대기** |
-| 010_crawl_quality | crawl_logs.details · auditions.quality_score + 인덱스 | ❓ 실측 필요 (`checks/010_015_status.sql`) |
-| 011_review_queue | auditions.review_status · **trusted_sources** · **source_candidates** | ✅ 사용 중(검수 큐·tools/review.py 동작) — 실측 권장 |
+| 010_crawl_quality | crawl_logs.details · auditions.quality_score + 인덱스 | ✅ 2026-08-26 실측 |
+| 011_review_queue | auditions.review_status · **trusted_sources** · **source_candidates** | ✅ 2026-08-26 실측 |
 | 012_quarantine_status | review_status CHECK에 `quarantine` 추가 | ✅ 2026-08-25 적용 |
-| **013_admin_actions** | 어드민 액션 로그(prev/next 스냅샷·undo·`merge`/`unpublish` 포함) | ❌ **미적용 — 어드민 R1 게이트** |
-| **014_suppression** | suppression 긴급 차단(email/domain/source, RLS 활성·정책 없음=service role 전용) | ❌ **미적용 — 어드민 R1 게이트** |
-| **015_reports** | reports(사유 10종·SLA) · auditions.`oneclick_blocked` · auditions.`reports_count` | ❌ **미적용 — 어드민 R1 게이트** |
+| 013_admin_actions | 어드민 액션 로그(prev/next 스냅샷·undo·`merge`/`unpublish` 포함) | ✅ 2026-08-26 적용 |
+| 014_suppression | suppression 긴급 차단(email/domain/source, RLS 활성·정책 없음=service role 전용) | ✅ 2026-08-26 적용 |
+| 015_reports | reports(사유 10종·SLA) · auditions.`oneclick_blocked` · auditions.`reports_count` | ✅ 2026-08-26 적용 |
+| **016_reports_server_insert** | reports INSERT 정책 제거 → 신고 삽입은 서버(service role) 전용 | ✅ 2026-08-26 적용 (Codex 교차 리뷰 P1) |
 
-> **어드민 R1 배포 게이트**: 013 → 014 → 015 순서로 적용 후 `database/checks/010_015_status.sql` 실행해 전 행 `ok=true` 확인.
-> 미적용 시 각 화면은 크래시 대신 안내 문구로 강등되지만, 신고 접수·액션 로그·undo·일괄 승인은 동작하지 않는다.
-> 프론트 환경변수 `ADMIN_EMAILS`(쉼표 구분)도 함께 설정해야 `/admin`이 열린다(미설정 시 전체 404).
+> **어드민 R1 배포 게이트: 충족됨.** 013~016 적용 완료 + `ADMIN_EMAILS` 설정 완료(2026-08-26).
+> 상태 재확인은 `database/checks/010_016_status.sql` 실행 — 전 행 `ok=true`가 정상.
+> 마이그레이션이 빠진 환경에서는 각 화면이 크래시 대신 안내 문구로 강등된다.
 
 ## 현행 테이블 요약
 ```sql
@@ -54,7 +55,8 @@ subscriptions   (잔존·미사용)
 ## RLS 원칙
 - profiles/applications/bookmarks/community_likes: 본인 행만 (`auth.uid() = user_id`)
 - auditions: 전체 select 공개, 쓰기는 service_role(크롤러)만
-- **reports**: 본인 신고만 select/insert. 처리(update)는 정책 없음 = service role(어드민 API)만
+- **reports**: 본인 신고 **select만** 허용. insert·update 모두 정책 없음 = service role 전용.
+  insert를 클라이언트에 열어두면 `/api/report`의 사유→등급 매핑·SLA·24h 한도를 통째로 우회하므로 016에서 제거함 — 되살리지 말 것
 - **admin_actions·suppression**: RLS 활성 + 정책 없음 = service role 전용. 어드민 게이트(`ADMIN_EMAILS`) 통과 후에만 접근
 - community_posts/comments: `is_active = true` 공개 조회, 본인 insert/update
 - 새 테이블은 반드시 `enable row level security` + 정책 3종(select/insert/delete) 세트로
@@ -67,8 +69,6 @@ subscriptions   (잔존·미사용)
 - 이 문서에 폐지된 예제 SQL(지원 제한 함수 등)을 되살리지 말 것
 
 ## 예정 작업
-- **013·014·015 라이브 적용 (어드민 R1 게이트, 최우선)** → `database/checks/010_015_status.sql`로 확인 + `ADMIN_EMAILS` 환경변수 설정
-- **008 라이브 적용** (사용자: `! supabase db query --linked -f database/migrations/008_crawl_logs.sql`) → `database/checks/007_008_status.sql`로 확인 — 2-4 crawl_logs 기록의 전제
 - 재분류가 필요하면 `crawler/scripts/backfill_categories.py`(dry-run 기본 → `--apply`, 멱등)
 - 2-3 인코딩 손상 `source_name` 레코드 정정
 - 2-7 Supabase CLI 마이그레이션 전환, profiles.phone 드리프트 정리

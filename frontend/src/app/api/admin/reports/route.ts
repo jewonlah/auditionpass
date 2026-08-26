@@ -3,6 +3,24 @@ import { getAdminEmail } from "@/lib/admin/auth";
 import { createAdminServiceClient } from "@/lib/admin/service";
 import { syncReportsCount } from "@/lib/admin/reportsCount";
 
+// 원클릭 차단을 풀기 전, 같은 공고에 아직 처리되지 않은 다른 심각 신고가 없는지 본다.
+// 신고가 여러 건일 때 그중 하나만 반려하고 차단을 풀면, 미해결 심각 신고를 남긴 채
+// 대리 발송이 다시 열린다.
+async function blockingSevereReports(
+  supabase: ReturnType<typeof createAdminServiceClient>,
+  auditionId: string,
+  exceptReportId: number
+): Promise<number> {
+  const { count } = await supabase
+    .from("reports")
+    .select("id", { count: "exact", head: true })
+    .eq("audition_id", auditionId)
+    .eq("severity", "severe")
+    .eq("status", "received")
+    .neq("id", exceptReportId);
+  return count ?? 0;
+}
+
 // 어드민 신고 처리 (39 §1 ③): 조회 + 최소 쓰기(게시중지·격리·유지) + 처리 메모.
 // 처리 결과는 유저에게 3상태(접수됨/조치됨/유지됨)로만 노출된다.
 
@@ -92,6 +110,15 @@ export async function POST(req: Request) {
     // 원클릭 차단만 해제 — 신고 상태는 건드리지 않는다.
     // (조치 완료된 신고는 dismiss 경로를 못 쓰므로 이게 없으면 차단이 영구 고착된다)
     if (body.decision === "unblock") {
+      const pending = await blockingSevereReports(supabase, report.audition_id, report.id);
+      if (pending > 0) {
+        return NextResponse.json(
+          {
+            error: `이 공고에 미처리 심각 신고가 ${pending}건 더 있습니다. 먼저 처리한 뒤 해제하세요.`,
+          },
+          { status: 409 }
+        );
+      }
       const { error } = await supabase
         .from("auditions")
         .update({ oneclick_blocked: false })
@@ -165,6 +192,15 @@ export async function POST(req: Request) {
       // dismiss(유지) — 자동 차단을 풀지 여부는 운영자가 명시적으로 선택
       actionLabel = "유지";
       if (body.unblockOneclick && audition) {
+        const pending = await blockingSevereReports(supabase, report.audition_id, report.id);
+        if (pending > 0) {
+          return NextResponse.json(
+            {
+              error: `이 공고에 미처리 심각 신고가 ${pending}건 더 있습니다. 먼저 처리한 뒤 해제하세요.`,
+            },
+            { status: 409 }
+          );
+        }
         const { error: unblockError } = await supabase
           .from("auditions")
           .update({ oneclick_blocked: false })
