@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
+import { TrustBadge } from "@/components/audition/TrustBadge";
 import { formatDday, getDday } from "@/lib/utils";
 import type { Audition } from "@/types";
 
@@ -26,13 +27,14 @@ export function AuditionCard({ audition }: AuditionCardProps) {
         </div>
         <Badge variant={ddayVariant}>{formatDday(audition.deadline)}</Badge>
       </div>
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge>{audition.genre}</Badge>
         {audition.apply_type === "email" ? (
           <Badge variant="success">원클릭 지원</Badge>
         ) : (
           <Badge className="bg-gray-100 text-gray-500">사이트 지원</Badge>
         )}
+        <TrustBadge audition={audition} />
       </div>
     </Link>
   );

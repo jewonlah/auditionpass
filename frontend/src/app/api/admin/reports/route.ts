@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminEmail } from "@/lib/admin/auth";
 import { createAdminServiceClient } from "@/lib/admin/service";
+import { syncReportsCount } from "@/lib/admin/reportsCount";
 
 // 어드민 신고 처리 (39 §1 ③): 조회 + 최소 쓰기(게시중지·격리·유지) + 처리 메모.
 // 처리 결과는 유저에게 3상태(접수됨/조치됨/유지됨)로만 노출된다.
@@ -169,6 +170,9 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    // 유지(반려) 처리로 유효 신고가 줄면 신뢰 배지도 함께 회복되어야 한다
+    await syncReportsCount(supabase, report.audition_id);
 
     return NextResponse.json({ success: true, actionLabel });
   } catch (error) {

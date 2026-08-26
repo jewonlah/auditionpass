@@ -15,6 +15,7 @@ import {
 import { ApplyButton } from "@/components/audition/ApplyButton";
 import { DescriptionRenderer } from "@/components/audition/DescriptionRenderer";
 import { ReportButton } from "@/components/audition/ReportButton";
+import { TrustBadge } from "@/components/audition/TrustBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDday, getDday, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -154,6 +155,11 @@ export default function AuditionDetailPage({
               <span>{audition.source_name}</span>
             </div>
           )}
+        </div>
+
+        {/* 신뢰 배지 3단계 + 고지 (36 §4) */}
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          <TrustBadge audition={audition} showHint />
         </div>
       </div>
 

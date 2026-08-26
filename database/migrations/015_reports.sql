@@ -6,6 +6,11 @@
 -- 게시(is_active)와 분리: 신뢰 출처 공고는 노출을 유지하되 대리 발송만 막는다.
 alter table auditions add column if not exists oneclick_blocked boolean not null default false;
 
+-- 유효 신고 수(반려 제외) 비정규화 — 신뢰 배지(36 §4)를 공고 행만으로 계산하기 위함.
+-- reports는 RLS로 본인 신고만 조회 가능하므로 클라이언트가 직접 집계할 수 없다.
+-- 접수 시 증가, 운영자 처리 시 재계산 (frontend/src/app/api/report·admin/reports).
+alter table auditions add column if not exists reports_count integer not null default 0;
+
 create table if not exists reports (
   id bigserial primary key,
   audition_id uuid not null references auditions(id) on delete cascade,

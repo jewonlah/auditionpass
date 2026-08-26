@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { REASON_MAP, slaHours } from "@/lib/reports";
+import { syncReportsCount } from "@/lib/admin/reportsCount";
 
 // 공고 신고 접수 (36 §4). 로그인 필수 — 중복·장난 신고를 막고 처리 결과를 돌려주기 위함.
 // 심각 4종은 접수 즉시 자동 조치: 원클릭 차단 + 검수 강등(pending), 비신뢰 출처면 비활성.
@@ -55,11 +56,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // 심각 4종 자동 조치 — 운영자 검토(24h) 전까지 피해 확산을 막는다
+    // 신뢰 배지용 유효 신고 수 갱신 + 심각 4종 자동 조치
+    // (운영자 검토 전까지 피해 확산을 막는다 — 36 §4)
     let autoAction: string | null = null;
-    if (reason.severity === "severe") {
-      try {
-        const service = createServiceRoleClient();
+    try {
+      const service = createServiceRoleClient();
+      await syncReportsCount(service, body.auditionId);
+
+      if (reason.severity === "severe") {
         const { data: audition } = await service
           .from("auditions")
           .select("id, source_name, is_active, review_status")
@@ -98,9 +102,9 @@ export async function POST(req: Request) {
               .eq("reporter_id", user.id);
           }
         }
-      } catch {
-        // 자동 조치 실패해도 신고 접수 자체는 유효 — 어드민 큐에서 처리된다
       }
+    } catch {
+      // 자동 조치·집계 실패해도 신고 접수 자체는 유효 — 어드민 큐에서 처리된다
     }
 
     return NextResponse.json({

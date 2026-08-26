@@ -42,6 +42,10 @@ export interface Audition {
   is_active: boolean;
   /** 심각 신고 접수 시 자동 차단 (36 §4) — 015 미적용 라이브에서는 undefined */
   oneclick_blocked?: boolean;
+  /** 반려되지 않은 신고 수 — 신뢰 배지 계산용 (015) */
+  reports_count?: number;
+  /** 검수 상태 — 신뢰 배지 계산용 (011) */
+  review_status?: 'auto' | 'pending' | 'approved' | 'rejected' | 'quarantine';
   crawled_at: string;
   created_at: string;
 }
