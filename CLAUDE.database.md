@@ -1,6 +1,6 @@
 # DB 에이전트 — Supabase 스키마 & 마이그레이션
 
-> 2026-08-26 갱신. 마이그레이션은 `database/migrations/001~016` 순서 적용이 정본. **`daily_apply_count`·지원 제한 함수는 009에서 DROP**, `subscriptions`는 미사용 잔존(신규 로직 금지, R3 결제 재설계 시 신규 스키마).
+> 2026-08-26 갱신. 마이그레이션은 `database/migrations/001~017` 순서 적용이 정본. **`daily_apply_count`·지원 제한 함수는 009에서 DROP**, `subscriptions`는 미사용 잔존(신규 로직 금지, R3 결제 재설계 시 신규 스키마).
 
 ## 역할
 스키마 설계, `database/migrations/NNN_*.sql` 작성(Supabase SQL 편집기 실행 전제), RLS·인덱스·pg_cron. 마이그레이션 거버넌스는 Phase 2-7에서 Supabase CLI로 전환 예정 — 그 전까지 **적용 여부를 파일만 보고 단정하지 말고 실측**(information_schema 조회).
@@ -23,10 +23,11 @@
 | 013_admin_actions | 어드민 액션 로그(prev/next 스냅샷·undo·`merge`/`unpublish` 포함) | ✅ 2026-08-26 적용 |
 | 014_suppression | suppression 긴급 차단(email/domain/source, RLS 활성·정책 없음=service role 전용) | ✅ 2026-08-26 적용 |
 | 015_reports | reports(사유 10종·SLA) · auditions.`oneclick_blocked` · auditions.`reports_count` | ✅ 2026-08-26 적용 |
-| **016_reports_server_insert** | reports INSERT 정책 제거 → 신고 삽입은 서버(service role) 전용 | ✅ 2026-08-26 적용 (Codex 교차 리뷰 P1) |
+| 016_reports_server_insert | reports INSERT 정책 제거 → 신고 삽입은 서버(service role) 전용 | ✅ 2026-08-26 적용 (Codex 교차 리뷰 P1) |
+| **017_agent_queue** | 인테이크 잔여물 큐(공고당 1행, RLS 정책 없음=service role 전용) | ✅ 2026-08-27 적용 |
 
-> **어드민 R1 배포 게이트: 충족됨.** 013~016 적용 완료 + `ADMIN_EMAILS` 설정 완료(2026-08-26).
-> 상태 재확인은 `database/checks/010_016_status.sql` 실행 — 전 행 `ok=true`가 정상.
+> **어드민 R1 배포 게이트: 충족됨.** 013~017 적용 완료 + `ADMIN_EMAILS` 설정 완료(2026-08-26).
+> 상태 재확인은 `database/checks/migration_status.sql` 실행 — 전 행 `ok=true`가 정상.
 > 마이그레이션이 빠진 환경에서는 각 화면이 크래시 대신 안내 문구로 강등된다.
 
 ## 현행 테이블 요약
@@ -43,6 +44,7 @@ crawl_logs      run_date source_name total_collected total_saved duplicates_skip
 trusted_sources source_name(PK) note trusted_at                                   -- 011 (자동 게재 허용 출처)
 source_candidates id url(unique) kind found_by hits sample_title status           -- 011 (발견 큐)
 admin_actions   id actor_email action audition_id audition_title prev next undone_by note created_at  -- 013
+agent_queue     id audition_id(unique) title url reason status note resolved_by/at first_seen last_seen  -- 017
 suppression     id kind('email'|'domain'|'source') value reason created_by  unique(kind,value)        -- 014
 reports         id audition_id reporter_id reason(10종) severity status sla_due_at auto_action
                 admin_note handled_by handled_at  unique(audition,reporter)       -- 015
@@ -57,7 +59,7 @@ subscriptions   (잔존·미사용)
 - auditions: 전체 select 공개, 쓰기는 service_role(크롤러)만
 - **reports**: 본인 신고 **select만** 허용. insert·update 모두 정책 없음 = service role 전용.
   insert를 클라이언트에 열어두면 `/api/report`의 사유→등급 매핑·SLA·24h 한도를 통째로 우회하므로 016에서 제거함 — 되살리지 말 것
-- **admin_actions·suppression**: RLS 활성 + 정책 없음 = service role 전용. 어드민 게이트(`ADMIN_EMAILS`) 통과 후에만 접근
+- **admin_actions·suppression·agent_queue**: RLS 활성 + 정책 없음 = service role 전용. 어드민 게이트(`ADMIN_EMAILS`) 통과 후에만 접근
 - community_posts/comments: `is_active = true` 공개 조회, 본인 insert/update
 - 새 테이블은 반드시 `enable row level security` + 정책 3종(select/insert/delete) 세트로
 

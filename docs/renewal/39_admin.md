@@ -61,12 +61,14 @@
 | 신뢰 배지 3단계 (36 §4) | ✅ | `lib/trust.ts` — 카드·상세 |
 | 소스 강등 (36 §5 — 30일 신고 3·삭제 2·사기 2) | ✅ | `lib/admin/sourceHealth.ts` — 소스 면·오늘 홈 |
 | 내 신고 내역 (유저 3상태) | ✅ | `/my/reports` + 신고 버튼 재방문 시 상태 표시 |
-| ⑤ 인테이크 | ⏸ | agent_queue가 로컬 JSON이라 웹에서 조회 불가 — 선행 작업 필요 |
+| ⑤ 인테이크 (잔여물 격리·처리 + 출처 후보 승인·거절) | ✅ | `/admin/intake` — agent_queue를 017로 DB 이관 |
 | ⑥ 발송 로그 · 원클릭 활성화(`o`) | ⏸ M2 | 발송 코어와 함께 |
 | 심각 신고 시 기존 지원자 주의 알림 발송 | ⏸ M2 | 현재는 어드민에 대상 인원수만 표시(외부 발송이라 유보) |
 
-**배포 게이트**: 마이그레이션 `013` → `014` → `015` 적용 + `ADMIN_EMAILS` 환경변수 설정.
-적용 확인은 `database/checks/010_016_status.sql`. 미적용 시 화면은 안내 문구로 강등된다.
+**배포 상태**: 마이그레이션 `013`~`017` 라이브 적용 완료 + `ADMIN_EMAILS` 설정 완료(2026-08-26~27).
+재확인은 `database/checks/migration_status.sql` — 전 행 `ok=true`가 정상. 미적용 환경에서는 각 화면이 안내 문구로 강등된다.
+
+**인테이크 데이터 흐름**: `python -m tools.ingest process`가 규칙으로 못 푼 잔여물을 `agent_queue`(017, 공고당 1행 upsert)에 넣고, 다음 실행 때 값이 채워진 건은 자동으로 닫는다. 기존 `/ingest` 스킬 호환을 위해 `crawler/intake/agent_queue.json`도 계속 함께 쓴다(DB가 정본).
 
 **회귀 테스트**: `cd frontend && npm test` (node --test + tsx, 31건). 게이트·risk 포팅·신뢰 배지의 경계 조건이 들어 있다 — 아래 불변식을 깨면 여기서 먼저 깨진다.
 

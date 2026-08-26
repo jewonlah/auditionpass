@@ -45,7 +45,9 @@ export default async function AdminLayout({
           <Link href="/admin/sources" className="rounded-lg px-3 py-2 hover:bg-[#F3F4F6]">
             소스·차단
           </Link>
-          <span className="cursor-default rounded-lg px-3 py-2 text-[#C9C7C1]">인테이크 (R2)</span>
+          <Link href="/admin/intake" className="rounded-lg px-3 py-2 hover:bg-[#F3F4F6]">
+            인테이크
+          </Link>
           <span className="cursor-default rounded-lg px-3 py-2 text-[#C9C7C1]">발송 로그 (M2)</span>
         </nav>
         <div className="mt-auto border-t border-[#F0F0EE] px-5 py-3.5 text-[11.5px] leading-relaxed text-[#8A8A86]">

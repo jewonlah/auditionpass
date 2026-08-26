@@ -1,4 +1,4 @@
--- 010~016 적용 여부 실측 (어드민 R1 배포 게이트)
+-- 마이그레이션 적용 여부 실측 (010~ ). 새 마이그레이션을 추가하면 여기에 행을 덧붙일 것.
 -- Supabase SQL 편집기에서 그대로 실행. ok=false 인 행이 아직 적용되지 않은 항목이다.
 -- to_regclass()를 쓰므로 테이블이 없어도 에러 없이 false를 반환한다.
 
@@ -76,4 +76,11 @@ select '016 reports INSERT 정책 제거됨 (서버 전용)',
 union all
 select '016 reports SELECT 정책은 유지 (본인 신고 조회)',
        exists (select 1 from pg_policies
-               where schemaname='public' and tablename='reports' and cmd='SELECT');
+               where schemaname='public' and tablename='reports' and cmd='SELECT')
+union all
+-- 017: 인테이크 잔여물 큐 (어드민 인테이크 면이 이걸 읽는다)
+select '017 agent_queue 테이블 존재',
+       to_regclass('public.agent_queue') is not null
+union all
+select '017 agent_queue RLS 활성 (정책 없음 = service role 전용)',
+       coalesce((select relrowsecurity from pg_class where oid = to_regclass('public.agent_queue')), false);

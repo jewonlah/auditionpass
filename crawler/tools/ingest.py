@@ -23,7 +23,7 @@ import json
 import re
 import sys
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from scrapers.base import AuditionData, BaseScraper
@@ -399,12 +399,54 @@ def cmd_process(args) -> None:
 
     print(f"\nprocess 결과: 시도 {stats['tried']} | 원문 확보 {stats['fetched']} | "
           f"이메일 +{stats['email']} | 마감 +{stats['deadline']} | 접근 실패 {stats['blocked']}")
+    # DB가 정본(017) — 어드민 인테이크 면이 이걸 읽는다.
+    # JSON은 기존 /ingest 스킬 흐름 호환을 위해 계속 함께 쓴다.
+    synced = _sync_agent_queue(sb, agent_residual, [r["id"] for r in rows])
+
     if agent_residual:
         INTAKE_DIR.mkdir(exist_ok=True)
         qpath = INTAKE_DIR / "agent_queue.json"
         qpath.write_text(json.dumps(agent_residual, ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"에이전트 배치 대상 {len(agent_residual)}건 → {qpath}")
+        print(f"에이전트 배치 대상 {len(agent_residual)}건 → {qpath}{synced}")
         print("처리: Claude Code에서 '/ingest 큐 처리' (규칙이 못 푼 잔여물을 에이전트가 전사·보정)")
+
+
+def _sync_agent_queue(sb, residual: list[dict], processed_ids: list[str]) -> str:
+    """잔여물을 agent_queue(017)에 반영. 017 미적용이면 조용히 건너뛴다(JSON 경로는 유지).
+
+    - 남은 잔여물: 공고당 1행 upsert (재실행해도 쌓이지 않음)
+    - 이번에 해결된 건: 열린 행을 resolved로 닫는다 (운영자가 같은 걸 또 보지 않게)
+    """
+    if not processed_ids:
+        return ""
+    now = datetime.now(timezone.utc).isoformat()
+    residual_ids = {r["id"] for r in residual}
+    try:
+        if residual:
+            sb.table("agent_queue").upsert(
+                [
+                    {
+                        "audition_id": r["id"],
+                        "title": r["title"],
+                        "url": r["url"],
+                        "reason": r["reason"],
+                        "status": "open",
+                        "last_seen": now,
+                    }
+                    for r in residual
+                ],
+                on_conflict="audition_id",
+            ).execute()
+        # 이번 회차에 규칙으로 풀린 공고는 큐에서 닫는다
+        fixed = [i for i in processed_ids if i not in residual_ids]
+        if fixed:
+            sb.table("agent_queue").update(
+                {"status": "resolved", "resolved_by": "ingest.process", "resolved_at": now}
+            ).in_("audition_id", fixed).eq("status", "open").execute()
+        return " (DB 동기화 완료)"
+    except Exception as e:
+        print(f"  [경고] agent_queue 동기화 생략(017 미적용?): {e}")
+        return " (DB 동기화 생략)"
 
 
 def main() -> None:
