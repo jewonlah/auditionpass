@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAdminGate } from "@/lib/admin/auth";
 import { createAdminServiceClient } from "@/lib/admin/service";
+import { fetchSourceHealth } from "@/lib/admin/sourceHealth";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +127,17 @@ export default async function AdminTodayPage() {
   const staleTop = [...staleBySource.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   const staleTotal = (stalePending.data ?? []).length;
 
+  // 신뢰 출처 중 30일 신고 기준을 넘긴 강등 후보 (36 §5)
+  const { data: trustedRows } = await supabase.from("trusted_sources").select("source_name");
+  const health = await fetchSourceHealth(supabase);
+  const demoteCandidates = health
+    ? [...new Set(
+        ((trustedRows ?? []) as { source_name: string }[]).map((t) =>
+          t.source_name.split(":")[0].trim()
+        )
+      )].filter((s) => health.get(s)?.demote)
+    : [];
+
   // 신고 — 015 미적용이면 조회 실패로 강등 표시
   const reportsUnavailable = Boolean(openReports.error);
   const reports = (openReports.data ?? []) as {
@@ -233,6 +245,17 @@ export default async function AdminTodayPage() {
             <span className={pill("bg-[#FFFBEB] text-[#B45309]")}>{sourceAlerts.length}</span>
             소스 상태 — 3일+ 무저장
           </div>
+          {demoteCandidates.length > 0 && (
+            <div className={row}>
+              <span className="font-bold text-[#B45309]">
+                강등 후보 {demoteCandidates.length}곳 — {demoteCandidates.slice(0, 2).join(", ")}
+                {demoteCandidates.length > 2 ? " 외" : ""}
+              </span>
+              <Link href="/admin/sources" className="ml-auto text-[12.5px] font-bold text-primary">
+                소스 관리 →
+              </Link>
+            </div>
+          )}
           {crawlLogsUnavailable ? (
             <p className="px-4 py-3 text-[13px] text-[#8A8A86]">
               crawl_logs 테이블 조회 불가 — 008/010 마이그레이션 라이브 적용 확인 필요

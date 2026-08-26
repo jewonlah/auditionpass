@@ -2,11 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { getAdminGate } from "@/lib/admin/auth";
 import { createAdminServiceClient } from "@/lib/admin/service";
 import { SuppressionManager } from "./SuppressionManager";
+import { DemoteButton } from "./DemoteButton";
+import { fetchSourceHealth, HEALTH_WINDOW_DAYS } from "@/lib/admin/sourceHealth";
 
 export const dynamic = "force-dynamic";
 
-// 소스 면 (39 §1 ④, R1b 최소판): 출처별 현황 조회 + suppression 긴급 차단.
-// trust 승격/강등은 완전 별도 절차(§3)라 이 화면에 두지 않는다. 티어 A~X는 R2.
+// 소스 면 (39 §1 ④): 출처별 현황 + 30일 신고 집계·강등(36 §5) + suppression 긴급 차단.
+// 승격(trust 부여)은 완전 별도 절차(39 §3)라 여기 없다. 티어 A~X 등급 표기는 R2.
 
 type StatRow = {
   source_name: string | null;
@@ -58,7 +60,7 @@ export default async function AdminSourcesPage({
   const supabase = createAdminServiceClient();
   const { block } = await searchParams;
 
-  const [rowsRes, trustedRes, logsRes] = await Promise.all([
+  const [rowsRes, trustedRes, logsRes, health] = await Promise.all([
     fetchAllAuditionRows(supabase),
     supabase.from("trusted_sources").select("source_name"),
     supabase
@@ -66,6 +68,7 @@ export default async function AdminSourcesPage({
       .select("source_name, run_date, total_saved")
       .order("run_date", { ascending: false })
       .limit(500),
+    fetchSourceHealth(supabase),
   ]);
 
   const trusted = new Set(
@@ -103,11 +106,35 @@ export default async function AdminSourcesPage({
     if (r.review_status === "quarantine") stat.quarantine += 1;
     bySource.set(head, stat);
   }
-  const stats = [...bySource.values()].sort((a, b) => b.active - a.active);
+  // 강등 후보(신뢰 출처인데 30일 기준 초과)를 맨 위로 올린다
+  const stats = [...bySource.values()].sort((a, b) => {
+    const aDemote = a.trusted && health?.get(a.source)?.demote ? 1 : 0;
+    const bDemote = b.trusted && health?.get(b.source)?.demote ? 1 : 0;
+    if (aDemote !== bDemote) return bDemote - aDemote;
+    return b.active - a.active;
+  });
+  const demoteCount = stats.filter(
+    (s) => s.trusted && health?.get(s.source)?.demote
+  ).length;
 
   return (
     <main className="flex flex-col gap-4 p-5 lg:p-7">
-      <h1 className="text-[22px] font-extrabold tracking-tight">소스</h1>
+      <div className="flex flex-wrap items-baseline gap-3">
+        <h1 className="text-[22px] font-extrabold tracking-tight">소스</h1>
+        {health === null ? (
+          <span className="text-[12.5px] text-[#8A8A86]">
+            신고 집계 불가 — 015 마이그레이션 확인 필요
+          </span>
+        ) : demoteCount > 0 ? (
+          <span className="rounded-full bg-[#FFFBEB] px-2.5 py-0.5 text-[11.5px] font-bold text-[#B45309]">
+            강등 후보 {demoteCount}곳
+          </span>
+        ) : (
+          <span className="text-[12.5px] text-[#8A8A86]">
+            최근 {HEALTH_WINDOW_DAYS}일 강등 기준 초과 출처 없음
+          </span>
+        )}
+      </div>
 
       <SuppressionManager initialBlockValue={block ?? ""} />
 
@@ -120,6 +147,7 @@ export default async function AdminSourcesPage({
               <th className="px-3 py-2.5 text-right">pending</th>
               <th className="px-3 py-2.5 text-right">격리</th>
               <th className="px-3 py-2.5">신뢰</th>
+              <th className="px-3 py-2.5 text-right">신고 {HEALTH_WINDOW_DAYS}일</th>
               <th className="px-3 py-2.5">최근 저장</th>
               <th className="px-3 py-2.5"></th>
             </tr>
@@ -142,11 +170,31 @@ export default async function AdminSourcesPage({
                     <span className="text-[#C9C7C1]">—</span>
                   )}
                 </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {health === null ? (
+                    <span className="text-[#C9C7C1]">—</span>
+                  ) : (health.get(s.source)?.reports ?? 0) === 0 ? (
+                    <span className="text-[#C9C7C1]">0</span>
+                  ) : (
+                    <span className="font-bold text-[#DC2626]">
+                      {health.get(s.source)?.reports}
+                    </span>
+                  )}
+                </td>
                 <td className="px-3 py-2 text-[12px] text-[#8A8A86]">
                   {logsRes.error ? "crawl_logs 없음" : (s.lastSaved ?? "이력 없음")}
                 </td>
-                <td className="px-3 py-2 text-right">
-                  <a href={`?block=${encodeURIComponent(s.source)}`} className="text-[12px] font-bold text-[#DC2626]">
+                <td className="px-3 py-2 text-right whitespace-nowrap">
+                  {s.trusted && health?.get(s.source)?.demote && (
+                    <DemoteButton
+                      source={s.source}
+                      reasons={health.get(s.source)!.reasons}
+                    />
+                  )}
+                  <a
+                    href={`?block=${encodeURIComponent(s.source)}`}
+                    className="ml-2 text-[12px] font-bold text-[#DC2626]"
+                  >
                     긴급 차단
                   </a>
                 </td>
