@@ -27,7 +27,7 @@ _MAX_PAGES = 2
 
 
 class CastingnaraScraper(BaseScraper):
-    source_name = "캐스팅나��"
+    source_name = "캐스팅나라"
     base_url = "https://castingnara.com"
 
     def scrape(self) -> list[AuditionData]:
@@ -158,7 +158,7 @@ class CastingnaraScraper(BaseScraper):
         result["email"] = self.extract_email(full_text) or self.extract_email(resp.text)
         result["phone"] = self.extract_phone(full_text)
         result["location"] = self.extract_location(full_text)
-        result["deadline"] = self.parse_deadline(full_text)
+        result["deadline"] = self.parse_deadline_smart(full_text, require_label=True)
 
         # 지원 자격
         req_el = soup.find(

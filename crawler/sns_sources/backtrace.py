@@ -143,7 +143,7 @@ class BacktraceScraper(BaseScraper):
             src = f"네이버카페:{_short_cafe(it.cafename)}" if "cafe.naver.com" in it.link else f"네이버웹문서:{domain_of(it.link)}"
             out.append(AuditionData(
                 title=it.title, company=None, genre=BaseScraper.classify_genre(text),
-                deadline=_extract_deadline(text, posted_at=date.today()),
+                deadline=_extract_deadline(text, posted_at=date.today(), posted_at_exact=False),
                 apply_email=extract_apply_email(it.description),
                 description=(f"{it.description}\n\n---\n출처: 원글 {it.cafename} (요약만 수집 — 전문·지원 방법은 원문 링크 확인)")[:2000],
                 requirements=None, source_url=it.link, source_name=src,

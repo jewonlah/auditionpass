@@ -172,7 +172,7 @@ def is_candidate(item: CafeItem) -> tuple[bool, str]:
 
 def to_audition(item: CafeItem) -> AuditionData:
     text = f"{item.title}\n{item.description}"
-    deadline = _extract_deadline(text, posted_at=date.today())
+    deadline = _extract_deadline(text, posted_at=date.today(), posted_at_exact=False)
     apply_email = extract_apply_email(item.description)
     cafe = _short_cafe(item.cafename)
     desc = (

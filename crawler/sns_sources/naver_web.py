@@ -163,7 +163,7 @@ class NaverWebScraper(BaseScraper):
             label = "블로그" if self.kind == "blog" else "홈페이지"
             out.append(AuditionData(
                 title=it.title, company=None, genre=BaseScraper.classify_genre(text),
-                deadline=_extract_deadline(text, posted_at=date.today()), apply_email=email,
+                deadline=_extract_deadline(text, posted_at=date.today(), posted_at_exact=False), apply_email=email,
                 description=(f"{it.description}\n\n---\n출처: {label} '{it.cafename}' (요약만 수집 — 전문·지원 방법은 원문 링크 확인)")[:2000],
                 requirements=None, source_url=it.link, source_name=source_name,
             ))

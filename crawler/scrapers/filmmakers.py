@@ -209,12 +209,12 @@ class FilmmakersScraper(BaseScraper):
                 parent = el.find_parent()
                 if parent:
                     context = parent.get_text(strip=True)
-                dl = self.parse_deadline(context)
+                dl = self.parse_deadline_smart(context)
                 if dl:
                     result["deadline"] = dl
                     break
         if not result["deadline"]:
-            result["deadline"] = self.parse_deadline(full_text)
+            result["deadline"] = self.parse_deadline_smart(full_text, require_label=True)
 
         # 제작사 (상세 페이지에서 재시도)
         for kw in ["제작사", "제작", "주최", "기획"]:

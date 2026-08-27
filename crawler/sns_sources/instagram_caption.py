@@ -36,7 +36,9 @@ _DATE_RE = re.compile(r"(\d{4})[.\-/년]\s*(\d{1,2})[.\-/월]\s*(\d{1,2})")
 # 연도 없는 월-일 (마감 맥락에서만 사용 — 전역 스캔 시 전화·수량 오탐 심함)
 _DATE_MD_RE = re.compile(r"(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?")
 # 마감 맥락 신호 (이 근처의 날짜만 마감일로 신뢰)
-_DEADLINE_CTX = re.compile(r"마감|까지|모집\s*기간|접수\s*기간|모집기한|지원\s*기간|~")
+_DEADLINE_CTX = re.compile(r"마감|까지|모집\s*기간|접수\s*기간|모집기한|지원\s*기간|접수|지원\s*기한|~")
+# 마감이 아닌 날짜 — 이 신호가 날짜 근처에 있으면 후보에서 뺀다(촬영일을 마감으로 저장하던 원인)
+_NOT_DEADLINE_CTX = re.compile(r"촬영\s*일|촬영일자|촬영\s*예정|개봉|방영|공연\s*일|행사\s*일|워크숍|리허설|미팅\s*일|생년|출생")
 
 # 카테고리 추정 (007 genre CHECK 문자열과 일치해야 함 — 확정은 classifier)
 _GENRE_HINTS = [
@@ -66,16 +68,44 @@ def _guess_genre(text: str) -> str:
     return "배우"  # 대다수가 연기 계열 — 기본값. classifier가 정밀화
 
 
-def _extract_deadline(text: str, posted_at: Optional[date]) -> Optional[date]:
+def _deadline_context(clean: str, start: int, end: int) -> bool:
+    """날짜 하나가 '마감'을 가리키는지 — 앞 40자·뒤 12자 창으로 판단 (2-3).
+
+    전역 검사로는 안 된다. 캡션 하나에 촬영일·개봉일·마감일이 섞여 있고,
+    옛 구현은 맥락 없이 `max()`를 골라 **촬영일을 마감으로 저장**했다
+    (실측: 활성 공고에서 2027년 마감 같은 값이 나온 원인).
+    """
+    window = clean[max(0, start - 40):start] + " " + clean[end:end + 12]
+    if _NOT_DEADLINE_CTX.search(window):
+        return False
+    return bool(_DEADLINE_CTX.search(window))
+
+
+# 게시일이 불확실할 때 M/D 보정을 허용하는 최대 미래 폭.
+# 오디션 마감이 반년 넘게 남는 경우는 드물고, 그런 공고는 대개 연도를 함께 쓴다.
+_MD_HORIZON_DAYS = 180
+
+
+def _extract_deadline(text: str, posted_at: Optional[date],
+                      posted_at_exact: bool = True) -> Optional[date]:
     """모집 마감일 추출. 전화번호를 먼저 제거하고, 완전한 YYYY.MM.DD를 우선.
-    연도 없는 M/D는 '마감 맥락'이 있을 때만·게시일 기준 연도 보정하여 사용."""
+    완전한 날짜도 연도 없는 M/D와 똑같이 **마감 맥락이 근처에 있을 때만** 쓴다.
+
+    `posted_at_exact=False`는 "게시일을 모른다"는 뜻이다. 네이버 카페·웹문서 검색 API는
+    게시일을 주지 않아 크롤 당일을 넘기는데, 검색은 과거 글도 잡아온다. 그 상태로
+    `mm < posted.month → 내년` 규칙을 쓰면 **올해 6월에 올라온 마감 지난 글이
+    내년 6월 마감으로 저장**된다(실측 377건). 그래서 게시일이 불확실하면 보정 결과가
+    반년을 넘어갈 때 마감 미상으로 둔다 — 틀린 미래 마감보다 미상이 안전하다."""
     clean = _PHONE_RE.sub(" ", text)  # 전화번호 오탐 제거
 
-    # 1) 완전한 YYYY.MM.DD 중 가장 늦은 날짜를 마감 후보로 (모집기간 "시작~마감"의 마감)
+    # 1) 완전한 YYYY.MM.DD 중 마감 맥락에 있는 것들의 가장 늦은 날짜 (모집기간 "시작~마감"의 마감)
     candidates: list[date] = []
-    for y, m, d in _DATE_RE.findall(clean):
+    for m in _DATE_RE.finditer(clean):
+        if not _deadline_context(clean, m.start(), m.end()):
+            continue
+        y, mo, d = m.groups()
         try:
-            candidates.append(date(int(y), int(m), int(d)))
+            candidates.append(date(int(y), int(mo), int(d)))
         except ValueError:
             continue
     if candidates:
@@ -89,7 +119,10 @@ def _extract_deadline(text: str, posted_at: Optional[date]) -> Optional[date]:
                 if not (1 <= mm <= 12 and 1 <= dd <= 31):
                     continue
                 yr = posted_at.year + (1 if mm < posted_at.month else 0)
-                candidates.append(date(yr, mm, dd))
+                cand = date(yr, mm, dd)
+                if not posted_at_exact and (cand - posted_at).days > _MD_HORIZON_DAYS:
+                    continue  # 게시일 불명 + 먼 미래 = 연도 보정이 틀렸을 공산이 크다
+                candidates.append(cand)
             except ValueError:
                 continue
         if candidates:

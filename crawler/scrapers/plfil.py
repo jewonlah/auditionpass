@@ -125,7 +125,7 @@ class PlfilScraper(BaseScraper):
             soup, full_text,
             ["마감", "접수기간", "모집기간", "지원기간", "마감일", "접수마감"]
         )
-        deadline = self.parse_deadline(deadline_text or "")
+        deadline = self.parse_deadline_smart(deadline_text or "")
 
         # 이메일
         apply_email = self.extract_email(full_text) or self.extract_email(full_html)

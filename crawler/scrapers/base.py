@@ -120,9 +120,14 @@ class BaseScraper(ABC):
         return None
 
     @staticmethod
-    def parse_deadline_smart(text: str) -> Optional[date]:
+    def parse_deadline_smart(text: str, require_label: bool = False) -> Optional[date]:
         """마감일 파싱 개선(2-3): '모집기간/접수/마감 A ~ B' 범위가 있으면 **종료일 B**(가장 늦은 것),
-        없으면 마감 라벨 근처의 날짜, 그것도 없으면 본문 첫 날짜. 전화번호 오탐 방지를 위해 전화번호는 먼저 제거."""
+        없으면 마감 라벨 근처의 날짜, 그것도 없으면 본문 첫 날짜. 전화번호 오탐 방지를 위해 전화번호는 먼저 제거.
+
+        `require_label=True`면 마지막 폴백(본문 첫 날짜)을 쓰지 않는다. **본문 전체를 넘길 때는
+        반드시 켤 것** — 첫 날짜는 촬영일·공고 작성일인 경우가 많고, 그걸 마감으로 저장하면
+        이미 끝난 공고가 미래 마감으로 계속 노출돼 유저가 헛지원한다. 마감 미상은 45일 만료로
+        자동 정리되지만 틀린 마감은 정리되지 않는다."""
         if not text:
             return None
         clean = re.sub(r"\b0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}\b", " ", text)
@@ -140,7 +145,7 @@ class BaseScraper(ABC):
             d = BaseScraper.parse_deadline(near.group(1))
             if d:
                 return d
-        return BaseScraper.parse_deadline(clean)
+        return None if require_label else BaseScraper.parse_deadline(clean)
 
     @staticmethod
     def classify_genre(text: str) -> str:

@@ -108,7 +108,7 @@ class OfficialPagesScraper(BaseScraper):
             title = head.group(0).strip()
         title = f"[{p.org}] {title}"[:150]
         email = self.extract_email(body)
-        deadline = self.parse_deadline_smart(body) if re.search(r"마감|접수|기간|까지", body) else None
+        deadline = self.parse_deadline_smart(body, require_label=True) if re.search(r"마감|접수|기간|까지", body) else None
         gform = _GFORM.search(html)
         desc = summarize(body, max_chars=600)
         if gform:

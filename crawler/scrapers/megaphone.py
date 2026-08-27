@@ -36,7 +36,7 @@ class MegaphoneScraper(BaseScraper):
             )
             resp.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"[{self.source_name}] 목록 페이지 요청 실���: {e}")
+            logger.error(f"[{self.source_name}] 목록 페이지 요청 실패: {e}")
             return results
 
         soup = BeautifulSoup(resp.text, "lxml")
@@ -56,7 +56,7 @@ class MegaphoneScraper(BaseScraper):
                     results.append(audition)
                     time.sleep(0.5)
             except Exception as e:
-                logger.warning(f"[{self.source_name}] 카드 ��싱 오류: {e}")
+                logger.warning(f"[{self.source_name}] 카드 파싱 오류: {e}")
                 continue
 
         return results
@@ -89,7 +89,7 @@ class MegaphoneScraper(BaseScraper):
 
         deadline_el = card.select_one(".deadline, .date, td:last-child, time")
         deadline_text = deadline_el.get_text(strip=True) if deadline_el else ""
-        deadline = self.parse_deadline(deadline_text)
+        deadline = self.parse_deadline_smart(deadline_text)
 
         detail = self._fetch_detail(href)
         if detail["deadline"] and not deadline:
@@ -135,11 +135,11 @@ class MegaphoneScraper(BaseScraper):
         result["email"] = self.extract_email(full_text) or self.extract_email(resp.text)
         result["phone"] = self.extract_phone(full_text)
         result["location"] = self.extract_location(full_text)
-        result["deadline"] = self.parse_deadline(full_text)
+        result["deadline"] = self.parse_deadline_smart(full_text, require_label=True)
 
         import re
         req_el = soup.find(
-            string=lambda t: t and re.search(r"자격|조건|요��|지원\s*방법", t)
+            string=lambda t: t and re.search(r"자격|조건|요건|요구|지원\s*방법", t)
         )
         if req_el:
             parent = req_el.find_parent()

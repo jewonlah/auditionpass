@@ -92,7 +92,7 @@ class OtrScraper(BaseScraper):
 
         # 마감날짜 (5번째 td: 페이 다음)
         deadline_text = tds[4].get_text(strip=True) if len(tds) >= 5 else ""
-        deadline = self.parse_deadline(deadline_text)
+        deadline = self.parse_deadline_smart(deadline_text)
 
         detail = self._fetch_detail(page, href)
         if detail["deadline"] and not deadline:
@@ -147,7 +147,7 @@ class OtrScraper(BaseScraper):
         result["location"] = self.extract_location(full_text)
 
         # 마감일 (상세 페이지에서 재시도)
-        result["deadline"] = self.parse_deadline(full_text)
+        result["deadline"] = self.parse_deadline_smart(full_text, require_label=True)
 
         # 지원 자격
         import re

@@ -259,7 +259,7 @@ class GenericBoardScraper(BaseScraper):
         text = f"{title}\n{body}"
         email = self._email_not_site(body, url)
         # 마감일: 범위 "A ~ B"의 종료일 우선 → 마감 라벨 근처 → 첫 날짜 (base.parse_deadline_smart, 2-3)
-        deadline = self.parse_deadline_smart(body) if re.search(r"마감|접수|모집\s*기간|까지", body) else None
+        deadline = self.parse_deadline_smart(body, require_label=True) if re.search(r"마감|접수|모집\s*기간|까지", body) else None
         desc = summarize(body, max_chars=600) if self.board.mode == "post" else f"{body[:200]}…"
         footer = f"\n\n---\n출처: {self.source_name} ({'요약' if self.board.mode == 'post' else '링크 인덱스'} — 전문·지원 방법은 원문 링크 확인)"
         comp = re.search(r"(?:업체명|주최|제작사?)\s*[:：]?\s*([^\n/|]{2,40})", body)

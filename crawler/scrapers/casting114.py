@@ -37,7 +37,7 @@ class Casting114Scraper(BaseScraper):
             resp.raise_for_status()
             data = resp.json()
         except (requests.RequestException, ValueError) as e:
-            logger.error(f"[{self.source_name}] API 요��� 실패: {e}")
+            logger.error(f"[{self.source_name}] API 요청 실패: {e}")
             return results
 
         items = data.get("itemList", [])
@@ -72,7 +72,7 @@ class Casting114Scraper(BaseScraper):
 
         # 마감일
         deadline_str = body.get("dueDate") or item.get("ref_str6", "")
-        deadline = self.parse_deadline(deadline_str)
+        deadline = self.parse_deadline_smart(deadline_str)
 
         # 이메일
         apply_email = body.get("email") or None
@@ -92,7 +92,7 @@ class Casting114Scraper(BaseScraper):
         if body.get("pay"):
             desc_parts.append(f"출연료: {body['pay']}")
         if body.get("period"):
-            desc_parts.append(f"��간: {body['period']}")
+            desc_parts.append(f"기간: {body['period']}")
         if body.get("content"):
             # HTML 태그 제거
             import re

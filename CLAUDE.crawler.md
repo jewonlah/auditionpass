@@ -68,6 +68,9 @@ class BaseScraper(ABC):
         source 생략 시 cls.base_url을 소스 도메인으로 써서 사이트 자체 메일을 자동 제외."""
         return extract_apply_email(text, source=source or cls.base_url)
 
+    # 마감일: 본문 전체를 넘길 때는 반드시 require_label=True (2-3).
+    #   라벨 없는 첫 날짜는 촬영일·작성일인 경우가 많고, 틀린 미래 마감은 만료 로직이 못 걷어낸다.
+    #   parse_deadline_smart = 범위 "A ~ B"의 종료일 → 마감 라벨 근처 → (require_label이면 여기서 None)
     def parse_deadline(self, text: str) -> Optional[date]:
         """마감일 텍스트를 date로 파싱"""
         import re

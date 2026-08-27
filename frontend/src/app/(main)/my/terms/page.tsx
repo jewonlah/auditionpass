@@ -23,7 +23,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-5 space-y-1">
             <li>오디션 공고 정보 수집 및 제공</li>
             <li>프로필 등록 및 관리</li>
-            <li>원클릭 오디��� 지원 (이메일 발송)</li>
+            <li>원클릭 오디션 지원 (이메일 발송)</li>
             <li>지원 이력 관리</li>
           </ul>
         </section>

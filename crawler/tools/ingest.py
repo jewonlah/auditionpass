@@ -91,7 +91,7 @@ def extract_fields(text: str) -> dict:
                                 0.95 if m else 0.0,
                                 _evidence_line(text, m.group(0)) if m else "")
 
-    dl = BaseScraper.parse_deadline_smart(text)
+    dl = BaseScraper.parse_deadline_smart(text, require_label=True)
     fields["deadline"] = _field(dl.isoformat() if dl else None,
                                 "verified_rule" if dl else "missing",
                                 0.8 if dl else 0.0,

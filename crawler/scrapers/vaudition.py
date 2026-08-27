@@ -98,7 +98,7 @@ class VauditionScraper(BaseScraper):
 
         deadline_el = card.select_one(".deadline, .date, .due-date, time")
         deadline_text = deadline_el.get_text(strip=True) if deadline_el else ""
-        deadline = self.parse_deadline(deadline_text)
+        deadline = self.parse_deadline_smart(deadline_text)
 
         detail = self._fetch_detail(page, href)
         if detail["deadline"] and not deadline:
@@ -147,7 +147,7 @@ class VauditionScraper(BaseScraper):
         result["email"] = self.extract_email(full_text) or self.extract_email(html)
         result["phone"] = self.extract_phone(full_text)
         result["location"] = self.extract_location(full_text)
-        result["deadline"] = self.parse_deadline(full_text)
+        result["deadline"] = self.parse_deadline_smart(full_text, require_label=True)
 
         import re
         req_el = soup.find(
