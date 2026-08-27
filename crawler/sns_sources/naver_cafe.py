@@ -26,6 +26,7 @@ from typing import Optional
 import requests
 
 from scrapers.base import AuditionData, BaseScraper
+from utils.email_extract import extract_apply_email
 from sns_sources.instagram_caption import _AUDITION_SIGNALS, _extract_deadline
 
 logger = logging.getLogger(__name__)
@@ -103,7 +104,6 @@ _SCAM = re.compile(r"고수익|고소득|성인\s*방송|19금|숙식\s*제공|�
 _CAFE_BLACKLIST = re.compile(r"맘카페|맘 카페|육아|창업|부동산|주식|재테크|중고나라|벼룩|팬카페|팬 카페|누드")
 
 _TAG_RE = re.compile(r"</?b>")  # API는 검색어 강조 <b>만 씀. 작품명 <수집> 같은 꺾쇠는 보존
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
 @dataclass
@@ -173,8 +173,7 @@ def is_candidate(item: CafeItem) -> tuple[bool, str]:
 def to_audition(item: CafeItem) -> AuditionData:
     text = f"{item.title}\n{item.description}"
     deadline = _extract_deadline(text, posted_at=date.today())
-    m = _EMAIL_RE.search(item.description)
-    apply_email = m.group() if m and "*" not in m.group() else None
+    apply_email = extract_apply_email(item.description)
     cafe = _short_cafe(item.cafename)
     desc = (
         f"{item.description}\n\n---\n"

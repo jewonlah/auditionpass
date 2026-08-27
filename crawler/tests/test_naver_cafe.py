@@ -76,10 +76,10 @@ class TitleTest(unittest.TestCase):
 
 class AuditionTest(unittest.TestCase):
     def test_to_audition_fields(self):
-        a = to_audition(item("단편영화 <수집> 주연배우 모집", "서류 접수기간 : 2026년 09월 20일(일) 23:00까지. 문의 cast@example.org"))
+        a = to_audition(item("단편영화 <수집> 주연배우 모집", "서류 접수기간 : 2026년 09월 20일(일) 23:00까지. 문의 cast@nine-film.co.kr"))
         self.assertEqual(a.source_name, "네이버카페:빛이 모이는 곳")
         self.assertEqual(str(a.deadline), "2026-09-20")
-        self.assertEqual(a.apply_email, "cast@example.org")
+        self.assertEqual(a.apply_email, "cast@nine-film.co.kr")  # example.org는 정본이 예시 도메인으로 거부
         self.assertIn("원문 링크", a.description)
 
     def test_masked_email_is_none(self):

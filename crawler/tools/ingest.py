@@ -28,6 +28,7 @@ from pathlib import Path
 
 from scrapers.base import AuditionData, BaseScraper
 from utils.risk import risk_score
+from utils.email_extract import is_apply_email
 
 INTAKE_DIR = Path(__file__).resolve().parent.parent / "intake"
 SCHEMA_VERSION = "intake-v1"
@@ -37,19 +38,14 @@ _FORM_RE = re.compile(
     r"https?://(?:forms\.gle|docs\.google\.com/forms|naver\.me|form\.naver\.com|tally\.so|typeform\.com|moaform\.com|smore\.im)[^\s\"'<)\]]+"
 )
 _NO_PROXY_RE = re.compile(r"대리\s*(?:지원|접수|발송)\s*(?:불가|금지)|본인\s*직접\s*(?:지원|접수)")
-# 접수처가 아닌 메일: 게시판 플랫폼 운영 메일 + 운영성 로컬파트 (staff@filmmakers 오탐 실측)
-_EMAIL_REJECT = re.compile(
-    r"^(?:staff|admin|webmaster|help|cs|master|no-?reply|privacy)@"
-    r"|@(?:filmmakers\.co\.kr|castingnara\.|casting114\.|megaphonekorea\.|auditionpass\.)", re.I)
 
 
 def _valid_apply_email(email: str | None) -> str | None:
+    """접수처로 쓸 수 있는 메일만 통과. 판정은 utils.email_extract가 정본."""
     if not email:
         return None
     email = email.strip().lower()
-    if _EMAIL_REJECT.search(email):
-        return None
-    return email
+    return email if is_apply_email(email) else None
 _LINE_EVIDENCE = 160
 
 

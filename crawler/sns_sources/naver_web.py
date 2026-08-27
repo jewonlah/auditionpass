@@ -20,7 +20,8 @@ from urllib.parse import urlparse
 import requests
 
 from scrapers.base import AuditionData, BaseScraper
-from sns_sources.naver_cafe import CafeItem, _clean, _clean_title, is_candidate, _EMAIL_RE
+from utils.email_extract import extract_apply_email
+from sns_sources.naver_cafe import CafeItem, _clean, _clean_title, is_candidate
 from sns_sources.instagram_caption import _extract_deadline
 
 logger = logging.getLogger(__name__)
@@ -157,8 +158,8 @@ class NaverWebScraper(BaseScraper):
                 held += 1
                 continue  # 미승인 출처 → 게시물은 저장 안 함(발견 큐에서 도메인 승인 후 유입)
             text = f"{it.title}\n{it.description}"
-            m = _EMAIL_RE.search(it.description)
-            email = m.group() if m and "*" not in m.group() else None
+            # 소스 도메인 제외는 걸지 않는다 — 블로그·홈페이지는 자기 도메인 메일이 곧 접수처다
+            email = extract_apply_email(it.description)
             label = "블로그" if self.kind == "blog" else "홈페이지"
             out.append(AuditionData(
                 title=it.title, company=None, genre=BaseScraper.classify_genre(text),

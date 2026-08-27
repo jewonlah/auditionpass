@@ -17,6 +17,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 
 from scrapers.base import AuditionData
+from utils.email_extract import extract_apply_email
 
 
 # 오디션 공고로 판단하는 신호어 (하나 이상 포함해야 후보)
@@ -28,7 +29,6 @@ _NEGATIVE_SIGNALS = re.compile(
     r"후기|수강생\s*모집|클래스\s*모집|정규\s*과정\s*모집|할인\s*이벤트|수강\s*문의",
 )
 
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 # 전화번호 패턴 — 날짜 오탐 방지를 위해 캡션에서 먼저 제거 (예: 02-2138-1434의 21-14가 M/D로 오인됨)
 _PHONE_RE = re.compile(r"\b0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}\b")
 # 완전한 연-월-일
@@ -139,8 +139,7 @@ def parse_caption(post: IGPost) -> Optional[AuditionData]:
     if deadline and deadline < date.today():
         return None
 
-    email_match = _EMAIL_RE.search(cap)
-    apply_email = email_match.group() if email_match else None
+    apply_email = extract_apply_email(cap)
 
     return AuditionData(
         title=_title_from_caption(cap),

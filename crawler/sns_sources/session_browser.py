@@ -37,8 +37,6 @@ PROFILE_DIR = ROOT / ".browser"                       # gitignore
 CONFIG = ROOT / "sns_sources" / "social_accounts.json"
 STATE = ROOT / ".browser_state.json"                  # 일일 카운터·마지막 처리 post id
 
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-
 
 @dataclass
 class SocialPost:

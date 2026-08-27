@@ -132,8 +132,9 @@ class CastikScraper(BaseScraper):
         elif deadline_text:
             deadline = self.parse_deadline(deadline_text)
 
-        # 이메일 추출 — 사이트 자체 이메일(admin@castik.co.kr) 제외
-        apply_email = self._extract_email_filtered(content_text) or self._extract_email_filtered(html)
+        # 이메일 추출 — 사이트 자체 메일 제외는 base_url 기준으로 자동(utils.email_extract).
+        # 옛 필터는 "castik.co.kr" 문자열만 봐서 실제 저장값 admin@castik.co(다른 도메인)를 39건 통과시켰다.
+        apply_email = self.extract_email(content_text) or self.extract_email(html)
 
         # 전화번호, 장소
         phone = self.extract_phone(content_text)
@@ -175,21 +176,6 @@ class CastikScraper(BaseScraper):
                 text = text[:end]
 
         return text.strip()
-
-    def _extract_email_filtered(self, text: str) -> str | None:
-        """이메일 추출 — castik.co.kr 도메인 제외"""
-        import re
-
-        pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-        for match in re.finditer(pattern, text):
-            email = match.group()
-            lower = email.lower()
-            # castik 사이트 자체 이메일 및 노이즈 제외
-            noise = ("castik.co.kr", "example.com", "test.com", "noreply", "no-reply")
-            if any(n in lower for n in noise):
-                continue
-            return email
-        return None
 
     @staticmethod
     def _extract_meta(text: str, keywords: list[str]) -> str | None:

@@ -26,6 +26,8 @@ from pathlib import Path
 
 import requests
 
+from utils.email_extract import extract_apply_email
+
 logger = logging.getLogger(__name__)
 
 _API = "https://apis.naver.com/cafe-web/cafe-articleapi/v3/cafes/{cafe}/articles/{article}?query=&useCafeId=false&requestFrom=A"
@@ -35,9 +37,6 @@ _UA = (
 )
 _URL_RE = re.compile(r"cafe\.naver\.com/([A-Za-z0-9_-]+)/(\d+)")
 _TAG_RE = re.compile(r"<[^>]+>")
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-# OCR·표기 변형 보정용 (골뱅이 표기)
-_EMAIL_OBFUSCATED_RE = re.compile(r"[A-Za-z0-9._%+-]+\s*\(?골뱅이\)?\s*[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 _FORM_RE = re.compile(
     r"https?://(?:forms\.gle|docs\.google\.com/forms|naver\.me|form\.naver\.com|tally\.so|typeform\.com|moaform\.com|smore\.im)[^\s\"'<)\]]+"
 )
@@ -46,7 +45,6 @@ _KAKAO_RE = re.compile(r"open\.kakao\.com/[^\s\"'<)\]]+|오픈\s*(?:카톡|채�
 _DEADLINE_RE = re.compile(r"마감|접수\s*기간|모집\s*기간|까지|선착순|채용\s*시|상시")
 
 # 자기 카페/네이버 시스템 메일 등 접수처가 아닌 주소
-_EMAIL_BLACKLIST = re.compile(r"@(naver\.com/|cafe\.|navercorp\.)", re.I)
 
 
 def _clean_text(content_html: str) -> str:
@@ -59,14 +57,8 @@ def _clean_text(content_html: str) -> str:
 
 
 def _find_email(text: str) -> str | None:
-    for m in _EMAIL_RE.finditer(text):
-        addr = m.group(0).strip(".")
-        if not _EMAIL_BLACKLIST.search(addr):
-            return addr.lower()
-    m = _EMAIL_OBFUSCATED_RE.search(text)
-    if m:
-        return re.sub(r"\s*\(?골뱅이\)?\s*", "@", m.group(0)).lower()
-    return None
+    """판정은 utils.email_extract가 정본(골뱅이 난독화 보정 포함)."""
+    return extract_apply_email(text)
 
 
 def fetch_article(sess: requests.Session, cafe: str, article: str,

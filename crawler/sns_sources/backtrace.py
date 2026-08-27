@@ -22,7 +22,8 @@ import requests
 from scrapers.base import AuditionData, BaseScraper
 from sns_sources.exclude_domains import domain_of, is_excluded
 from sns_sources.instagram_caption import _extract_deadline
-from sns_sources.naver_cafe import CafeItem, _clean, _clean_title, is_candidate, _EMAIL_RE, _short_cafe
+from sns_sources.naver_cafe import CafeItem, _clean, _clean_title, is_candidate, _short_cafe
+from utils.email_extract import extract_apply_email
 
 logger = logging.getLogger(__name__)
 
@@ -139,12 +140,11 @@ class BacktraceScraper(BaseScraper):
             if not ok:
                 continue
             text = f"{it.title}\n{it.description}"
-            m = _EMAIL_RE.search(it.description)
             src = f"네이버카페:{_short_cafe(it.cafename)}" if "cafe.naver.com" in it.link else f"네이버웹문서:{domain_of(it.link)}"
             out.append(AuditionData(
                 title=it.title, company=None, genre=BaseScraper.classify_genre(text),
                 deadline=_extract_deadline(text, posted_at=date.today()),
-                apply_email=(m.group() if m and "*" not in m.group() else None),
+                apply_email=extract_apply_email(it.description),
                 description=(f"{it.description}\n\n---\n출처: 원글 {it.cafename} (요약만 수집 — 전문·지원 방법은 원문 링크 확인)")[:2000],
                 requirements=None, source_url=it.link, source_name=src,
             ))

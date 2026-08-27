@@ -15,7 +15,7 @@ crawler/
 │   └── castingposter.py    # 캐스팅포스터
 ├── utils/
 │   ├── supabase_client.py  # Supabase 연동
-│   └── email_extractor.py  # 이메일 추출 유틸
+│   └── email_extract.py    # 접수 이메일 추출·거부 판정 **정본** (2-2)
 ├── requirements.txt
 └── .github/
     └── workflows/
@@ -61,12 +61,12 @@ class BaseScraper(ABC):
         """공고 목록을 수집하고 반환"""
         pass
 
-    def extract_email(self, text: str) -> Optional[str]:
-        """텍스트에서 이메일 주소 추출"""
-        import re
-        pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        match = re.search(pattern, text)
-        return match.group() if match else None
+    @classmethod
+    def extract_email(cls, text: str, source: str = "") -> Optional[str]:
+        """접수 이메일 추출 — 판정은 utils.email_extract가 정본.
+        여기에 정규식을 다시 쓰지 말 것(같은 규칙을 여러 곳에 두다 오발송이 반복됐다).
+        source 생략 시 cls.base_url을 소스 도메인으로 써서 사이트 자체 메일을 자동 제외."""
+        return extract_apply_email(text, source=source or cls.base_url)
 
     def parse_deadline(self, text: str) -> Optional[date]:
         """마감일 텍스트를 date로 파싱"""

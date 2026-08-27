@@ -5,6 +5,8 @@ from typing import Optional
 import re
 import logging
 
+from utils.email_extract import extract_apply_email
+
 logger = logging.getLogger(__name__)
 
 # 공지사항/노이즈 제목 필터
@@ -48,19 +50,16 @@ class BaseScraper(ABC):
         """공지사항/노이즈 제목 여부 판단"""
         return bool(_SKIP_RE.search(title))
 
-    @staticmethod
-    def extract_email(text: str) -> Optional[str]:
-        """텍스트에서 이메일 주소 추출"""
-        pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-        match = re.search(pattern, text)
-        if not match:
-            return None
-        email = match.group()
-        # 노이즈 이메일 제외
-        noise = ("example.com", "test.com", "noreply", "no-reply", "otr@otr.co.kr", "info@megaphonekorea.com")
-        if any(n in email.lower() for n in noise):
-            return None
-        return email
+    @classmethod
+    def extract_email(cls, text: str, source: str = "") -> Optional[str]:
+        """텍스트에서 접수 이메일 추출.
+
+        판정은 `utils.email_extract`가 정본 — 여기에 규칙을 다시 쓰지 말 것.
+        `source`를 생략하면 클래스의 `base_url`을 소스 도메인으로 써서 사이트
+        자체 메일(admin@castik.co.kr 등)을 자동 제외한다. 소스 하나가 여러
+        사이트를 도는 스크레이퍼(official_pages)는 페이지 URL을 넘긴다.
+        """
+        return extract_apply_email(text, source=source or cls.base_url)
 
     @staticmethod
     def extract_phone(text: str) -> Optional[str]:
