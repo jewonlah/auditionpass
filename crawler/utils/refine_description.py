@@ -54,6 +54,10 @@ def refine_description(raw_text: str, title: str) -> str:
             model=MODEL,
             max_tokens=250,
             temperature=1.0,  # DeepSeek 권장: 데이터 정제/분석 = 1.0
+            # thinking 필수 비활성화. V4는 기본이 enabled라 추론이 max_tokens를 전부 소진하고
+            # content=''·finish_reason='length'로 조용히 실패한다(실측: reasoning_tokens=250, 출력 0).
+            # 이 작업은 추론이 불필요하고, 추론 토큰도 출력 토큰으로 과금되므로 끄는 게 비용상으로도 이득.
+            extra_body={"thinking": {"type": "disabled"}},
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"공고 제목: {title}\n\n원본 텍스트:\n{truncated}"},
