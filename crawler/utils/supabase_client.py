@@ -218,12 +218,12 @@ def _unescape(text: str | None) -> str | None:
 
 
 REFINE_MIN_CHARS = 400  # 이보다 짧으면 이미 요약 수준 — 검색 API 요약(네이버카페 ≈100~200자)은 정제 불필요
-# 2026-08-22 사용자 지시: Anthropic API 사용 금지(비용 0). 기본은 규칙 기반 summarize(). REFINE_ENABLED=1일 때만 Claude.
+# 2026-08-27: 정제 엔진 Anthropic → DeepSeek V4-Flash(월 ~1,500원). REFINE_ENABLED=1일 때만 API 호출, 기본은 규칙 기반 summarize()(비용 0).
 REFINE_ENABLED = os.environ.get("REFINE_ENABLED") == "1"
 
 
 def _refine_if_needed(description: str | None, title: str) -> str | None:
-    """긴 본문만 요약(600자). 기본 규칙 기반(비용 0), REFINE_ENABLED=1이면 Claude 정제."""
+    """긴 본문만 요약(600자). 기본 규칙 기반(비용 0), REFINE_ENABLED=1이면 DeepSeek 정제(실패 시 규칙 기반 폴백)."""
     if description and len(description.strip()) >= REFINE_MIN_CHARS:
         if REFINE_ENABLED:
             return refine_description(description, title)

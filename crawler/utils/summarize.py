@@ -1,5 +1,11 @@
 """
-규칙 기반 description 요약 — Claude API 대체 (비용 0, 2026-08-22 사용자 지시 "Anthropic API 사용 금지").
+규칙 기반 description 요약 — 비용 0.
+
+2026-08-22 "Anthropic API 사용 금지" 지시로 정제를 전면 대체했으나,
+2026-08-27 DeepSeek V4-Flash 전환(월 ~1,500원)으로 정제가 복귀하여 지금은 **폴백** 역할이다:
+  - REFINE_ENABLED=0/미설정 → 여기가 기본 경로
+  - REFINE_ENABLED=1 이지만 API 실패/키 없음 → refine_description이 여기로 폴백
+지우지 말 것. API가 죽어도 파이프라인이 멈추지 않게 하는 안전망이다.
 
 목표는 refine_description과 동일: 300~600자 안에 배역/자격/일정/장소/페이/지원방법이 보이게.
 방법: 라벨 줄 우선 추출 → 없으면 본문 앞부분. 인사말·해시태그·광고 문구 제거.

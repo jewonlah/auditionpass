@@ -1,8 +1,18 @@
 """
-V오디션 (vaudition.com) 크롤러
-JS 렌더링 필요 — Playwright + BeautifulSoup
-"""
+V오디션 (vaudition.com) 크롤러 — **현재 수집 대상에서 제외됨** (플랜 30 §2 2-5, 2026-08-27)
 
+제외 사유(실측):
+- 상세 `bbs/board.php?bo_table=contest&wr_id={id}`가 로그인 벽이다.
+  "프로필작성자만 볼수 있어요!!. 프로필을 작성했다면 로그인 후 이용가능해요."
+  32 §3의 "로그인 벽 미접근" 규칙상 우회하지 않는다.
+- 목록(`div.gall_con`)에서 얻을 수 있는 건 제목·모집분야와 **"오디션 진행일"**뿐이다.
+  진행일은 마감일이 아니므로 마감으로 저장하면 안 된다(2-3에서 촬영일을 마감으로
+  저장하던 문제와 같은 함정).
+- 결정적으로, 유저가 원문 링크를 눌러도 같은 로그인 벽을 만난다 → 게재 가치가 없다.
+
+파일은 남겨둔다. 사이트가 공개로 바뀌면 목록 파서만 고쳐 되살릴 수 있다.
+main.py의 scrapers 목록에서 빠져 있다.
+"""
 import time
 import logging
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout

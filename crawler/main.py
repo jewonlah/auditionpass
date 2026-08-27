@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from scrapers.plfil import PlfilScraper
 from scrapers.megaphone import MegaphoneScraper
 from scrapers.otr import OtrScraper
-from scrapers.vaudition import VauditionScraper
 from scrapers.castlink import CastlinkScraper
 from scrapers.filmmakers import FilmmakersScraper
 from scrapers.casting114 import Casting114Scraper
@@ -69,10 +68,12 @@ def main():
 
     scrapers = [
         PlfilScraper(),          # 1. plfil.com — SSR
-        MegaphoneScraper(),      # 2. megaphonekorea.com — SSR (HTTP)
+        MegaphoneScraper(),      # 2. megaphonekorea.com — SSR (HTTP, 명시적 셀렉터 2-5)
         OtrScraper(),            # 2. otr.co.kr — Playwright
-        VauditionScraper(),      # 3. vaudition.com — Playwright
-        CastlinkScraper(),       # 4. castlink.co.kr — Playwright
+        # V오디션(vaudition.com) 제외 — 2026-08-27 실측: 상세가 로그인 벽("프로필작성자만 볼수 있어요").
+        # 32 §3 "로그인 벽 미접근" 규칙상 열 수 없고, 유저가 원문 링크를 눌러도 같은 벽을 만난다.
+        # 목록에 있는 날짜도 마감이 아니라 "오디션 진행일"이라 정보 가치가 낮다. scrapers/vaudition.py는 남겨둔다.
+        CastlinkScraper(),       # 4. castlink.co.kr — RSC 페이로드 직접 파싱(2-5)
         FilmmakersScraper(),     # 6. filmmakers.co.kr — SSR (재시도 로직 추가)
         Casting114Scraper(),     # 5. casting114.com — JSON API
         CastingnaraScraper(),    # 6. castingnara.com — SSR (PHP)
