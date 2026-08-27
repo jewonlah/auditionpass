@@ -387,6 +387,11 @@ def cmd_process(args) -> None:
         if f["deadline"]["value"] and not r["deadline"]:
             update["deadline"] = f["deadline"]["value"]
             stats["deadline"] += 1
+            # 뒤늦게 채운 마감이 이미 지났으면 여기서 내린다 — 크롤러의 만료 처리는 이미 끝난 뒤라
+            # 여기서 안 내리면 다음 실행까지 "마감 지났는데 활성"으로 남는다(실측 2건, 2-4)
+            if f["deadline"]["value"] < date.today().isoformat():
+                update["is_active"] = False
+                stats["expired_late"] = stats.get("expired_late", 0) + 1
         if update:
             sb.table("auditions").update(update).eq("id", r["id"]).execute()
         else:
@@ -394,7 +399,8 @@ def cmd_process(args) -> None:
         time.sleep(2.0 + random.random())
 
     print(f"\nprocess 결과: 시도 {stats['tried']} | 원문 확보 {stats['fetched']} | "
-          f"이메일 +{stats['email']} | 마감 +{stats['deadline']} | 접근 실패 {stats['blocked']}")
+          f"이메일 +{stats['email']} | 마감 +{stats['deadline']} | 접근 실패 {stats['blocked']}"
+          + (f" | 뒤늦은 마감으로 비활성 {stats['expired_late']}" if stats.get("expired_late") else ""))
     # DB가 정본(017) — 어드민 인테이크 면이 이걸 읽는다.
     # JSON은 기존 /ingest 스킬 흐름 호환을 위해 계속 함께 쓴다.
     synced = _sync_agent_queue(sb, agent_residual, [r["id"] for r in rows])

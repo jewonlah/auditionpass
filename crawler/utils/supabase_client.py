@@ -344,6 +344,42 @@ def upsert_auditions(auditions: list) -> int:
     return saved
 
 
+def expire_auditions(undated_days: int = 45, search_prefix: str = "네이버카페",
+                     search_undated_days: int = 30) -> dict[str, int]:
+    """만료 처리 — 판정은 DB 함수 `expire_auditions`(018)가 정본.
+
+    마감 지남 / 마감 미상 N일 경과 / 검색형 짧은 만료를 한 번에 처리한다.
+    이전에는 이 세 규칙이 pg_cron·main.py에 흩어져 있었고, 크롤러 종료 뒤 마감을 채우는
+    `tools/ingest.py`는 어느 쪽에도 걸리지 않아 **과거 마감인데 활성인 공고**가 남았다.
+    새 경로가 생기면 이 함수만 부르면 된다.
+
+    018 미적용 환경에서는 파이썬 폴백으로 같은 일을 한다(크롤러 무중단).
+    """
+    try:
+        res = supabase.rpc("expire_auditions", {
+            "undated_days": undated_days,
+            "search_prefix": search_prefix,
+            "search_undated_days": search_undated_days,
+        }).execute()
+        row = (res.data or [{}])[0] if isinstance(res.data, list) else (res.data or {})
+        out = {
+            "expired": int(row.get("expired") or 0),
+            "stale": int(row.get("stale") or 0),
+            "stale_search": int(row.get("stale_search") or 0),
+        }
+    except Exception as e:
+        logger.warning(f"expire_auditions RPC 실패(018 미적용?) — 파이썬 폴백: {str(e)[:120]}")
+        out = {
+            "expired": deactivate_expired(),
+            "stale_search": deactivate_stale_undated(days=search_undated_days, source_prefix=search_prefix),
+            "stale": deactivate_stale_undated(days=undated_days),
+        }
+    total = sum(out.values())
+    if total:
+        logger.info(f"  만료 비활성화 {total}건 (마감지남 {out['expired']} / 미상 {out['stale']} / 검색형 {out['stale_search']})")
+    return out
+
+
 def deactivate_stale_undated(days: int = 45, source_prefix: str | None = None) -> int:
     """마감일이 없는 공고를 마지막 수집(crawled_at) 후 N일 지나면 비활성화.
     - 2026-08-21 실측: 활성 1,854건 중 1,691건(89%)이 필메코·캐스트링크의 4개월 묵은 마감 미상 공고였다(좀비).

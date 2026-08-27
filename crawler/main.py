@@ -27,8 +27,7 @@ from sns_sources.naver_web import NaverWebScraper
 from utils import crawl_log
 from utils.supabase_client import (
     upsert_auditions,
-    deactivate_expired,
-    deactivate_stale_undated,
+    expire_auditions,
     pop_classify_stats,
 )
 
@@ -41,6 +40,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+# 예외로 죽은 스크레이퍼가 이 비율 이상이면 실행을 실패로 본다 (2-4)
+FAIL_RATIO = 0.5
 # supabase/httpx의 요청 단위 INFO 로그(수천 줄) 억제 — 로컬 로그 파일 가독성
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -146,15 +148,16 @@ def main():
             continue
 
     # 소스 생존 경보 (최근 3일 저장 0건) — 4개월 동안 모르고 지나간 필메코·캐스트링크 사례 방지
-    dead = crawl_log.recent_zero_days(days=3)
+    dead, never = crawl_log.dead_sources(days=3)
     if dead:
-        logger.warning(f"⚠ 최근 3일 신규 저장 0건 소스: {', '.join(dead)}")
+        logger.error(f"⚠ 소스 사망 의심 — 최근 30일엔 저장했는데 3일째 0건: {', '.join(dead)}")
+    if never:
+        logger.info(f"  (참고) 30일간 저장 0건인 소스: {', '.join(never)}")
 
     # 마감 공고 비활성화
     logger.info("마감 공고 비활성화 처리...")
-    deactivated = deactivate_expired()
-    deactivated += deactivate_stale_undated(days=45)                          # 전 소스: 마감 미상 45일 만료 (좀비 방지)
-    deactivated += deactivate_stale_undated(days=30, source_prefix="네이버카페")  # 검색형은 30일
+    # 만료 판정은 DB 함수 하나(018)로 일원화 — 규칙이 흩어져 ingest 경로가 누락됐던 결함(2-4)
+    deactivated = sum(expire_auditions().values())
 
     logger.info("========== 크롤러 완료 ==========")
     logger.info(f"  수집: {total_collected}건 / 저장: {total_saved}건 / 비활성화: {deactivated}건")
@@ -164,8 +167,13 @@ def main():
         for err in errors:
             logger.warning(f"    - {err}")
 
-    if len(errors) == len(scrapers):
+    # 실패 판정: "전부 실패"만 잡으면 1개만 성공해도 초록불이라 부분 장애를 4개월 놓친다(2-4).
+    # 절반 이상이 예외로 죽으면 실패로 본다.
+    if errors and len(errors) == len(scrapers):
         logger.error("모든 크롤러가 실패했습니다.")
+        sys.exit(1)
+    if len(errors) >= max(2, round(len(scrapers) * FAIL_RATIO)):
+        logger.error(f"크롤러 {len(errors)}/{len(scrapers)}개 실패 — 임계치({FAIL_RATIO:.0%}) 초과")
         sys.exit(1)
 
 

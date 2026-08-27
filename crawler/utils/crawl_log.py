@@ -84,13 +84,36 @@ def learn_low_yield(source_name: str, field: str) -> set[str]:
 
 
 def recent_zero_days(days: int = 3) -> list[str]:
-    """최근 days일 동안 저장 0건인 소스 — 소스 사망 경보."""
-    since = (date.today() - timedelta(days=days)).isoformat()
+    """최근 days일 동안 저장 0건인 소스. `dead_sources`의 하위 호환 래퍼."""
+    dead, never = dead_sources(days)
+    return sorted(dead + never)
+
+
+def dead_sources(days: int = 3, history_days: int = 30) -> tuple[list[str], list[str]]:
+    """최근 days일 저장 0건인 소스를 둘로 나눈다 → (사망, 미개통).
+
+    - **사망**: 최근 history_days 안에 저장한 적이 **있는데** 최근 days일은 0건.
+      필메코·캐스트링크가 4개월 죽은 걸 모르고 지나간 사례가 이것이다. 실제 경보 대상.
+    - **미개통**: 그 기간 내내 한 번도 저장이 없던 소스(신규·미구현·비수기).
+      매 실행 경고에 섞이면 진짜 사망 신호가 묻힌다(2-4: "전부 실패" 판정이 무의미했던 이유와 같다).
+    """
+    today = date.today()
+    since = (today - timedelta(days=days)).isoformat()
+    since_hist = (today - timedelta(days=history_days)).isoformat()
     try:
-        res = supabase.table("crawl_logs").select("source_name,total_saved").gte("run_date", since).execute()
+        res = (supabase.table("crawl_logs").select("source_name,total_saved,run_date")
+               .gte("run_date", since_hist).execute())
     except Exception:
-        return []
-    saved: dict[str, int] = defaultdict(int)
+        return [], []
+    recent: dict[str, int] = defaultdict(int)
+    older: dict[str, int] = defaultdict(int)
     for r in res.data or []:
-        saved[r["source_name"]] += int(r.get("total_saved") or 0)
-    return sorted(s for s, n in saved.items() if n == 0)
+        n = int(r.get("total_saved") or 0)
+        if (r.get("run_date") or "") >= since:
+            recent[r["source_name"]] += n
+        else:
+            older[r["source_name"]] += n
+    zero = [s for s in set(recent) | set(older) if recent.get(s, 0) == 0]
+    dead = sorted(s for s in zero if older.get(s, 0) > 0)
+    never = sorted(s for s in zero if older.get(s, 0) == 0)
+    return dead, never
