@@ -1,20 +1,21 @@
 # 33. 운영자(사용자) 투두 리스트
 
-> 2026-08-21 작성. 에이전트가 대신 못 하는 **결정·결제·키 발급·물리 작업**만 모았다. 완료 시 체크. 근거 문서 번호 병기.
+> 2026-08-21 작성 · 2026-08-27 갱신(완료분 소거). 에이전트가 대신 못 하는 **결정·결제·키 발급·물리 작업**만 모았다. 완료 시 체크. 근거 문서 번호 병기.
 > 우선순위: P0 = 지금 막혀 있음 · P1 = 이번 주 · P2 = 결정만 해주면 에이전트가 진행 · P3 = 나중
 
 ## P0 — 지금 막혀 있는 것
 
 - [ ] **Anthropic API 크레딧 충전** — console.anthropic.com → Plans & Billing. CI에서 Claude 정제 전부 실패 중(32 §0-2). 분류 3단계·LLM 추출기·정제 전부 의존. 월 $5~10면 충분.
-- [ ] **크롤러 실행 위치 결정** — 필메코·캐스트링크는 데이터센터 IP만 차단(32 §0-1). 아래 33 §"실행 위치" 표에서 1개 선택. 추천: **① 이 PC 작업 스케줄러** 또는 **② self-hosted runner**. 선택만 하면 설치는 에이전트가 스크립트로 준비.
-- [ ] **008_crawl_logs 라이브 적용** — `! supabase db query --linked -f database/migrations/008_crawl_logs.sql` (한 줄씩). 소스 사망 경보(2-4)의 전제.
+- [x] ~~**크롤러 실행 위치 결정**~~ — **① 이 PC 작업 스케줄러로 확정·등록 완료**(2026-08-22). `AuditionPass Crawler`·`AuditionPass Social` 2종 Ready.
+- [x] ~~**008_crawl_logs 라이브 적용**~~ — **적용 완료**(2026-08-26 실측, `crawl_logs.details` 존재 확인).
 
 ## P1 — 이번 주 (각 5분, 키는 `crawler/.env`에만)
 
 - [ ] **카카오 개발자 앱** — developers.kakao.com → 내 애플리케이션 → 추가 → 앱 키의 **REST API 키** → `.env`에 `KAKAO_REST_API_KEY=` (다음 카페·블로그 검색, 사업자 불필요)
 - [ ] **고용24 Open API 키** — work24.go.kr → 고객센터 → OPEN API → 인증키 신청(채용정보) → `.env`에 `WORK24_API_KEY=` (아나운서·쇼호스트·MC·모델 채용, 연락처 원문)
 - [ ] **YouTube Data API 키** — console.cloud.google.com → API 라이브러리 → YouTube Data API v3 사용 → 사용자 인증 정보 → API 키 → `.env`에 `YOUTUBE_API_KEY=`
-- [ ] **Phase 1 배포 결정** — `renewal/r1`을 main에 병합해야 네이버카페·분류기·좀비 만료가 cron에 반영됨(지금은 로컬 수동 실행). 병합 직후 `009b` 실행(메모리: live-db-009-split). 30 §2 Phase 1 체크리스트 검토 후 "병합해"라고 지시.
+- [x] ~~**Phase 1 배포 결정**~~ — `renewal/r1` → main 병합·배포 완료. 어드민 R1까지 라이브 반영됨(`013`~`017`).
+- [ ] **`009b` 라이브 실행** — 병합 직후 실행 대기 항목(메모리: live-db-009-split). 라이브 코드에 `can_apply_today`·`increment_apply_count` 참조 0건 실측 확인 → 지금 실행 가능. Supabase SQL 편집기에 `database/migrations/009b_renewal_drop_apply_limit.sql` 붙여넣기 → 이어서 `database/checks/009_status.sql`로 7행 `true` 확인.
 - [ ] **SERVICE_ROLE_KEY 로테이션** (30 §2 0-5) — Supabase 대시보드 → Settings → API → 재발급 → Vercel env·GitHub Secret·`crawler/.env` 3곳 교체.
 
 ## P2 — 결정만 해주면 에이전트가 진행
