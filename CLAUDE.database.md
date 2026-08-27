@@ -16,7 +16,7 @@
 | 006_community | community_posts·comments·likes + RLS + 인덱스 | ✅ |
 | 007_category_system | auditions.category·sub_category·category_confidence·classify_method, genre CHECK 15종 | ✅ **2026-08-21 적용 + 백필 완료**(2,630건, 활성 1,854건 14카테고리 실저장). 분류기 2-1 연결 완료. `category`=한글 라벨, `genre`=레거시 3분류 유지 |
 | 008_crawl_logs | crawl_logs (Phase 2-4) | ✅ **적용됨 (2026-08-26 실측 — `crawl_logs.details` 존재).** 2026-08-21 "미적용" 기록은 그 뒤에 해소됨 |
-| **009_renewal_apply_flow** | profiles.birth_year(+age nullable) · applications.status/opened_at · **bookmarks** · daily_apply_count·함수 DROP | ❓ 009a 적용 완료, **009b(DROP)는 Phase 1 배포 직후 실행 대기** |
+| **009_renewal_apply_flow** | profiles.birth_year(+age nullable) · applications.status/opened_at · **bookmarks** · daily_apply_count·함수 DROP | ✅ **009a·009b 모두 적용 완료 (009b는 2026-08-27, `supabase db push`)**. 실측 7항목 통과 |
 | 010_crawl_quality | crawl_logs.details · auditions.quality_score + 인덱스 | ✅ 2026-08-26 실측 |
 | 011_review_queue | auditions.review_status · **trusted_sources** · **source_candidates** | ✅ 2026-08-26 실측 |
 | 012_quarantine_status | review_status CHECK에 `quarantine` 추가 | ✅ 2026-08-25 적용 |
@@ -25,6 +25,11 @@
 | 015_reports | reports(사유 10종·SLA) · auditions.`oneclick_blocked` · auditions.`reports_count` | ✅ 2026-08-26 적용 |
 | 016_reports_server_insert | reports INSERT 정책 제거 → 신고 삽입은 서버(service role) 전용 | ✅ 2026-08-26 적용 (Codex 교차 리뷰 P1) |
 | **017_agent_queue** | 인테이크 잔여물 큐(공고당 1행, RLS 정책 없음=service role 전용) | ✅ 2026-08-27 적용 |
+
+> **CLI 마이그레이션 거버넌스 (2026-08-27 시작, 2-7 전환의 첫 발)**: 009b는 `supabase db push --linked`로 적용했다.
+> 원격 `supabase_migrations.schema_migrations`에는 **009b 1건만** 기록돼 있고 001~017은 SQL 편집기로 직접 적용해 이력이 없다.
+> 앞으로 `db push`를 다시 쓰기 전에 기존 마이그레이션을 `supabase migration repair --status applied <version>`으로 등록할 것 —
+> 등록하지 않고 로컬 `supabase/migrations/`에 옛 파일을 넣으면 **이미 적용된 것을 재적용하려 든다**.
 
 > **어드민 R1 배포 게이트: 충족됨.** 013~017 적용 완료 + `ADMIN_EMAILS` 설정 완료(2026-08-26).
 > 상태 재확인은 `database/checks/migration_status.sql` 실행 — 전 행 `ok=true`가 정상.

@@ -15,7 +15,7 @@
 - [ ] **고용24 Open API 키** — work24.go.kr → 고객센터 → OPEN API → 인증키 신청(채용정보) → `.env`에 `WORK24_API_KEY=` (아나운서·쇼호스트·MC·모델 채용, 연락처 원문)
 - [ ] **YouTube Data API 키** — console.cloud.google.com → API 라이브러리 → YouTube Data API v3 사용 → 사용자 인증 정보 → API 키 → `.env`에 `YOUTUBE_API_KEY=`
 - [x] ~~**Phase 1 배포 결정**~~ — `renewal/r1` → main 병합·배포 완료. 어드민 R1까지 라이브 반영됨(`013`~`017`).
-- [ ] **`009b` 라이브 실행** — 병합 직후 실행 대기 항목(메모리: live-db-009-split). 라이브 코드에 `can_apply_today`·`increment_apply_count` 참조 0건 실측 확인 → 지금 실행 가능. Supabase SQL 편집기에 `database/migrations/009b_renewal_drop_apply_limit.sql` 붙여넣기 → 이어서 `database/checks/009_status.sql`로 7행 `true` 확인.
+- [x] ~~**`009b` 라이브 실행**~~ — **적용 완료(2026-08-27)**. `supabase db push --linked`로 실행, `daily_apply_count` 테이블·`can_apply_today`/`increment_apply_count` 함수 삭제 실측 확인. 실행 전 daily_apply_count 2행 백업함. **009 전체 완료.**
 - [ ] **SERVICE_ROLE_KEY 로테이션** (30 §2 0-5) — Supabase 대시보드 → Settings → API → 재발급 → Vercel env·GitHub Secret·`crawler/.env` 3곳 교체.
 
 ## P2 — 결정만 해주면 에이전트가 진행
