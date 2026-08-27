@@ -380,6 +380,27 @@ def expire_auditions(undated_days: int = 45, search_prefix: str = "네이버카�
     return out
 
 
+def archive_old_auditions(after_days: int = 30, dry_run: bool = False) -> int:
+    """지난 공고 본문 비우기 — 판정은 DB 함수 `archive_old_auditions`(019)가 정본.
+
+    **삭제가 아니다.** 행과 source_url을 남기는 이유:
+    - `applications`·`bookmarks`·`reports`가 on delete cascade — 지우면 유저 지원 이력과
+      신고 이력이 함께 사라진다(신고가 사라지면 소스 강등 판정이 무력화 = 나쁜 출처 세탁).
+    - 크롤러는 source_url로 중복을 판정한다. 행이 없으면 같은 공고가 신규로 되살아난다.
+    pg_cron이 매일 KST 00:20에 돌지만, 크롤러 로그에도 남기려고 여기서도 부른다(멱등).
+    """
+    try:
+        res = supabase.rpc("archive_old_auditions",
+                           {"after_days": after_days, "dry_run": dry_run}).execute()
+        n = int(res.data or 0)
+    except Exception as e:
+        logger.warning(f"archive_old_auditions RPC 실패(019 미적용?): {str(e)[:120]}")
+        return 0
+    if n:
+        logger.info(f"  지난 공고 본문 비움 {n}건 ({after_days}일 경과, 행·URL·제목은 보존)")
+    return n
+
+
 def deactivate_stale_undated(days: int = 45, source_prefix: str | None = None) -> int:
     """마감일이 없는 공고를 마지막 수집(crawled_at) 후 N일 지나면 비활성화.
     - 2026-08-21 실측: 활성 1,854건 중 1,691건(89%)이 필메코·캐스트링크의 4개월 묵은 마감 미상 공고였다(좀비).

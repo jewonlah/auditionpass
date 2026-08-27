@@ -26,6 +26,7 @@
 | 016_reports_server_insert | reports INSERT 정책 제거 → 신고 삽입은 서버(service role) 전용 | ✅ 2026-08-26 적용 (Codex 교차 리뷰 P1) |
 | **017_agent_queue** | 인테이크 잔여물 큐(공고당 1행, RLS 정책 없음=service role 전용) | ✅ 2026-08-27 적용 |
 | **018_expire_auditions** | 만료 처리 정본 함수 `expire_auditions()` + pg_cron `expire-auditions` 등록, 003 옛 함수 제거 | ✅ 2026-08-27 적용. **003은 라이브에 적용된 적이 없어 `cron` 스키마가 없었다** — pg_cron 자동 만료는 018부터가 처음 |
+| **019_archive_old_auditions** | 지난 공고 본문 비우기 `archive_old_auditions(after_days, dry_run)` + pg_cron `archive-old-auditions` | ✅ 2026-08-27 적용. **삭제 아님** — 지원·신고 이력이 cascade로 사라지고 source_url이 없어지면 재수집으로 되살아난다 |
 
 > **CLI 마이그레이션 거버넌스 (2026-08-27 시작, 2-7 전환의 첫 발)**: 009b는 `supabase db push --linked`로 적용했다.
 > 원격 `supabase_migrations.schema_migrations`에는 **009b 1건만** 기록돼 있고 001~017은 SQL 편집기로 직접 적용해 이력이 없다.

@@ -28,6 +28,7 @@ from utils import crawl_log
 from utils.supabase_client import (
     upsert_auditions,
     expire_auditions,
+    archive_old_auditions,
     pop_classify_stats,
 )
 
@@ -158,6 +159,9 @@ def main():
     logger.info("마감 공고 비활성화 처리...")
     # 만료 판정은 DB 함수 하나(018)로 일원화 — 규칙이 흩어져 ingest 경로가 누락됐던 결함(2-4)
     deactivated = sum(expire_auditions().values())
+    # 지난 지 30일 넘은 공고는 본문만 비운다(019) — 삭제하면 지원·신고 이력이 cascade로 사라지고
+    # source_url이 없어져 같은 공고가 되살아난다. pg_cron도 매일 돌지만 멱등이라 무해.
+    archive_old_auditions(30)
 
     logger.info("========== 크롤러 완료 ==========")
     logger.info(f"  수집: {total_collected}건 / 저장: {total_saved}건 / 비활성화: {deactivated}건")
