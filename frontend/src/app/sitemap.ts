@@ -8,6 +8,9 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://auditionpass.co.kr
 // 1시간 ISR로 런타임 재생성. 실패해도 다음 주기에 회복된다.
 export const revalidate = 3600;
 
+const PAGE = 1000;              // Supabase 한 번에 가져올 행 수
+const MAX_SITEMAP_URLS = 50000; // sitemaps.org 상한
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [
@@ -51,22 +54,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고가 sitemap에 잔류
     // auditions에는 updated_at 컬럼이 없다(created_at만) — updated_at 조회 시 쿼리 전체가
     // 에러로 죽어 sitemap이 정적 4개 URL로 굳는다 (2026-08-25 배포 실측)
-    const { data } = await supabase
-      .from("auditions")
-      .select("id, created_at")
-      .eq("is_active", true)
-      .or(`deadline.gte.${today},deadline.is.null`)
-      .order("created_at", { ascending: false })
-      .limit(500);
-
-    if (data) {
-      auditionPages = data.map((a) => ({
-        url: `${BASE_URL}/audition/${a.id}`,
-        lastModified: new Date(a.created_at),
-        changeFrequency: "daily" as const,
-        priority: 0.8,
-      }));
+    // 2026-08-28: limit(500) 이었다. 활성 공고가 4,400여 건인데 500건만 제출하고 있었다 —
+    // 나머지는 내부 링크로만 발견돼야 해서 사실상 색인 밖이었다. 페이지네이션으로 전량 제출한다.
+    // (사이트맵 1개당 50,000 URL 이 상한이라 현재 규모는 한 파일로 충분하다)
+    const rows: { id: string; created_at: string }[] = [];
+    for (let from = 0; from < MAX_SITEMAP_URLS; from += PAGE) {
+      const { data, error } = await supabase
+        .from("auditions")
+        .select("id, created_at")
+        .eq("is_active", true)
+        .or(`deadline.gte.${today},deadline.is.null`)
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error || !data?.length) break;
+      rows.push(...data);
+      if (data.length < PAGE) break;
     }
+
+    auditionPages = rows.map((a) => ({
+      url: `${BASE_URL}/audition/${a.id}`,
+      lastModified: new Date(a.created_at),
+      // 공고 본문은 수집 후 거의 바뀌지 않는다. daily 로 두면 크롤 예산만 낭비된다.
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
   } catch {
     // DB 접속 실패 시 정적 페이지만 반환
   }

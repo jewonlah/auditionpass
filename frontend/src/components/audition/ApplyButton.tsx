@@ -49,7 +49,11 @@ const INITIAL_CHECK: ApplyCheck = {
 type SheetStep = null | "login" | "profile" | "confirm" | "success";
 
 interface ApplyButtonProps {
-  audition: Pick<Audition, "id" | "title" | "company" | "genre" | "apply_email">;
+  // apply_email 은 서버가 클라이언트로 내보내지 않는다(36 §4 이메일 비노출).
+  // 값이 없을 수 있으므로 선택 필드로 둔다 — 화면 표시는 이미 조건부다.
+  audition: Pick<Audition, "id" | "title" | "company" | "genre"> & {
+    apply_email?: string | null;
+  };
   isLoggedIn: boolean;
   authLoading: boolean;
 }
@@ -485,7 +489,9 @@ function ConfirmStep({
   summary,
   onSent,
 }: {
-  audition: Pick<Audition, "id" | "title" | "company" | "apply_email">;
+  audition: Pick<Audition, "id" | "title" | "company"> & {
+    apply_email?: string | null;
+  };
   summary: ProfileSummary | null;
   onSent: () => void;
 }) {

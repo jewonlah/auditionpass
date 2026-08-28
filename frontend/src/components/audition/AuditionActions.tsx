@@ -33,11 +33,21 @@ export function BackButton() {
   );
 }
 
+/**
+ * 서버에서 넘기는 필드는 필요한 것만. 공고 객체를 통째로 넘기면 description 원문이
+ * RSC 페이로드로 HTML 에 실려 나간다(수집기 꼬리표 포함). 또 apply_email 은
+ * 절대 클라이언트로 내보내지 않는다 — 36 §4 "이메일 주소 비노출".
+ */
+export type AuditionActionProps = Pick<
+  Audition,
+  "id" | "title" | "company" | "genre" | "apply_type" | "source_url" | "oneclick_blocked"
+>;
+
 export function AuditionActions({
   audition,
   isExpired,
 }: {
-  audition: Audition;
+  audition: AuditionActionProps;
   isExpired: boolean;
 }) {
   const { user, loading: authLoading } = useAuth();
