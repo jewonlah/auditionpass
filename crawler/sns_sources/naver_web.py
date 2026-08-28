@@ -49,6 +49,19 @@ from sns_sources.exclude_domains import _ALL as EXCLUDE_DOMAINS  # noqa: E402
 
 
 # 블로그 콘텐츠팜·후기·뉴스 블로거 — 실측(2026-08-22): '건강백과365', '뉴스인사이더', '나만의 소확행 경제학' 류가 상위
+_BLOG_ID_RE = re.compile(r"blog\.naver\.com/([A-Za-z0-9_-]+)")
+
+
+def _blog_key(cand_url: str, cafename: str) -> str:
+    """블로그 출처 키 = 블로그 ID. URL에서 못 뽑으면 표시명으로 폴백한다.
+
+    tools/promote_candidates.py 와 /api/admin/candidates 가 같은 규칙으로 키를 만들어야
+    발견 큐 승인이 trusted_sources 등록으로 이어진다. 규칙을 바꾸면 세 곳을 같이 고칠 것.
+    """
+    m = _BLOG_ID_RE.search(cand_url or "")
+    return m.group(1) if m else (cafename or "")[:20]
+
+
 _BLOGGER_BLACKLIST = re.compile(r"뉴스|건강|경제|일상|소확행|정보\s*정리|저널리스트|여행|맛집|리뷰|후기|재테크|부동산|쇼핑")
 # 블로그 글은 제목에 공고성 단어가 있어야 후보 (SEO 글 '아역배우 되는법 오디션 공고 신청부터…' 차단)
 _BLOG_TITLE_OK = re.compile(r"공고|모집|오디션\s*(?:안내|접수|일정)|캐스팅|구인|채용")
@@ -148,9 +161,14 @@ class NaverWebScraper(BaseScraper):
                 continue
             kw_stat[it.keyword]["passed"] += 1
             dom_stat[dom]["passed"] += 1
-            source_name = f"{self.source_name}:{(it.cafename[:20] if self.kind == 'blog' else dom) or dom}"
             # 발견 큐 적립 (도메인/블로거 단위)
             cand_url = f"https://{dom}" if self.kind == "webkr" else (it.cafeurl or f"blog:{it.cafename}")
+            # 블로그 출처 키는 **블로그 ID**로 잡는다 (2026-08-28 변경).
+            # 표시명(cafename)은 블로거가 바꿀 수 있고 20자로 잘려 충돌하는 데다,
+            # 발견 큐(source_candidates)에는 URL만 저장돼 승인 시 표시명을 복원할 수 없었다.
+            # ID는 URL에서 결정적으로 나오므로 발견 → 승인 → 신뢰출처 등록이 한 키로 이어진다.
+            # 전환 비용 0: 이 변경 시점에 trusted 블로그는 0건이었다.
+            source_name = f"{self.source_name}:{_blog_key(cand_url, it.cafename) if self.kind == 'blog' else (dom or dom)}"
             c = self.candidates.setdefault(cand_url, {"kind": "domain" if self.kind == "webkr" else "blog",
                                                       "found_by": f"naver_{self.kind}:{it.keyword}", "sample_title": it.title[:80], "hits": 0})
             c["hits"] += 1
