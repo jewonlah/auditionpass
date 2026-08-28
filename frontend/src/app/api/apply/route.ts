@@ -107,8 +107,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5. 이메일 발송
-    await sendApplicationEmail({ audition, profile });
+    // 5. 이메일 발송 — Reply-To 에 지원자 주소를 넣어 담당자 답장이 지원자에게 직접 가게 한다
+    await sendApplicationEmail({ audition, profile, replyToEmail: user.email });
 
     // 6. 지원 이력 저장 (status는 F6 상태 모델 — R1은 sent/failed)
     const { error: insertError } = await supabase
