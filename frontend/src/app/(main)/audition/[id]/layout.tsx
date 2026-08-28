@@ -26,10 +26,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       .single();
 
     if (!audition) {
-      return { title: "오디션 정보 없음 | 오디션패스" };
+      return { title: "오디션 정보 없음" };
     }
 
-    const title = `${audition.title} | 오디션패스`;
+    // 루트 layout 의 title.template("%s | 오디션패스")이 접미사를 붙인다.
+    // 여기서 또 붙이면 "제목 | 오디션패스 | 오디션패스" 가 된다 (2026-08-28 실측 후 수정).
+    const title = audition.title;
     const description =
       audition.description?.slice(0, 155) ||
       `${audition.company || ""} ${audition.genre} 오디션 — 오디션패스에서 원클릭으로 지원하세요.`;
@@ -55,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch {
-    return { title: "오디션 상세 | 오디션패스" };
+    return { title: "오디션 상세" };
   }
 }
 
