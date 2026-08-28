@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { AttributionTracker } from "@/components/Attribution";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
@@ -65,6 +66,7 @@ export default function RootLayout({
           Vercel Analytics 는 쿠키를 쓰지 않아 개인정보 동의 배너 없이 바로 수집할 수 있다.
           퍼널·이벤트 추적이 필요해지면 그때 GA4 를 동의 처리와 함께 추가한다.
         */}
+        <AttributionTracker />
         <Analytics />
         <SpeedInsights />
       </body>

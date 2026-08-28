@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { resolveReturnTo, withReturnTo } from "@/lib/utils";
 import { Mail, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { readAttribution } from "@/components/Attribution";
 
 const signupSchema = z
   .object({
@@ -47,6 +48,10 @@ function SignupContent() {
   async function onSubmit(data: SignupForm) {
     setServerError("");
 
+    // 최초 유입 경로를 가입에 붙인다 — 없으면 이 사람이 어디서 왔는지 영영 알 수 없다.
+    // (Vercel Analytics 는 전체 방문 기준이라 개별 가입자와 연결되지 않는다)
+    const attribution = readAttribution();
+
     const { error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -54,6 +59,14 @@ function SignupContent() {
         emailRedirectTo: rawReturnTo
           ? `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`
           : `${window.location.origin}/auth/callback`,
+        data: attribution
+          ? {
+              signup_source: attribution.source,
+              signup_referrer: attribution.referrer,
+              signup_landing: attribution.landing,
+              ...attribution.utm,
+            }
+          : { signup_source: "direct" },
       },
     });
 

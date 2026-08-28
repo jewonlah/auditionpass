@@ -48,6 +48,9 @@ export default async function AdminLayout({
           <Link href="/admin/candidates" className="rounded-lg px-3 py-2 hover:bg-[#F3F4F6]">
             소스 후보
           </Link>
+          <Link href="/admin/users" className="rounded-lg px-3 py-2 hover:bg-[#F3F4F6]">
+            가입자
+          </Link>
           <Link href="/admin/intake" className="rounded-lg px-3 py-2 hover:bg-[#F3F4F6]">
             인테이크
           </Link>
