@@ -18,7 +18,7 @@ import {
   Check,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { cn, withReturnTo } from "@/lib/utils";
 import type { CommunityPost, CommunityComment } from "@/types";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -86,7 +86,7 @@ export default function CommunityDetailPage({
 
   async function handleLike() {
     if (!user) {
-      router.push("/login");
+      router.push(withReturnTo("/login", `/community/${id}`));
       return;
     }
 
@@ -107,7 +107,7 @@ export default function CommunityDetailPage({
 
   async function handleComment() {
     if (!user) {
-      router.push("/login");
+      router.push(withReturnTo("/login", `/community/${id}`));
       return;
     }
     if (!commentText.trim()) return;

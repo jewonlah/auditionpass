@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import type { CommunityCategory } from "@/types";
+import { LoginRedirect } from "@/components/auth/LoginRedirect";
 
 const CATEGORIES: { key: CommunityCategory; label: string; desc: string }[] = [
   { key: "자유", label: "자유", desc: "일상, 잡담" },
@@ -33,8 +34,9 @@ export default function CommunityWritePage() {
   }
 
   if (!user) {
-    router.push("/login");
-    return null;
+    // 렌더 중 router.push 는 React 부작용 규칙 위반이라 이중 내비게이션이 날 수 있다.
+    // returnTo 도 없어 로그인 후 /home 으로 튕기며 쓰던 글이 사라졌다 (12 §F3 위반).
+    return <LoginRedirect returnTo="/community/write" />;
   }
 
   async function handleSubmit() {

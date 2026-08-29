@@ -52,7 +52,7 @@ function SignupContent() {
     // (Vercel Analytics 는 전체 방문 기준이라 개별 가입자와 연결되지 않는다)
     const attribution = readAttribution();
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -76,6 +76,22 @@ function SignupContent() {
       } else {
         setServerError("회원가입에 실패했습니다. 다시 시도해주세요.");
       }
+      return;
+    }
+
+    // 이미 가입된 이메일 판별 (2026-08-29 추가).
+    // 이메일 확인이 켜져 있으면 GoTrue 는 사용자 열거를 막기 위해 **에러 없이**
+    // identities 가 빈 가짜 user 를 돌려준다. 그래서 위 error.message 분기는 발화하지 않고,
+    // 기존 가입자가 재가입을 시도하면 오지 않을 메일을 계속 기다리게 된다.
+    if (signUpData.user && signUpData.user.identities?.length === 0) {
+      setServerError("이미 가입된 이메일입니다. 로그인해주세요.");
+      return;
+    }
+
+    // 이메일 확인이 꺼져 있으면 signUp 이 즉시 세션을 준다. 이때 "메일함을 확인하세요"를
+    // 띄우면 이미 로그인된 사용자가 오지 않을 메일을 기다리는 데드엔드가 된다.
+    if (signUpData.session) {
+      window.location.assign(returnTo);
       return;
     }
 

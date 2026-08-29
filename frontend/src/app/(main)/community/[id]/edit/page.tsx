@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { cn, withReturnTo } from "@/lib/utils";
 import type { CommunityCategory, CommunityPost } from "@/types";
 
 const CATEGORIES: { key: CommunityCategory; label: string }[] = [
@@ -34,7 +34,7 @@ export default function CommunityEditPage({
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push("/login");
+      router.push(withReturnTo("/login", `/community/${id}/edit`));
       return;
     }
 

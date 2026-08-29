@@ -30,6 +30,16 @@ function LoginContent() {
   const rawReturnTo = searchParams.get("returnTo");
   const returnTo = resolveReturnTo(rawReturnTo, "/home");
 
+  // 인증 콜백이 실패 사유를 실어 보낸다 (2026-08-29). 그전에는 만료된 링크를 눌러도
+  // 아무 설명 없이 로그인 화면만 떠서, 사용자가 원인을 모른 채 재가입을 반복했다.
+  const authError = searchParams.get("error");
+  const authNotice =
+    authError === "expired_link"
+      ? "인증 링크가 만료되었거나 이미 사용되었습니다. 아래에서 다시 로그인하거나 가입을 다시 진행해 주세요."
+      : authError === "auth_failed" || authError === "missing_code"
+        ? "인증에 실패했습니다. 다시 시도해 주세요."
+        : null;
+
   const {
     register,
     handleSubmit,
@@ -72,6 +82,12 @@ function LoginContent() {
 
         {/* 로그인 폼 */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {authNotice && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+              {authNotice}
+            </div>
+          )}
+
           {serverError && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
               {serverError}
