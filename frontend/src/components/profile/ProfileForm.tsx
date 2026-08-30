@@ -61,11 +61,16 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   const [specialtyInput, setSpecialtyInput] = useState("");
   const isEdit = !!initialData;
 
+  // AI 소개문 — 랜딩의 약속 "프로필은 AI가 씁니다". 초안은 AI, 확정은 본인.
+  const [polishing, setPolishing] = useState(false);
+  const [polishError, setPolishError] = useState("");
+
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema) as Resolver<ProfileFormData>,
@@ -262,11 +267,53 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         />
       </div>
 
-      {/* 한 줄 소개 */}
+      {/* 한 줄 소개 — 사실만 넣으면 AI가 초안을 쓴다 */}
       <div>
-        <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-          한 줄 소개
-        </label>
+        <div className="mb-1.5 flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-700">한 줄 소개</label>
+          <button
+            type="button"
+            disabled={polishing}
+            onClick={async () => {
+              setPolishError("");
+              setPolishing(true);
+              try {
+                const v = getValues();
+                const res = await fetch("/api/profile/polish", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    birth_year: v.birth_year || null,
+                    gender: v.gender || null,
+                    height: v.height || null,
+                    genre: v.genre,
+                    activity_field: v.activity_field,
+                    specialty: v.specialty,
+                    career: v.career || null,
+                    bio: v.bio || null,
+                  }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "생성 실패");
+                setValue("bio", data.bio, { shouldValidate: true, shouldDirty: true });
+              } catch (e) {
+                setPolishError(e instanceof Error ? e.message : "소개문 생성에 실패했습니다.");
+              } finally {
+                setPolishing(false);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-3 py-1 text-xs font-bold text-primary transition-colors hover:bg-red-50 disabled:opacity-50"
+          >
+            {polishing ? (
+              <>
+                <span className="size-3 animate-spin rounded-full border-[1.5px] border-primary/30 border-t-primary" />
+                쓰는 중…
+              </>
+            ) : (
+              "AI로 소개 쓰기"
+            )}
+          </button>
+        </div>
         <textarea
           placeholder="자신을 한 줄로 소개해주세요"
           maxLength={100}
@@ -278,8 +325,14 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           {errors.bio && (
             <p className="text-sm text-red-500">{errors.bio.message}</p>
           )}
+          {polishError && !errors.bio && (
+            <p className="text-sm text-red-500">{polishError}</p>
+          )}
           <p className="text-xs text-gray-400 ml-auto">{bioValue.length}/100</p>
         </div>
+        <p className="mt-1 text-xs text-gray-400">
+          분야·특기·경력을 채운 뒤 누르면 더 잘 씁니다. 고쳐 쓰셔도 됩니다.
+        </p>
       </div>
 
       {/* 활동 분야 */}
