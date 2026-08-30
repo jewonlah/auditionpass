@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; }
+
+    /* ── 형광펜 ─────────────────────────────────────────
+       배우는 대본을 받으면 자기 대사에 형광펜을 긋는다.
+       공고 4,538건에서 당신 것에 긋는 일 — 그게 우리가 하는 일이다.
+       한 번에 쭉 긋고, 한참 머물다, 다시. 손으로 긋듯 살짝 빠르게 시작해서 느리게 끝난다. */
+    @keyframes highlight {
+      0%      { transform: scaleX(0); }
+      22%,84% { transform: scaleX(1); }
+      100%    { transform: scaleX(0); }
+    }
+    .pen { transform-origin: 0 50%; animation: highlight 11s cubic-bezier(0.22,1,0.3,1) infinite; }
+
+    /* 그어지고 나서야 뒤따라 붙는 메모 */
+    @keyframes memo { 0%,26% { opacity: 0; } 40%,84% { opacity: 1; } 100% { opacity: 0; } }
+    .memo { animation: memo 11s ease-out infinite; }
+
+    /* 커서 — 아직 쓰이는 중인 대본 */
+    @keyframes caret { 0%,48% { opacity: 1; } 49%,100% { opacity: 0; } }
+    .caret { animation: caret 1.15s steps(1) infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pen { animation: none; transform: scaleX(1); }
+      .memo { animation: none; opacity: 1; }
+      .caret { animation: none; }
+    }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; background: #FCFBF7; color: #1C1A16; font-family: 'Noto Serif KR', serif; position: relative; overflow: hidden;">
+
+  <!-- 종이 결 -->
+  <div style="position: absolute; inset: 0; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E&quot;); opacity: 0.04; mix-blend-mode: multiply; pointer-events: none;"></div>
+
+  <!-- 제본 구멍 -->
+  <div style="position: absolute; left: 62px; top: 262px; width: 15px; height: 15px; border-radius: 9999px; background: #E4E0D6; box-shadow: inset 0 1px 2px rgba(0,0,0,0.16);"></div>
+  <div style="position: absolute; left: 62px; top: 482px; width: 15px; height: 15px; border-radius: 9999px; background: #E4E0D6; box-shadow: inset 0 1px 2px rgba(0,0,0,0.16);"></div>
+  <div style="position: absolute; left: 62px; top: 702px; width: 15px; height: 15px; border-radius: 9999px; background: #E4E0D6; box-shadow: inset 0 1px 2px rgba(0,0,0,0.16);"></div>
+
+  <!-- 러닝 헤드 -->
+  <div style="position: absolute; top: 52px; left: 150px; right: 84px; display: flex; align-items: baseline; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.16em; color: #8D8778;">
+    <span style="font-weight: 700; color: #1C1A16;">AUDITIONPASS</span>
+    <span style="margin-left: 20px;">소속사 없는 배우와 모델의 매니저</span>
+    <span style="margin-left: auto; font-weight: 700; color: #1C1A16;">114.</span>
+  </div>
+  <div style="position: absolute; top: 82px; left: 150px; right: 84px; height: 1px; background: #DCD7C9;"></div>
+
+  <!-- ── S# 114 ────────────────────────────────────────── -->
+  <div style="position: absolute; top: 126px; left: 150px; width: 1100px;">
+
+    <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.1em;">S# 114.&nbsp;&nbsp; 오디션장 복도 / 낮</p>
+
+    <p style="margin: 20px 0 0 60px; width: 700px; font-size: 16px; line-height: 1.9; color: #46423A;">
+      혼자 앉아 있다. 무릎 위에 프로필 사진 한 장.
+      복도 끝에서 이름이 불린다. 내 이름은 아니다.
+    </p>
+
+    <p style="margin: 28px 0 0 300px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; color: #6E685C;">지 망 생</p>
+    <p style="margin: 9px 0 0 240px; width: 560px; font-size: 17px; line-height: 1.86;">
+      여기까지 오는 데 일주일이 걸렸다. 공고 하나 찾는 데 이틀,
+      담당자 메일 주소 찾는 데 하루, 나머지는 망설이는 데 썼다.
+    </p>
+  </div>
+
+  <!-- ── S# 115 ────────────────────────────────────────── -->
+  <div style="position: absolute; top: 434px; left: 150px; width: 1160px;">
+
+    <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.1em;">S# 115.&nbsp;&nbsp; 같은 곳 / 잠시 후</p>
+
+    <p style="margin: 26px 0 0 300px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; color: #6E685C;">오 디 션 패 스</p>
+
+    <!-- 형광펜이 그어지는 단 한 줄 -->
+    <div style="position: relative; margin: 16px 0 0 60px; display: inline-block;">
+      <div class="pen" style="position: absolute; left: -12px; right: -16px; top: 12px; bottom: 10px; background: linear-gradient(to right, rgba(255,226,77,0.55), #FFE24D 5%, #FFE24D 95%, rgba(255,226,77,0.4)); mix-blend-mode: multiply; transform: rotate(-0.45deg);"></div>
+      <h1 style="position: relative; margin: 0; font-size: 54px; line-height: 1.24; letter-spacing: -0.045em; font-weight: 900;">
+        당신의 꿈은, 우리가 관리하겠습니다.<span class="caret" style="display: inline-block; width: 3px; height: 44px; background: #1C1A16; margin-left: 8px; vertical-align: -6px;"></span>
+      </h1>
+    </div>
+
+    <p style="margin: 26px 0 0 60px; width: 760px; font-size: 16px; line-height: 1.9; color: #46423A;">
+      매일 여덟 곳을 훑는다. 오늘 <span style="font-weight: 900; color: #1C1A16;">114건</span>이 새로 올라왔고,
+      진행 중인 공고는 <span style="font-weight: 900; color: #1C1A16;">4,538건</span>이다.
+      그중 셋을 골라 프로필을 대신 보냈다.
+    </p>
+
+    <!-- 여백에 적어 넣은 메모 -->
+    <p class="memo" style="margin: 22px 0 0 60px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: #B08400;">
+      &#8627; 케이팝 드림걸스 &nbsp;09:12 보냄 &nbsp;&nbsp; 조각 24차팀 &nbsp;10:04 보냄 &nbsp;&nbsp; 스킨케어 지면 &nbsp;11:37 보냄
+    </p>
+  </div>
+
+  <!-- ── 페이지 하단 ───────────────────────────────────── -->
+  <div style="position: absolute; left: 150px; right: 84px; bottom: 46px;">
+    <div style="height: 1px; background: #DCD7C9;"></div>
+    <div style="display: flex; align-items: center; padding-top: 26px;">
+      <span style="display: inline-flex; align-items: center; gap: 13px; padding: 15px 28px; background: #1C1A16; color: #FCFBF7; font-family: 'Noto Sans KR', sans-serif; font-size: 15px; font-weight: 700; flex: none;">
+        오늘의 공고 보기
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="#FCFBF7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span style="margin-left: 26px; font-family: 'Noto Sans KR', sans-serif; font-size: 13.5px; font-weight: 500; color: #7A7568;">가입은 대신 지원할 때만 필요합니다</span>
+      <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.18em; color: #8D8778;">(계속)</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

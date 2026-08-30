@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; }
+
+    /* 색면은 도형이지 조명이 아니다. 숨만 쉬고 반짝이지 않는다. */
+    @keyframes breathe {
+      0%,100% { transform: scale(1); }
+      50%     { transform: scale(1.035); }
+    }
+    .disc { animation: breathe 19s ease-in-out infinite; }
+
+    @keyframes lift { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+    .lift { animation: lift 9s ease-in-out infinite; }
+
+    @keyframes arrow { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+    .arrow { animation: arrow 3s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) { .disc,.lift,.arrow { animation: none; } }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; background: #F0EAD8; color: #16337A; font-family: 'Noto Sans KR', system-ui, sans-serif; position: relative; overflow: hidden;">
+
+  <!-- ── 오른쪽 색면 ───────────────────────────────────── -->
+  <div style="position: absolute; top: 0; right: 0; width: 560px; height: 980px; background: #16337A;"></div>
+
+  <!-- ── 머스타드 원 ─────────────────────────────────────
+       파란 면 안에서만 산다. 글자와 겹치지 않는 자리에 두어야
+       도형이 도형으로 읽힌다. 왼쪽 아래 CTA와 대각으로 균형을 잡는다. -->
+  <div class="disc" style="position: absolute; right: -128px; bottom: -142px; width: 350px; height: 350px; border-radius: 9999px; background: #E8A22B;"></div>
+
+  <!-- 종이 결 -->
+  <div style="position: absolute; inset: 0; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E&quot;); opacity: 0.06; mix-blend-mode: multiply; pointer-events: none;"></div>
+
+  <!-- ── 내비 ───────────────────────────────────────────── -->
+  <div style="position: relative; display: flex; align-items: center; padding: 34px 56px 0;">
+    <span style="font-size: 16px; font-weight: 900; letter-spacing: -0.03em;">오디션패스</span>
+    <div style="margin-left: 38px; display: flex; gap: 26px; font-size: 14px; font-weight: 500; color: #4A5D9E;">
+      <span>공고</span><span>대신 지원</span><span>요금</span>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 22px;">
+      <span style="font-size: 14px; font-weight: 500; color: #A8B6DC;">로그인</span>
+      <span style="padding: 9px 18px; background: #E8A22B; color: #16337A; font-size: 13px; font-weight: 900;">무료로 시작</span>
+    </div>
+  </div>
+
+  <!-- ── 왼쪽 : 약속 ───────────────────────────────────── -->
+  <div style="position: absolute; top: 148px; left: 56px; width: 764px;">
+
+    <span style="display: inline-block; padding: 6px 13px; background: #16337A; color: #F0EAD8; font-size: 11px; font-weight: 900; letter-spacing: 0.14em;">소속사 없는 배우와 모델의 매니저</span>
+
+    <h1 style="margin: 28px 0 0; font-size: 84px; line-height: 1.0; letter-spacing: -0.058em; font-weight: 900;">
+      당신의 꿈은,<br>우리가<br>관리하겠습니다
+    </h1>
+
+    <p style="margin: 34px 0 0; max-width: 36ch; font-size: 17px; line-height: 1.74; color: #2E4489;">
+      소속사가 있는 배우는 매니저가 공고를 찾아주고, 프로필을 대신 보내줍니다.
+      그 일을 오디션패스가 합니다.
+    </p>
+
+    <div style="display: flex; gap: 44px; margin-top: 38px; padding-top: 26px; border-top: 3px solid #16337A;">
+      <div>
+        <p style="margin: 0; font-size: 34px; font-weight: 900; letter-spacing: -0.035em; font-variant-numeric: tabular-nums;">4,538</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 700; color: #4A5D9E;">진행 중인 공고</p>
+      </div>
+      <div>
+        <p style="margin: 0; font-size: 34px; font-weight: 900; letter-spacing: -0.035em; color: #C9800F; font-variant-numeric: tabular-nums;">114</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 700; color: #4A5D9E;">오늘 새로 올라온 공고</p>
+      </div>
+      <div>
+        <p style="margin: 0; font-size: 34px; font-weight: 900; letter-spacing: -0.035em; font-variant-numeric: tabular-nums;">8</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 700; color: #4A5D9E;">매일 훑는 공고 사이트</p>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 22px; margin-top: 38px;">
+      <span style="display: inline-flex; align-items: center; gap: 13px; padding: 17px 32px; background: #E8A22B; color: #16337A; font-size: 15.5px; font-weight: 900;">
+        오늘의 공고 보기
+        <svg class="arrow" viewBox="0 0 16 16" width="15" height="15" fill="none"><path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="#16337A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span style="font-size: 14px; font-weight: 500; color: #4A5D9E;">가입은 대신 지원할 때만 필요합니다</span>
+    </div>
+  </div>
+
+  <!-- ── 오른쪽 색면 안 : 증거 ─────────────────────────── -->
+  <div style="position: absolute; top: 148px; right: 56px; width: 448px; color: #F0EAD8;">
+
+    <div style="display: flex; align-items: baseline; padding-bottom: 14px; border-bottom: 2px solid rgba(240,234,216,0.34);">
+      <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.2em; color: #E8A22B;">오늘의 공고</span>
+      <span style="margin-left: auto; font-size: 12px; font-weight: 500; color: #A8B6DC;">2026.08.30</span>
+    </div>
+
+    <!-- 우리가 보낸 것 -->
+    <div class="lift" style="margin-top: 22px; background: #F0EAD8; color: #16337A; padding: 22px 24px 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 10.5px; font-weight: 900; letter-spacing: 0.14em; color: #4A5D9E;">뮤지컬</span>
+        <span style="margin-left: auto; font-size: 11.5px; font-weight: 900; color: #C9800F;">오늘 마감</span>
+      </div>
+      <p style="margin: 12px 0 0; font-size: 18px; line-height: 1.32; font-weight: 900; letter-spacing: -0.025em;">어린이 뮤지컬 «케이팝 드림걸스» 배우 모집</p>
+      <p style="margin: 9px 0 0; font-size: 12.5px; color: #5A6DA8;">서울, 회차당 협의</p>
+
+      <div style="margin-top: 17px; padding: 11px 14px; background: #E8A22B;">
+        <p style="margin: 0; font-size: 13px; font-weight: 900;">오디션패스가 프로필을 보냈습니다</p>
+        <p style="margin: 3px 0 0; font-size: 11.5px; font-weight: 700; color: #6E4A05; font-variant-numeric: tabular-nums;">오전 9시 12분, 담당자 메일 접수됨</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; border: 2px solid rgba(240,234,216,0.34); padding: 18px 22px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 10.5px; font-weight: 900; letter-spacing: 0.14em; color: #A8B6DC;">연극</span>
+        <span style="margin-left: auto; font-size: 11.5px; font-weight: 700; color: #A8B6DC; font-variant-numeric: tabular-nums;">D-6</span>
+      </div>
+      <p style="margin: 11px 0 0; font-size: 15.5px; line-height: 1.36; font-weight: 700;">연극 «조각» 24차팀 순철·영희 역 오디션</p>
+      <p style="margin: 7px 0 0; font-size: 12px; color: #A8B6DC;">위로컴퍼니, 대학로</p>
+    </div>
+
+    <div style="margin-top: 14px; border: 2px solid rgba(240,234,216,0.34); padding: 18px 22px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 10.5px; font-weight: 900; letter-spacing: 0.14em; color: #A8B6DC;">광고 모델</span>
+        <span style="margin-left: auto; font-size: 11.5px; font-weight: 700; color: #A8B6DC; font-variant-numeric: tabular-nums;">D-9</span>
+      </div>
+      <p style="margin: 11px 0 0; font-size: 15.5px; line-height: 1.36; font-weight: 700;">스킨케어 브랜드 지면 촬영 모델 모집</p>
+      <p style="margin: 7px 0 0; font-size: 12px; color: #A8B6DC;">서울, 일급 협의</p>
+    </div>
+
+    <p style="margin: 22px 0 0; font-size: 12.5px; font-weight: 700; color: #E8A22B;">이 밖에 4,535건 &rarr;</p>
+  </div>
+
+  <!-- ── 바닥 ──────────────────────────────────────────── -->
+  <div style="position: absolute; left: 56px; bottom: 34px; width: 764px; display: flex; align-items: center; gap: 26px;">
+    <span style="font-size: 10.5px; font-weight: 900; letter-spacing: 0.18em; color: #4A5D9E; flex: none;">매일 훑는 곳</span>
+    <div style="display: flex; align-items: center; gap: 22px; font-size: 13px; font-weight: 700; color: #16337A;">
+      <span>필름메이커스</span><span>캐스팅114</span><span>캐스틱</span><span>플필</span><span>네이버 카페</span><span>인스타그램</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

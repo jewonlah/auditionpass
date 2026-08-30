@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; }
+
+    /* ── 운행 ───────────────────────────────────────────
+       여덟 노선 위를 공고가 흘러 한 역으로 모인다.
+       노선마다 속도가 다르다 — 어떤 곳은 하루에 몇 건, 어떤 곳은 몇십 건. */
+    @keyframes flow { to { stroke-dashoffset: -122; } }
+    .p1 { animation: flow 3.2s linear infinite; }
+    .p2 { animation: flow 4.6s linear infinite; }
+    .p3 { animation: flow 5.8s linear infinite; }
+    .p4 { animation: flow 3.9s linear infinite; }
+    .p5 { animation: flow 2.7s linear infinite; }
+    .p6 { animation: flow 5.1s linear infinite; }
+    .p7 { animation: flow 4.2s linear infinite; }
+    .p8 { animation: flow 6.4s linear infinite; }
+    .pt { animation: flow 1.5s linear infinite; }
+
+    /* 합류역이 숨쉰다 */
+    @keyframes hub {
+      0%,100% { r: 24; }
+      50%     { r: 25.5; }
+    }
+    .hub { animation: hub 4.4s ease-in-out infinite; }
+
+    @keyframes arrow { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+    .arrow { animation: arrow 3s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .p1,.p2,.p3,.p4,.p5,.p6,.p7,.p8,.pt,.hub,.arrow { animation: none; }
+    }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; background: #F7F8FA; color: #14161A; font-family: 'Noto Sans KR', system-ui, sans-serif; position: relative; overflow: hidden;">
+
+  <!-- ── 내비 ───────────────────────────────────────────── -->
+  <div style="position: relative; display: flex; align-items: center; padding: 32px 64px 0;">
+    <span style="font-size: 16px; font-weight: 900; letter-spacing: -0.03em;">오디션패스</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 22px;">
+      <span style="font-size: 13.5px; font-weight: 500; color: #5C6270;">로그인</span>
+      <span style="padding: 9px 18px; border-radius: 9999px; border: 1.4px solid #14161A; font-size: 13px; font-weight: 700;">무료로 시작</span>
+    </div>
+  </div>
+
+  <!-- ── 표제 ──────────────────────────────────────────── -->
+  <div style="position: absolute; top: 108px; left: 64px; width: 700px;">
+    <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; letter-spacing: 0.2em; color: #5C6270;">소속사 없는 배우와 모델의 매니저</p>
+    <h1 style="margin: 20px 0 0; font-size: 62px; line-height: 1.1; letter-spacing: -0.05em; font-weight: 900;">
+      당신의 꿈은,<br>우리가 관리하겠습니다
+    </h1>
+  </div>
+
+  <div style="position: absolute; top: 128px; right: 64px; width: 420px; text-align: right;">
+    <p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4B515C;">
+      공고는 여덟 곳에 흩어져 있습니다. 매일 여덟 번 로그인하고,
+      여덟 번 검색하고, 여덟 번 실망하는 일을 우리가 대신합니다.
+      한 곳으로 모아 오고, 원하는 곳에는 대신 지원합니다.
+    </p>
+  </div>
+
+  <!-- ── 노선도 ────────────────────────────────────────── -->
+  <svg viewBox="0 0 1312 440" width="1312" height="440" style="position: absolute; top: 322px; left: 64px;" fill="none">
+
+    <!-- 노선 -->
+    <g stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M190 30  L565 30  L740 205" stroke="#E0342B"/>
+      <path d="M190 80  L615 80  L740 205" stroke="#F5871F"/>
+      <path d="M190 130 L665 130 L740 205" stroke="#E3B505"/>
+      <path d="M190 180 L715 180 L740 205" stroke="#1FA84C"/>
+      <path d="M190 230 L715 230 L740 205" stroke="#0B8AD9"/>
+      <path d="M190 280 L665 280 L740 205" stroke="#3B3BC9"/>
+      <path d="M190 330 L615 330 L740 205" stroke="#8E3FC0"/>
+      <path d="M190 380 L565 380 L740 205" stroke="#D9407A"/>
+    </g>
+
+    <!-- 흐르는 공고 -->
+    <g stroke-width="8" stroke-linecap="butt" stroke-linejoin="round" stroke="#F7F8FA" stroke-dasharray="10 112">
+      <path class="p1" d="M190 30  L565 30  L740 205"/>
+      <path class="p2" d="M190 80  L615 80  L740 205"/>
+      <path class="p3" d="M190 130 L665 130 L740 205"/>
+      <path class="p4" d="M190 180 L715 180 L740 205"/>
+      <path class="p5" d="M190 230 L715 230 L740 205"/>
+      <path class="p6" d="M190 280 L665 280 L740 205"/>
+      <path class="p7" d="M190 330 L615 330 L740 205"/>
+      <path class="p8" d="M190 380 L565 380 L740 205"/>
+    </g>
+
+    <!-- 본선 -->
+    <path d="M740 205 L1160 205" stroke="#14161A" stroke-width="17" stroke-linecap="round"/>
+    <path class="pt" d="M740 205 L1160 205" stroke="#F7F8FA" stroke-width="17" stroke-dasharray="9 113" stroke-linecap="butt"/>
+
+    <!-- 출발역 -->
+    <g fill="#F7F8FA" stroke-width="4.5">
+      <circle cx="190" cy="30"  r="7.5" stroke="#E0342B"/>
+      <circle cx="190" cy="80"  r="7.5" stroke="#F5871F"/>
+      <circle cx="190" cy="130" r="7.5" stroke="#E3B505"/>
+      <circle cx="190" cy="180" r="7.5" stroke="#1FA84C"/>
+      <circle cx="190" cy="230" r="7.5" stroke="#0B8AD9"/>
+      <circle cx="190" cy="280" r="7.5" stroke="#3B3BC9"/>
+      <circle cx="190" cy="330" r="7.5" stroke="#8E3FC0"/>
+      <circle cx="190" cy="380" r="7.5" stroke="#D9407A"/>
+    </g>
+
+    <!-- 출발역 이름 -->
+    <g text-anchor="end" font-family="Noto Sans KR, sans-serif" font-size="15" font-weight="700" fill="#2A2F38">
+      <text x="168" y="35">필름메이커스</text>
+      <text x="168" y="85">캐스팅114</text>
+      <text x="168" y="135">캐스틱</text>
+      <text x="168" y="185">플필</text>
+      <text x="168" y="235">네이버 카페</text>
+      <text x="168" y="285">인스타그램</text>
+      <text x="168" y="335">스레드</text>
+      <text x="168" y="385">대학로 극단</text>
+    </g>
+
+    <!-- 환승역 -->
+    <circle class="hub" cx="740" cy="205" r="24" fill="#F7F8FA" stroke="#14161A" stroke-width="7"/>
+    <text x="740" y="266" text-anchor="middle" font-family="Noto Sans KR, sans-serif" font-size="21" font-weight="900" fill="#14161A" letter-spacing="-0.5">오디션패스</text>
+    <text x="740" y="290" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#6B7180" letter-spacing="1.6">4,538건 정차 중</text>
+
+    <!-- 본선 위 안내 -->
+    <text x="950" y="188" text-anchor="middle" font-family="Noto Sans KR, sans-serif" font-size="14" font-weight="700" fill="#14161A">오늘 114건이 이 선로로 갑니다</text>
+
+    <!-- 종착역 -->
+    <circle cx="1160" cy="205" r="13" fill="#F7F8FA" stroke="#14161A" stroke-width="7"/>
+    <text x="1186" y="200" font-family="Noto Sans KR, sans-serif" font-size="26" font-weight="900" fill="#14161A" letter-spacing="-0.8">당신</text>
+    <text x="1186" y="224" font-family="Noto Sans KR, sans-serif" font-size="13" font-weight="500" fill="#5C6270">대신 지원까지</text>
+  </svg>
+
+  <!-- ── 바닥 ──────────────────────────────────────────── -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid #E0E3E9;">
+    <div style="display: flex; align-items: center; padding: 24px 64px 26px;">
+      <span style="display: inline-flex; align-items: center; gap: 13px; padding: 16px 30px; border-radius: 9999px; background: #14161A; color: #F7F8FA; font-size: 15px; font-weight: 700; flex: none;">
+        오늘의 공고 보기
+        <svg class="arrow" viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="#F7F8FA" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+
+      <div style="display: flex; align-items: center; gap: 34px; margin-left: 46px;">
+        <div>
+          <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">4,538</span>
+          <span style="margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #6B7180;">진행 중</span>
+        </div>
+        <div>
+          <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">114</span>
+          <span style="margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #6B7180;">오늘 신규</span>
+        </div>
+        <div>
+          <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">8</span>
+          <span style="margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #6B7180;">노선</span>
+        </div>
+      </div>
+
+      <span style="margin-left: auto; font-size: 13px; font-weight: 500; color: #6B7180;">가입은 대신 지원할 때만 필요합니다</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

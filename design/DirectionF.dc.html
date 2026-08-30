@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; }
+
+    /* ── 2도 인쇄 ───────────────────────────────────────
+       리소그래프는 판이 미세하게 어긋난다. 그 어긋남이 이 매체의 얼굴이다.
+       핑크판이 코발트판 위에서 아주 느리게 움직인다 — 완벽하게 맞으면
+       그냥 디지털이 되어버린다. */
+    @keyframes misreg {
+      0%,100% { transform: translate(6px, 5px); }
+      50%     { transform: translate(3px, 7px); }
+    }
+    .misreg { animation: misreg 17s ease-in-out infinite; }
+
+    @keyframes misreg2 {
+      0%,100% { transform: translate(-4px, -3px) rotate(-0.4deg); }
+      50%     { transform: translate(-2px, -5px) rotate(0.3deg); }
+    }
+    .misreg2 { animation: misreg2 21s ease-in-out infinite; }
+
+    /* 망점 원판이 돈다 */
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .screen { animation: spin 140s linear infinite; }
+
+    /* 잉크가 마르며 조금 진해진다 */
+    @keyframes ink { 0%,100% { opacity: 0.82; } 50% { opacity: 1; } }
+    .wet { animation: ink 13s ease-in-out infinite; }
+
+    @keyframes arrow { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+    .arrow { animation: arrow 3s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .misreg { animation: none; transform: translate(6px, 5px); }
+      .misreg2 { animation: none; transform: translate(-4px, -3px); }
+      .screen,.wet,.arrow { animation: none; }
+    }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; background: #F2ECDD; color: #1B44E0; font-family: 'Noto Sans KR', system-ui, sans-serif; position: relative; overflow: hidden;">
+
+  <!-- ── 핑크 망점 원판 ────────────────────────────────── -->
+  <div class="screen" style="position: absolute; top: -190px; right: -170px; width: 720px; height: 720px; border-radius: 9999px;
+      background-image: radial-gradient(circle, #FF2E88 1.5px, transparent 1.6px); background-size: 7px 7px;
+      mix-blend-mode: multiply; opacity: 0.9; pointer-events: none;"></div>
+
+  <!-- 코발트 망점 띠 -->
+  <div class="wet" style="position: absolute; left: -60px; bottom: 118px; width: 620px; height: 210px; transform: rotate(-4deg);
+      background-image: radial-gradient(circle, #1B44E0 1.3px, transparent 1.4px); background-size: 8px 8px;
+      mix-blend-mode: multiply; pointer-events: none;"></div>
+
+  <!-- 종이 결 -->
+  <div style="position: absolute; inset: 0; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E&quot;); opacity: 0.1; mix-blend-mode: multiply; pointer-events: none;"></div>
+
+  <!-- ── 내비 ───────────────────────────────────────────── -->
+  <div style="position: relative; z-index: 4; display: flex; align-items: center; padding: 34px 64px;">
+    <span style="font-size: 16px; font-weight: 900; letter-spacing: -0.02em; color: #1B44E0;">오디션패스</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 22px;">
+      <span style="font-size: 13.5px; font-weight: 500; color: #4A5FA8;">로그인</span>
+      <span style="padding: 9px 18px; border: 2px solid #FF2E88; color: #FF2E88; font-size: 12.5px; font-weight: 700;">무료로 시작</span>
+    </div>
+  </div>
+
+  <!-- ── 표제 : 두 판이 겹친다 ─────────────────────────── -->
+  <div style="position: absolute; top: 168px; left: 64px; z-index: 3;">
+    <p style="margin: 0 0 24px; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #FF2E88;">소속사 없는 배우와 모델의 매니저</p>
+
+    <div style="position: relative; width: 760px; height: 320px;">
+      <!-- 핑크판 -->
+      <h1 class="misreg" aria-hidden="true" style="position: absolute; top: 0; left: 0; margin: 0; width: 760px; font-size: 92px; line-height: 1.06; letter-spacing: -0.055em; font-weight: 900; color: #FF2E88; mix-blend-mode: multiply;">
+        당신의 꿈은,<br>우리가<br>관리하겠습니다
+      </h1>
+      <!-- 코발트판 -->
+      <h1 class="misreg2" style="position: absolute; top: 0; left: 0; margin: 0; width: 760px; font-size: 92px; line-height: 1.06; letter-spacing: -0.055em; font-weight: 900; color: #1B44E0; mix-blend-mode: multiply;">
+        당신의 꿈은,<br>우리가<br>관리하겠습니다
+      </h1>
+    </div>
+
+    <p style="margin: 40px 0 0; max-width: 40ch; font-size: 16.5px; line-height: 1.76; color: #26307A;">
+      소속사가 있는 배우는 매니저가 공고를 찾아주고, 프로필을 대신 보내줍니다.
+      그 일을 오디션패스가 합니다.
+    </p>
+  </div>
+
+  <!-- ── 오려붙인 공고 조각들 ──────────────────────────── -->
+  <div style="position: absolute; top: 292px; right: 74px; width: 470px; z-index: 3;">
+
+    <div style="transform: rotate(1.6deg); border: 2px solid #1B44E0; background: #F2ECDD; padding: 16px 20px;">
+      <div style="display: flex; align-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; color: #1B44E0;">
+        <span>연극</span><span style="margin-left: auto;">D-6</span>
+      </div>
+      <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.36; font-weight: 700; color: #14225E;">연극 «조각» 24차팀 순철·영희 역 오디션</p>
+    </div>
+
+    <div style="transform: rotate(-2.2deg); margin: 18px 0 0 34px; border: 2px solid #1B44E0; background: #F2ECDD; padding: 16px 20px;">
+      <div style="display: flex; align-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; color: #1B44E0;">
+        <span>광고 모델</span><span style="margin-left: auto;">D-9</span>
+      </div>
+      <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.36; font-weight: 700; color: #14225E;">스킨케어 브랜드 지면 촬영 모델 모집</p>
+    </div>
+
+    <!-- 우리가 보낸 것 : 핑크판이 덮는다 -->
+    <div style="position: relative; transform: rotate(-0.6deg); margin: 20px 0 0 -18px;">
+      <div style="position: absolute; inset: 0; transform: translate(7px, 7px); background: #FF2E88; mix-blend-mode: multiply;"></div>
+      <div style="position: relative; border: 2px solid #1B44E0; background: #F2ECDD; padding: 20px 22px 18px;">
+        <div style="display: flex; align-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; color: #1B44E0;">
+          <span>뮤지컬</span><span style="margin-left: auto; color: #FF2E88;">오늘 마감</span>
+        </div>
+        <p style="margin: 11px 0 0; font-size: 17.5px; line-height: 1.32; font-weight: 900; color: #14225E;">어린이 뮤지컬 «케이팝 드림걸스» 배우 모집</p>
+        <div style="display: inline-block; margin-top: 15px; padding: 6px 12px; background: #FF2E88; color: #F2ECDD; font-size: 12px; font-weight: 900; letter-spacing: 0.04em; transform: rotate(-1.4deg);">
+          오디션패스가 대신 보냈습니다 &nbsp;09:12
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 바닥 ──────────────────────────────────────────── -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; border-top: 2px solid #1B44E0;">
+    <div style="display: flex; align-items: center; padding: 24px 64px 26px;">
+
+      <!-- 핑크 위에 코발트 어긋난 판 -->
+      <span style="position: relative; display: inline-block; flex: none;">
+        <span style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #1B44E0; mix-blend-mode: multiply;"></span>
+        <span style="position: relative; display: inline-flex; align-items: center; gap: 13px; padding: 16px 30px; background: #FF2E88; color: #F2ECDD; font-size: 15px; font-weight: 900;">
+          오늘의 공고 보기
+          <svg class="arrow" viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="#F2ECDD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </span>
+
+      <div style="display: flex; align-items: center; gap: 36px; margin-left: 52px;">
+        <div>
+          <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.02em; color: #1B44E0; font-variant-numeric: tabular-nums;">4,538</span>
+          <span style="margin-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #4A5FA8;">진행 중</span>
+        </div>
+        <div>
+          <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.02em; color: #FF2E88; font-variant-numeric: tabular-nums;">114</span>
+          <span style="margin-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #4A5FA8;">오늘 신규</span>
+        </div>
+        <div>
+          <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.02em; color: #1B44E0; font-variant-numeric: tabular-nums;">8</span>
+          <span style="margin-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #4A5FA8;">매일 훑는 곳</span>
+        </div>
+      </div>
+
+      <span style="margin-left: auto; font-size: 13px; font-weight: 500; color: #4A5FA8;">가입은 대신 지원할 때만 필요합니다</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

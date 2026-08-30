@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; }
+
+    /* ── LED 격자 ───────────────────────────────────────
+       글자를 도트로 쪼갠다. 전광판은 글씨를 그리는 게 아니라
+       전구를 켜는 물건이다. */
+    .led { position: relative; }
+    .led::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        repeating-linear-gradient(to right,  rgba(10,10,9,0.62) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(to bottom, rgba(10,10,9,0.62) 0 1px, transparent 1px 3px);
+    }
+
+    /* 행이 갱신될 때 한 번 흰빛이 스친다 */
+    @keyframes flip {
+      0%, 84%, 100% { color: #FFAE00; }
+      88%           { color: #FFF3D2; }
+    }
+    .r1 { animation: flip 17s steps(1) infinite; }
+    .r2 { animation: flip 17s steps(1) infinite 2.4s; }
+    .r3 { animation: flip 17s steps(1) infinite 5.9s; }
+    .r4 { animation: flip 17s steps(1) infinite 9.1s; }
+    .r5 { animation: flip 17s steps(1) infinite 12.6s; }
+
+    /* 시계 콜론 */
+    @keyframes colon { 0%,49% { opacity: 1; } 50%,100% { opacity: 0.15; } }
+    .colon { animation: colon 2s steps(1) infinite; }
+
+    /* 대신 지원 완료 — 이 판에서 유일하게 초록으로 켜진다 */
+    @keyframes lamp {
+      0%,100% { opacity: 1; text-shadow: 0 0 14px rgba(60,255,140,0.55); }
+      50%     { opacity: 0.82; text-shadow: 0 0 22px rgba(60,255,140,0.8); }
+    }
+    .go { animation: lamp 3.6s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .r1,.r2,.r3,.r4,.r5,.colon,.go { animation: none; }
+    }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; background: #0B0B0A; color: #FFAE00; font-family: 'Noto Sans KR', system-ui, sans-serif; position: relative; overflow: hidden;">
+
+  <!-- 판이 걸린 벽 -->
+  <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 8%, rgba(255,174,0,0.055), rgba(11,11,10,0) 62%); pointer-events: none;"></div>
+
+  <!-- ── 판 위쪽 안내 ──────────────────────────────────── -->
+  <div style="position: relative; display: flex; align-items: center; padding: 28px 64px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.2em; color: #8A6A18;">
+    <span style="font-weight: 700; color: #FFAE00;">AUDITIONPASS</span>
+    <span style="margin-left: 22px;">소속사 없는 배우와 모델의 매니저</span>
+    <span style="margin-left: auto;">2026.08.30&nbsp;&nbsp;&nbsp;11<span class="colon">:</span>42</span>
+  </div>
+
+  <!-- ── 표제 ──────────────────────────────────────────── -->
+  <div class="led" style="position: absolute; top: 96px; left: 64px; width: 820px;">
+    <h1 style="margin: 0; font-size: 66px; line-height: 1.14; letter-spacing: -0.05em; font-weight: 900; color: #FFAE00;">
+      당신의 꿈은,<br>우리가 관리하겠습니다
+    </h1>
+  </div>
+
+  <div style="position: absolute; top: 112px; right: 64px; width: 400px; text-align: right;">
+    <p style="margin: 0; font-size: 14.5px; line-height: 1.8; color: #9A8A63;">
+      소속사가 있는 배우는 매니저가 다음 편을 잡아줍니다.
+      그 일을 오디션패스가 합니다. 여덟 곳의 공고를 한 판에 모아
+      띄우고, 원하는 곳에는 대신 지원합니다.
+    </p>
+    <p style="margin: 16px 0 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; color: #6E5614;">4538 LIVE&nbsp;&nbsp; 114 NEW&nbsp;&nbsp; 8 SOURCES</p>
+  </div>
+
+  <!-- ── 출발 안내판 ───────────────────────────────────── -->
+  <div class="led" style="position: absolute; top: 306px; left: 64px; right: 64px; background: #131211; border: 1px solid #2A2418; padding: 0 34px 12px;">
+
+    <div style="display: flex; align-items: baseline; padding: 22px 0 14px; border-bottom: 1px solid #2A2418; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.22em; color: #7D6317;">
+      <span style="width: 108px;">마감</span>
+      <span style="width: 150px;">구분</span>
+      <span style="flex: 1;">오늘의 공고</span>
+      <span style="width: 190px;">장소</span>
+      <span style="width: 210px; text-align: right;">상태</span>
+    </div>
+
+    <div class="r1" style="display: flex; align-items: baseline; padding: 19px 0 17px; border-bottom: 1px solid #201B12; font-size: 17px; font-weight: 700;">
+      <span style="width: 108px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;">오늘</span>
+      <span style="width: 150px; font-size: 14px;">뮤지컬</span>
+      <span style="flex: 1;">어린이 뮤지컬 «케이팝 드림걸스» 배우 모집</span>
+      <span style="width: 190px; font-size: 14px;">서울</span>
+      <span class="go" style="width: 210px; text-align: right; font-size: 15px; font-weight: 900; color: #3CFF8C;">대신 지원 완료</span>
+    </div>
+
+    <div class="r2" style="display: flex; align-items: baseline; padding: 19px 0 17px; border-bottom: 1px solid #201B12; font-size: 17px; font-weight: 700;">
+      <span style="width: 108px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;">D-2</span>
+      <span style="width: 150px; font-size: 14px;">MC 진행자</span>
+      <span style="flex: 1;">소규모 학술행사 진행자 모집</span>
+      <span style="width: 190px; font-size: 14px;">서울</span>
+      <span style="width: 210px; text-align: right; font-size: 15px;">접수 중</span>
+    </div>
+
+    <div class="r3" style="display: flex; align-items: baseline; padding: 19px 0 17px; border-bottom: 1px solid #201B12; font-size: 17px; font-weight: 700;">
+      <span style="width: 108px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;">D-6</span>
+      <span style="width: 150px; font-size: 14px;">연극</span>
+      <span style="flex: 1;">연극 «조각» 24차팀 순철·영희 역 오디션</span>
+      <span style="width: 190px; font-size: 14px;">대학로</span>
+      <span style="width: 210px; text-align: right; font-size: 15px;">접수 중</span>
+    </div>
+
+    <div class="r4" style="display: flex; align-items: baseline; padding: 19px 0 17px; border-bottom: 1px solid #201B12; font-size: 17px; font-weight: 700;">
+      <span style="width: 108px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;">D-9</span>
+      <span style="width: 150px; font-size: 14px;">광고 모델</span>
+      <span style="flex: 1;">스킨케어 브랜드 지면 촬영 모델 모집</span>
+      <span style="width: 190px; font-size: 14px;">서울</span>
+      <span style="width: 210px; text-align: right; font-size: 15px;">접수 중</span>
+    </div>
+
+    <div class="r5" style="display: flex; align-items: baseline; padding: 19px 0 17px; font-size: 17px; font-weight: 700;">
+      <span style="width: 108px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;">D-12</span>
+      <span style="width: 150px; font-size: 14px;">독립장편</span>
+      <span style="flex: 1;">독립장편 «여름의 끝» 주연 오디션</span>
+      <span style="width: 190px; font-size: 14px;">경기</span>
+      <span style="width: 210px; text-align: right; font-size: 15px;">접수 중</span>
+    </div>
+
+    <div style="display: flex; align-items: baseline; padding: 16px 0 8px; border-top: 1px solid #2A2418; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.16em; color: #7D6317;">
+      <span>이 밖에 4,533건이 판에 올라와 있습니다</span>
+      <span style="margin-left: auto;">전체 보기 &rarr;</span>
+    </div>
+  </div>
+
+  <!-- ── 바닥 ──────────────────────────────────────────── -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid #221D14;">
+    <div style="display: flex; align-items: center; padding: 24px 64px 26px;">
+      <span style="display: inline-flex; align-items: center; gap: 13px; padding: 16px 30px; background: #FFAE00; color: #0B0B0A; font-size: 15px; font-weight: 900; flex: none;">
+        오늘의 공고 보기
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="#0B0B0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div style="display: flex; align-items: center; gap: 26px; margin-left: 46px; font-size: 13.5px; font-weight: 700; color: #6E6455;">
+        <span>필름메이커스</span><span>캐스팅114</span><span>캐스틱</span><span>플필</span><span>네이버 카페</span><span>인스타그램</span>
+      </div>
+      <span style="margin-left: auto; font-size: 13px; font-weight: 500; color: #6E6455;">가입은 대신 지원할 때만 필요합니다</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

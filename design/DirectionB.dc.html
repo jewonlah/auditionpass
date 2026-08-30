@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&display=swap">
+  <style>
+    body { margin: 0; }
+
+    /* ── 극장 간판 ──────────────────────────────────────
+       공고가 실제로 흘러간다. 오늘 올라온 것들이 눈앞을 지나간다. */
+    @keyframes run { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .run { animation: run 52s linear infinite; }
+
+    /* 마감 임박은 간판 전구처럼 */
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.32; } }
+    .blink { animation: blink 2.6s ease-in-out infinite; }
+
+    /* 대신 지원한 줄에만 잉크가 스민다 */
+    @keyframes ink { 0%,8% { transform: scaleX(0); } 30%,88% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+    .ink { transform-origin: 0 50%; animation: ink 9s cubic-bezier(0.16,1,0.3,1) infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .run,.blink,.ink { animation: none; }
+      .ink { transform: scaleX(1); }
+    }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; background: #E9E5DB; color: #100E0C; font-family: 'Noto Sans KR', system-ui, sans-serif; position: relative; overflow: hidden;">
+
+  <!-- 조판 그리드 — 원고지처럼 바탕에 깔린다 -->
+  <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to right, rgba(16,14,12,0.055) 0 1px, transparent 1px 96px); pointer-events: none;"></div>
+  <!-- 인쇄 결 -->
+  <div style="position: absolute; inset: 0; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='130' height='130' filter='url(%23n)'/%3E%3C/svg%3E&quot;); opacity: 0.06; mix-blend-mode: multiply; pointer-events: none;"></div>
+
+  <!-- ── 간판 ──────────────────────────────────────────── -->
+  <div style="position: absolute; top: 0; left: 0; right: 0; height: 50px; background: #100E0C; overflow: hidden; display: flex; align-items: center;">
+    <div class="run" style="display: flex; white-space: nowrap; font-size: 12.5px; font-weight: 700; letter-spacing: 0.13em; color: #E9E5DB;">
+      <span style="display: flex; align-items: center;">
+        <span>어린이 뮤지컬 «케이팝 드림걸스» 배우 모집</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>연극 «조각» 24차팀 순철·영희 역</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>스킨케어 브랜드 지면 촬영 모델</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span style="color:#8FA0FF;">오늘 114건 새로 올라옴</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>독립장편 «여름의 끝» 주연 오디션</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>웹드라마 조연 및 단역 상시 모집</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+      </span>
+      <span style="display: flex; align-items: center;" aria-hidden="true">
+        <span>어린이 뮤지컬 «케이팝 드림걸스» 배우 모집</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>연극 «조각» 24차팀 순철·영희 역</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>스킨케어 브랜드 지면 촬영 모델</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span style="color:#8FA0FF;">오늘 114건 새로 올라옴</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>독립장편 «여름의 끝» 주연 오디션</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+        <span>웹드라마 조연 및 단역 상시 모집</span><span style="display:inline-block; width:1px; height:12px; background:#6C665A; margin:0 30px;"></span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── 제호 ──────────────────────────────────────────── -->
+  <div style="position: absolute; top: 50px; left: 0; right: 0; display: flex; align-items: baseline; padding: 20px 48px 16px; border-bottom: 2.5px solid #100E0C;">
+    <span style="font-family: 'Noto Serif KR', serif; font-size: 21px; font-weight: 900; letter-spacing: 0.16em;">오디션패스</span>
+    <span style="margin-left: 20px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; color: #57534A;">제 4,538 호</span>
+    <span style="margin-left: auto; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; color: #57534A;">2026년 8월 30일 토요일</span>
+  </div>
+
+  <!-- ── 세로쓰기 표제 ─────────────────────────────────── -->
+  <div style="position: absolute; top: 168px; right: 48px; writing-mode: vertical-rl; font-family: 'Noto Serif KR', serif; font-size: 86px; font-weight: 900; line-height: 1.44; letter-spacing: -0.02em;">
+    <span>당신의 꿈은,</span><br>
+    <span>우리가 <span style="color: #1F35C4;">관리</span>하겠습니다</span>
+  </div>
+
+  <!-- 표제 옆 세로 괘선 -->
+  <div style="position: absolute; top: 176px; right: 322px; width: 1px; height: 640px; background: #100E0C; opacity: 0.35;"></div>
+
+  <!-- ── 본문 ──────────────────────────────────────────── -->
+  <div style="position: absolute; top: 176px; left: 48px; width: 700px;">
+
+    <p style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #1F35C4;">소속사 없는 배우와 모델의 매니저</p>
+
+    <p style="margin: 20px 0 0; width: 560px; font-family: 'Noto Serif KR', serif; font-size: 18px; font-weight: 600; line-height: 1.86; color: #26231E;">
+      소속사가 있는 배우는 매니저가 공고를 찾아주고, 프로필을 대신 보내줍니다.
+      그 일을 오디션패스가 합니다. 여덟 곳에 흩어진 공고를 매일 모아오고,
+      원하는 곳에는 대신 지원합니다.
+    </p>
+
+    <!-- 배역표 — 극장 프로그램의 그것 -->
+    <div style="margin-top: 44px; border-top: 2px solid #100E0C;">
+
+      <div style="display: flex; align-items: baseline; padding: 12px 0 10px; border-bottom: 1px solid rgba(16,14,12,0.28); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: #57534A;">
+        <span style="width: 46px;">번호</span>
+        <span style="width: 96px;">구분</span>
+        <span style="flex: 1;">오늘 올라온 공고</span>
+        <span style="width: 92px; text-align: right;">마감</span>
+      </div>
+
+      <!-- 대신 지원이 끝난 줄 -->
+      <div style="position: relative; display: flex; align-items: baseline; padding: 15px 0 13px; border-bottom: 1px solid rgba(16,14,12,0.14);">
+        <div class="ink" style="position: absolute; left: -12px; right: -12px; top: 4px; bottom: 4px; background: rgba(31,53,196,0.09); z-index: 0;"></div>
+        <span style="position: relative; width: 46px; font-size: 13px; font-weight: 700; color: #1F35C4; font-variant-numeric: tabular-nums;">001</span>
+        <span style="position: relative; width: 96px; font-size: 12.5px; font-weight: 700; color: #57534A;">뮤지컬</span>
+        <span style="position: relative; flex: 1; font-size: 15.5px; font-weight: 700;">어린이 뮤지컬 «케이팝 드림걸스» 배우 모집</span>
+        <span class="blink" style="position: relative; width: 92px; text-align: right; font-size: 12.5px; font-weight: 900; color: #C21807;">오늘 마감</span>
+      </div>
+      <p style="margin: 0; padding: 0 0 14px 142px; font-size: 12.5px; color: #1F35C4; font-weight: 700; border-bottom: 1px solid rgba(16,14,12,0.14);">
+        오디션패스가 프로필을 보냈습니다 — 오전 9시 12분 접수됨
+      </p>
+
+      <div style="display: flex; align-items: baseline; padding: 15px 0 13px; border-bottom: 1px solid rgba(16,14,12,0.14);">
+        <span style="width: 46px; font-size: 13px; font-weight: 700; color: #8A8479; font-variant-numeric: tabular-nums;">002</span>
+        <span style="width: 96px; font-size: 12.5px; font-weight: 700; color: #57534A;">연극</span>
+        <span style="flex: 1; font-size: 15.5px; font-weight: 700;">연극 «조각» 24차팀 순철·영희 역 오디션</span>
+        <span style="width: 92px; text-align: right; font-size: 12.5px; font-weight: 700; color: #57534A; font-variant-numeric: tabular-nums;">D-6</span>
+      </div>
+
+      <div style="display: flex; align-items: baseline; padding: 15px 0 13px; border-bottom: 2px solid #100E0C;">
+        <span style="width: 46px; font-size: 13px; font-weight: 700; color: #8A8479; font-variant-numeric: tabular-nums;">003</span>
+        <span style="width: 96px; font-size: 12.5px; font-weight: 700; color: #57534A;">광고 모델</span>
+        <span style="flex: 1; font-size: 15.5px; font-weight: 700;">스킨케어 브랜드 지면 촬영 모델 모집</span>
+        <span style="width: 92px; text-align: right; font-size: 12.5px; font-weight: 700; color: #57534A; font-variant-numeric: tabular-nums;">D-9</span>
+      </div>
+
+      <p style="margin: 11px 0 0; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: #57534A;">이 밖에 진행 중인 공고 4,535건</p>
+    </div>
+
+    <!-- 활판 버튼 — 둥글릴 이유가 없다 -->
+    <div style="display: flex; align-items: center; gap: 22px; margin-top: 40px;">
+      <span style="display: inline-flex; align-items: center; gap: 14px; padding: 16px 30px; background: #100E0C; color: #E9E5DB; font-size: 15px; font-weight: 700; letter-spacing: 0.03em;">
+        오늘의 공고 보기
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="#E9E5DB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span style="font-size: 13.5px; font-weight: 500; color: #57534A;">가입은 대신 지원할 때만 필요합니다</span>
+    </div>
+  </div>
+
+  <!-- ── 판권 ──────────────────────────────────────────── -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 2.5px solid #100E0C; display: flex; align-items: center; gap: 30px; padding: 16px 48px;">
+    <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; color: #57534A; flex: none;">매일 훑는 여덟 곳</span>
+    <div style="display: flex; align-items: center; gap: 26px; font-size: 13.5px; font-weight: 700; color: #100E0C;">
+      <span>필름메이커스</span><span>캐스팅114</span><span>캐스틱</span><span>플필</span><span>네이버 카페</span><span>인스타그램</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
