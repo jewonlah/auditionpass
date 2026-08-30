@@ -171,7 +171,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     }
 
     // F3: 저장 후 원래 맥락으로 복귀 (랜딩 추방 버그 A6 해소), 폴백 /my
-    router.push(resolveReturnTo(searchParams.get("returnTo"), "/my"));
+    // 온보딩(welcome)에서 왔으면 저장 즉시 홈 피드로 — 게이트를 방금 통과했다
+    const fallback = searchParams.get("welcome") === "1" ? "/home" : "/my";
+    router.push(resolveReturnTo(searchParams.get("returnTo"), fallback));
     router.refresh();
   }
 

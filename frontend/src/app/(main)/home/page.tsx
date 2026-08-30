@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { formatDday, getDday, todayKST } from "@/lib/utils";
+import { getMissingFields } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import type { Audition, Profile } from "@/types";
 import { ChevronRight, Send, UserRound, Zap, Clock, Sparkles } from "lucide-react";
@@ -70,6 +71,14 @@ export default async function HomePage() {
     ]);
 
   const profile = (profileRes.data as Profile | null) ?? null;
+
+  // P3 온보딩 게이트 (2026-08-31): 가입 = 매니저 계약이다.
+  // 원클릭 지원의 최소 요건(이름·출생연도·성별·분야)이 비어 있으면 홈 대신
+  // 온보딩으로 보낸다. 공고 열람(/auditions)은 여전히 자유 — 막는 건 홈 피드뿐.
+  if (getMissingFields(profile).length > 0) {
+    redirect("/profile?welcome=1");
+  }
+
   const oneClickAuditions = (oneClickRes.data as Audition[] | null) ?? [];
   const deadlineAuditions = (deadlineRes.data as Audition[] | null) ?? [];
   const applyCount = applyCountRes.count ?? 0;
@@ -179,7 +188,7 @@ export default async function HomePage() {
         title={myGenres.length > 0 ? "내 분야 신규 공고" : "신규 공고"}
         desc={
           myGenres.length > 0
-            ? `${myGenres.join(" · ")} 분야의 새 공고`
+            ? `${myGenres.join(", ")} 분야의 새 공고`
             : "방금 올라온 공고"
         }
         moreHref="/auditions"
