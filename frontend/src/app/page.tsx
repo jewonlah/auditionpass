@@ -1,369 +1,776 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
+import { Reveal } from "@/components/landing/Reveal";
+import { getDday } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "오디션패스 | 배우·모델 오디션 정보를 한 곳에서",
-  description:
-    "흩어진 배우·모델 오디션 공고를 매일 자동으로 수집합니다. 프로필 한 번 등록하면 원클릭으로 지원 완료. 지금 무료로 시작하세요.",
-  keywords: [
-    "오디션",
-    "오디션 정보",
-    "배우 오디션",
-    "모델 오디션",
-    "캐스팅",
-    "오디션 지원",
-    "배우 지망생",
-    "모델 지망생",
-    "오디션패스",
-    "원클릭 지원",
-    "뮤지컬 오디션",
-    "연극 오디션",
-    "영화 오디션",
-    "드라마 캐스팅",
-  ],
-  openGraph: {
-    title: "오디션패스 — 당신의 다음 무대",
-    description:
-      "배우·모델 오디션 정보를 한 곳에서. 매일 자동 수집, 원클릭 지원.",
-    type: "website",
-    locale: "ko_KR",
-    siteName: "오디션패스",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "오디션패스 — 당신의 다음 무대",
-    description:
-      "배우·모델 오디션 정보를 한 곳에서. 매일 자동 수집, 원클릭 지원.",
-  },
-  alternates: {
-    canonical: "/",
-  },
-};
+/**
+ * 랜딩 — A안 「동틀 녘」 (2026-08-31 확정).
+ *
+ * 디자인 캔버스 design/FullA.dc.html 을 정본으로 이식했다.
+ *
+ * 시스템:
+ *   여명 #F7F4EF / 잉크 #141110 / 불꽃 #F0330F / 노을 #FF8A1E
+ *   액센트가 붙는 곳: 상단 띠, 눈썹, 「관리」, 오늘 신규 숫자, CTA, 원클릭 상태.
+ *
+ * 카피 규칙 (제원 확정):
+ *   - 눈썹 = "당신의 매니저가 되어 드립니다"
+ *   - "대신 지원"이라는 말은 쓰지 않는다 → 언제나 "원클릭 지원"
+ *   - 비교군 = 소속사 있는 연예인 vs 혼자 준비하는 연습생 및 지원자
+ *   - 랜딩·마케팅 문구에 수집처(타 플랫폼) 이름을 쓰지 않는다.
+ *     원문 링크는 공고 상세 페이지 안에서만 산다.
+ *
+ * 데이터 규칙: 화면의 숫자는 전부 DB 실측. 실측이 없는 것(지역 분포 등)은
+ * 만들어 넣지 않고 뺀다. 3컷 일러스트만 예시 데이터임이 자명한 제품 그림.
+ *
+ * 서버 컴포넌트 + ISR — 크롤러가 실공고와 내부 링크를 그대로 받아간다.
+ */
+export const revalidate = 900;
+
+interface Card {
+  id: string;
+  title: string;
+  company: string | null;
+  category: string | null;
+  genre: string;
+  deadline: string | null;
+  apply_type: string | null;
+}
+
+interface Stats {
+  active: number;
+  today: number;
+  oneclick: number;
+}
+
+interface Cat {
+  name: string;
+  count: number;
+}
+
+async function getData(): Promise<{ cards: Card[]; stats: Stats; cats: Cat[] }> {
+  const sb = createServiceRoleClient();
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+
+  // 첫 화면 공고: 마감이 남아 있고 원클릭 되는 것 우선, 최신순.
+  const { data: rows } = await sb
+    .from("auditions")
+    .select("id,title,company,category,genre,deadline,apply_type")
+    .eq("is_active", true)
+    .or(`deadline.gte.${today},deadline.is.null`)
+    .order("apply_type", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  const head = () => sb.from("auditions").select("id", { count: "exact", head: true });
+  const dayAgo = new Date(Date.now() - 86400000).toISOString();
+
+  const [activeR, todayR, oneclickR, catR] = await Promise.all([
+    head().eq("is_active", true),
+    head().eq("is_active", true).gte("created_at", dayAgo),
+    head().eq("is_active", true).eq("apply_type", "email"),
+    sb
+      .from("auditions")
+      .select("category")
+      .eq("is_active", true)
+      .not("category", "is", null)
+      .limit(5000),
+  ]);
+
+  // 분야 칩은 이름만이 아니라 건수까지 실측으로 단다.
+  const counts = new Map<string, number>();
+  for (const r of catR.data ?? []) {
+    const c = (r.category as string)?.trim();
+    if (c) counts.set(c, (counts.get(c) ?? 0) + 1);
+  }
+  const cats = [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  return {
+    cards: (rows ?? []) as Card[],
+    stats: {
+      active: activeR.count ?? 0,
+      today: todayR.count ?? 0,
+      oneclick: oneclickR.count ?? 0,
+    },
+    cats,
+  };
+}
+
+function dday(deadline: string | null): { label: string; urgent: boolean } {
+  const d = getDday(deadline);
+  if (d === null) return { label: "상시", urgent: false };
+  if (d < 0) return { label: "마감", urgent: false };
+  if (d === 0) return { label: "오늘 마감", urgent: true };
+  return { label: `D-${d}`, urgent: d <= 3 };
+}
+
+/* ── 원자 컴포넌트 ────────────────────────────────────────────── */
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[11px] font-bold tracking-[0.2em] text-[#F0330F]">
+      {children}
+    </span>
+  );
+}
+
+function FlameCta({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="group inline-flex items-center gap-3 rounded-full bg-[#F0330F] px-7 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_30px_-14px_rgba(240,51,15,0.62)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
+    >
+      {children}
+      <svg
+        viewBox="0 0 16 16"
+        className="size-3.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5"
+        fill="none"
+        aria-hidden
+      >
+        <path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Link>
+  );
+}
+
+/** 공고 카드 — 목록·그리드 공용. 원클릭 여부와 마감이 한눈에. */
+function AuditionCard({ a }: { a: Card }) {
+  const d = dday(a.deadline);
+  const oneclick = a.apply_type === "email";
+  return (
+    <Link
+      href={`/audition/${a.id}`}
+      className="group flex h-full flex-col rounded-[18px] border border-[#E1D8CC] bg-white px-5 py-4.5 transition-[transform,border-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 hover:border-[#C9BFAF]"
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-bold tracking-[0.1em] text-[#8A8479]">
+          {a.category || a.genre}
+        </span>
+        <span
+          className={`ml-auto text-[12px] font-bold tabular-nums ${
+            d.urgent ? "text-[#F0330F]" : "text-[#6B665C]"
+          }`}
+        >
+          {d.label}
+        </span>
+      </div>
+      <p className="mt-2.5 line-clamp-2 text-[15.5px] leading-snug font-bold tracking-[-0.02em] text-[#141110]">
+        {a.title}
+      </p>
+      {a.company && (
+        <p className="mt-2 truncate text-[12.5px] text-[#7A7468]">{a.company}</p>
+      )}
+      <div className="mt-auto border-t border-[#F0EAE0] pt-3.5" style={{ marginTop: "auto" }}>
+        <span
+          className={`inline-block rounded-full px-4 py-1.5 text-[12.5px] font-bold transition-colors duration-500 ${
+            oneclick
+              ? "border-[1.3px] border-[#141110] text-[#141110] group-hover:bg-[#141110] group-hover:text-[#F7F4EF]"
+              : "text-[#8A8479]"
+          }`}
+        >
+          {oneclick ? "원클릭 지원" : "공고 보기"}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+/* ── 페이지 ───────────────────────────────────────────────────── */
 
 export default async function LandingPage() {
-  // F2: 로그인 세션이면 랜딩 대신 앱 홈으로 (서버 리다이렉트 — 랜딩 플래시 없음)
+  // 로그인 상태면 개인화 피드로. 랜딩은 처음 온 사람의 화면이다.
   const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) redirect("/home");
 
+  const { cards, stats, cats } = await getData();
+  const stack = cards.slice(0, 3); // 히어로 카드 스택
+  const grid = cards.slice(3, 12); // 오늘의 공고 그리드
+  const nf = new Intl.NumberFormat("ko-KR");
+
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      {/* NAV */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm z-50 border-b border-gray-100">
-        <div className="max-w-[1100px] mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="text-xl font-extrabold text-[#6366F1]">
-            AUDITION<span className="text-[#EC4899]">PASS</span>
+    <main className="relative min-h-[100dvh] bg-[#F7F4EF] text-[#141110]">
+      {/* 동틀 녘 모션 — 전부 CSS, prefers-reduced-motion 이면 정지 */}
+      <style>{`
+        @keyframes ap-dawn {
+          0%, 100% { transform: translate3d(0,0,0) scale(1); opacity: .5; }
+          50% { transform: translate3d(-2%,1.5%,0) scale(1.07); opacity: .82; }
+        }
+        @keyframes ap-lift-a { 0%,100% { transform: rotate(-3.2deg) translateY(0); } 50% { transform: rotate(-3.2deg) translateY(-7px); } }
+        @keyframes ap-lift-b { 0%,100% { transform: rotate(1.8deg) translateY(0); } 50% { transform: rotate(1.8deg) translateY(-5px); } }
+        @keyframes ap-lift-c { 0%,100% { transform: rotate(-0.5deg) translateY(0); } 50% { transform: rotate(-0.5deg) translateY(-9px); } }
+        .ap-dawn { animation: ap-dawn 22s ease-in-out infinite; }
+        .ap-lift-a { animation: ap-lift-a 11s ease-in-out infinite; }
+        .ap-lift-b { animation: ap-lift-b 9s ease-in-out infinite .6s; }
+        .ap-lift-c { animation: ap-lift-c 7.5s ease-in-out infinite .2s; }
+        @media (prefers-reduced-motion: reduce) {
+          .ap-dawn, .ap-lift-a, .ap-lift-b, .ap-lift-c { animation: none; }
+        }
+      `}</style>
+
+      {/* 상단 불꽃 띠 — 페이지를 열자마자 온도가 먼저 보인다 */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 z-20 h-[5px]"
+        style={{ background: "linear-gradient(to right, #F0330F, #FF8A1E 46%, rgba(255,138,30,0) 82%)" }}
+      />
+
+      {/* ── 히어로 ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden">
+        {/* 동틀 녘 — 지평선 너머에서 올라오는 열 */}
+        <div
+          aria-hidden
+          className="ap-dawn pointer-events-none absolute -top-[260px] -right-[180px] h-[880px] w-[1060px]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 58% 38%, rgba(255,138,30,0.34), rgba(255,92,32,0.17) 38%, rgba(255,190,120,0.07) 60%, rgba(247,244,239,0) 76%)",
+          }}
+        />
+        {/* 종이 결 */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-multiply"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          }}
+        />
+
+        {/* 내비 — 로고와 입장 동선만 남긴다 */}
+        <header className="relative z-10 mx-auto flex max-w-6xl items-center px-5 pt-8">
+          <Link href="/" className="text-[17px] font-black tracking-[-0.045em]">
+            오디션패스
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
+          <div className="ml-auto flex items-center gap-5">
+            <Link href="/login" className="text-[14px] font-medium text-[#57534A] transition-colors hover:text-[#141110]">
               로그인
             </Link>
             <Link
               href="/signup"
-              className="bg-[#6366F1] text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-[#4F46E5] transition-colors"
+              className="rounded-full border-[1.4px] border-[#141110] px-4.5 py-2 text-[13.5px] font-bold transition-colors duration-500 hover:bg-[#141110] hover:text-[#F7F4EF]"
             >
-              무료로 시작하기
+              무료로 시작
             </Link>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      {/* HERO */}
-      <section className="pt-36 pb-20 px-6 text-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
-        <div className="relative z-10 max-w-[700px] mx-auto">
-          <span className="inline-block bg-white text-[#6366F1] px-5 py-2 rounded-full text-sm font-semibold border border-indigo-200 mb-6">
-            배우 &amp; 모델을 위한 오디션 플랫폼
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-5 tracking-tight">
-            오디션 정보,
-            <br />
-            <span className="bg-gradient-to-r from-[#6366F1] to-[#EC4899] bg-clip-text text-transparent">
-              한 곳에서 끝내세요
-            </span>
-          </h1>
-          <p className="text-lg text-gray-500 mb-9 leading-relaxed">
-            흩어진 오디션 공고를 매일 자동으로 모아드립니다.
-            <br />
-            프로필 한 번 등록하면, 원클릭으로 지원 완료.
-          </p>
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Link
-              href="/signup"
-              className="bg-[#6366F1] text-white px-9 py-4 rounded-full text-base font-bold hover:bg-[#4F46E5] transition-all shadow-lg shadow-indigo-300/30 hover:-translate-y-0.5"
-            >
-              지금 무료로 시작하기
-            </Link>
+        <div className="relative z-10 mx-auto grid max-w-6xl gap-12 px-5 pt-14 pb-20 md:grid-cols-[1.1fr_1fr] md:items-center md:gap-14 md:pt-24 md:pb-28">
+          {/* 왼쪽: 약속 */}
+          <Reveal>
+            <Eyebrow>당신의 매니저가 되어 드립니다</Eyebrow>
+            <h1 className="mt-5 text-[38px] leading-[1.12] font-black tracking-[-0.05em] sm:text-[52px] md:text-[60px]">
+              당신의 꿈은, 우리가
+              <br />
+              <span className="text-[#F0330F]">관리</span>하겠습니다
+            </h1>
+            <p className="mt-6 max-w-[40ch] text-[16.5px] leading-[1.72] text-[#4B473E]">
+              소속사 있는 연예인은 매니저가 공고를 찾아주고, 프로필을 대신 써서 보내줍니다.
+              그 일을 오디션패스가 합니다. 새 공고를 매일 모아 오고, 프로필은 AI가 다듬고,
+              지원은 버튼 하나로 끝납니다.
+            </p>
+
+            {/* 근거는 숫자로. 형용사는 쓰지 않는다. */}
+            <div className="mt-9 flex gap-10 border-t border-[#E4DCD2] pt-7 sm:gap-12">
+              <div>
+                <p className="text-[30px] font-black tracking-[-0.03em] tabular-nums sm:text-[32px]">
+                  {nf.format(stats.active)}
+                </p>
+                <p className="mt-1 text-[12.5px] font-medium text-[#6B665C]">진행 중인 공고</p>
+              </div>
+              <div>
+                <p className="text-[30px] font-black tracking-[-0.03em] text-[#F0330F] tabular-nums sm:text-[32px]">
+                  {nf.format(stats.today)}
+                </p>
+                <p className="mt-1 text-[12.5px] font-medium text-[#6B665C]">오늘 새로 올라온 공고</p>
+              </div>
+              <div>
+                <p className="text-[30px] font-black tracking-[-0.03em] tabular-nums sm:text-[32px]">0원</p>
+                <p className="mt-1 text-[12.5px] font-medium text-[#6B665C]">지금은 전부 무료</p>
+              </div>
+            </div>
+
+            <div className="mt-9 flex flex-wrap items-center gap-5">
+              <FlameCta href="/auditions">오늘의 공고 보기</FlameCta>
+              <span className="text-[14px] font-medium text-[#6B665C]">
+                가입은 원클릭 지원할 때만 필요합니다
+              </span>
+            </div>
+          </Reveal>
+
+          {/* 오른쪽: 실제 공고가 쌓인 카드 스택 (모바일에서는 감춘다 — 그리드가 바로 아래 있다) */}
+          <Reveal delay={120} className="hidden md:block">
+            <div className="relative h-[420px]">
+              {stack.map((a, i) => {
+                const d = dday(a.deadline);
+                const pos = [
+                  "ap-lift-a top-0 left-1 w-[86%]",
+                  "ap-lift-b top-[88px] left-9 w-[86%]",
+                  "ap-lift-c top-[186px] left-0 w-[94%]",
+                ][i];
+                const front = i === 2;
+                return (
+                  <Link
+                    key={a.id}
+                    href={`/audition/${a.id}`}
+                    className={`absolute block rounded-[20px] border px-6 py-5 ${pos} ${
+                      front
+                        ? "border-[#E1D8CC] bg-white shadow-[0_26px_54px_-30px_rgba(72,32,16,0.4),0_6px_16px_-10px_rgba(72,32,16,0.2)]"
+                        : "border-[#E6DED4] bg-[#FDFCF8]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10.5px] font-bold tracking-[0.12em] text-[#8B857A]">
+                        {a.category || a.genre}
+                      </span>
+                      {front && a.apply_type === "email" && (
+                        <span className="rounded-full bg-[#FFE7E0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#F0330F]">
+                          원클릭 지원
+                        </span>
+                      )}
+                      <span
+                        className={`ml-auto text-[11.5px] font-bold tabular-nums ${
+                          d.urgent ? "text-[#F0330F]" : "text-[#8B857A]"
+                        }`}
+                      >
+                        {d.label}
+                      </span>
+                    </div>
+                    <p
+                      className={`mt-2.5 line-clamp-2 leading-snug font-bold tracking-[-0.02em] ${
+                        front ? "text-[18px] font-black text-[#141110]" : "text-[15px] text-[#55504A]"
+                      }`}
+                    >
+                      {a.title}
+                    </p>
+                    {front && a.company && (
+                      <p className="mt-2 truncate text-[13px] text-[#7A7468]">{a.company}</p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── 오늘의 공고: 설명 대신 재고 ─────────────────────────── */}
+      <section className="border-t border-[#EDE7DC] bg-white">
+        <div className="mx-auto max-w-6xl px-5 pt-14 pb-20 md:pt-16 md:pb-24">
+          {/* 검색 — 랜딩에서는 목록으로 보내는 문이다 */}
+          <Reveal>
             <Link
               href="/auditions"
-              className="bg-white text-gray-900 px-9 py-4 rounded-full text-base font-semibold border border-gray-100 hover:border-[#6366F1] hover:text-[#6366F1] transition-all"
+              className="flex items-center gap-3 rounded-full border-[1.5px] border-[#141110] py-2 pr-2 pl-5 transition-colors duration-500 hover:bg-[#FBF8F3]"
             >
-              오디션 둘러보기
+              <svg viewBox="0 0 20 20" className="size-[18px] flex-none" fill="none" aria-hidden>
+                <circle cx="9" cy="9" r="6.2" stroke="#8A8479" strokeWidth="1.8" />
+                <path d="M13.6 13.6L17.5 17.5" stroke="#8A8479" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              <span className="flex-1 truncate text-[15px] text-[#9A938A] sm:text-[16px]">
+                배역, 분야, 지역으로 찾아보세요
+              </span>
+              <span className="rounded-full bg-[#F0330F] px-6 py-2.5 text-[14px] font-black text-white">
+                검색
+              </span>
             </Link>
-          </div>
-          <div className="flex justify-center gap-12 mt-16 pt-10 border-t border-indigo-100/50">
-            <div className="text-center">
-              <div className="text-3xl font-extrabold text-[#6366F1]">500+</div>
-              <div className="text-sm text-gray-500 mt-1">등록된 오디션</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-extrabold text-[#6366F1]">10+</div>
-              <div className="text-sm text-gray-500 mt-1">크롤링 사이트</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-extrabold text-[#6366F1]">24h</div>
-              <div className="text-sm text-gray-500 mt-1">자동 업데이트</div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* PAIN POINT */}
-      <section className="py-24 px-6 bg-gray-50">
-        <div className="max-w-[1100px] mx-auto">
-          <p className="text-sm font-bold text-[#6366F1] uppercase tracking-wider mb-3">
-            Problem
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold leading-snug mb-4">
-            오디션 준비, 이런 고민 있으셨죠?
-          </h2>
-          <p className="text-base text-gray-500 mb-12">
-            많은 배우/모델 지망생들이 겪는 공통적인 문제입니다.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: "😩",
-                bg: "bg-red-50",
-                title: "정보가 너무 흩어져 있어요",
-                desc: "카페, 블로그, 인스타, 사이트... 오디션 공고를 찾으려면 최소 5곳 이상을 매일 확인해야 합니다.",
-              },
-              {
-                icon: "⏰",
-                bg: "bg-amber-50",
-                title: "마감일을 놓쳐요",
-                desc: "좋은 오디션을 발견해도 이미 마감. 실시간으로 알려주는 곳이 없어서 기회를 놓치게 됩니다.",
-              },
-              {
-                icon: "📝",
-                bg: "bg-gray-100",
-                title: "지원할 때마다 똑같은 반복",
-                desc: "이름, 나이, 사진... 매번 같은 정보를 다시 입력하는 건 시간 낭비입니다.",
-              },
-            ].map((item) => (
-              <article
-                key={item.title}
-                className="bg-white rounded-2xl p-8 border border-gray-100 hover:border-indigo-200 hover:-translate-y-1 transition-all hover:shadow-lg"
+            {/* 분야 칩 — 이름도 건수도 전부 실측 */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/auditions"
+                className="rounded-full bg-[#141110] px-4 py-2 text-[13px] font-bold text-[#F7F4EF]"
               >
-                <div
-                  className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center text-2xl mb-5`}
+                전체 {nf.format(stats.active)}
+              </Link>
+              {cats.map((c) => (
+                <Link
+                  key={c.name}
+                  href={`/auditions?filter=${encodeURIComponent(c.name)}`}
+                  className="rounded-full border border-[#E1D8CC] px-4 py-2 text-[13px] font-medium text-[#37342E] transition-colors duration-500 hover:border-[#141110]"
                 >
-                  {item.icon}
-                </div>
-                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  {item.desc}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="py-24 px-6">
-        <div className="max-w-[1100px] mx-auto">
-          <p className="text-sm font-bold text-[#6366F1] uppercase tracking-wider mb-3">
-            Solution
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold leading-snug mb-4">
-            오디션패스가 해결합니다
-          </h2>
-          <p className="text-base text-gray-500 mb-12">
-            더 이상 오디션 정보를 찾아 헤매지 마세요.
-          </p>
-          <div className="flex flex-col gap-8">
-            {[
-              {
-                num: "01",
-                title: "매일 자동으로 오디션 수집",
-                desc: "10개 이상의 캐스팅 사이트에서 오디션 공고를 자동으로 크롤링합니다. 더 이상 여러 사이트를 돌아다닐 필요 없어요.",
-                badge: "매일 업데이트",
-              },
-              {
-                num: "02",
-                title: "원클릭 지원",
-                desc: "프로필을 한 번만 등록하세요. 이후에는 버튼 한 번으로 오디션 지원이 완료됩니다. 반복 입력은 이제 그만.",
-                badge: "3초 만에 지원",
-              },
-              {
-                num: "03",
-                title: "마감 임박 알림",
-                desc: "관심 있는 오디션의 마감일이 다가오면 알려드립니다. 다시는 좋은 기회를 놓치지 마세요.",
-                badge: "D-3 자동 알림",
-              },
-            ].map((f) => (
-              <div
-                key={f.num}
-                className="flex flex-col md:flex-row items-center gap-8 p-10 rounded-2xl bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-colors"
-              >
-                <span className="text-5xl font-black text-indigo-200 min-w-[80px] text-center">
-                  {f.num}
-                </span>
-                <div className="text-center md:text-left">
-                  <h3 className="text-xl font-bold mb-2">{f.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">
-                    {f.desc}
-                  </p>
-                  <span className="inline-block mt-3 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">
-                    {f.badge}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="py-24 px-6 bg-gray-50">
-        <div className="max-w-[1100px] mx-auto">
-          <p className="text-sm font-bold text-[#6366F1] uppercase tracking-wider mb-3">
-            How it works
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold leading-snug mb-4">
-            시작은 간단합니다
-          </h2>
-          <p className="text-base text-gray-500 mb-12">
-            4단계로 오디션 지원을 시작하세요.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { num: 1, title: "회원가입", desc: "이메일로 30초 만에 가입" },
-              {
-                num: 2,
-                title: "프로필 등록",
-                desc: "사진, 신체 정보, 경력을 한 번 입력",
-              },
-              {
-                num: 3,
-                title: "오디션 탐색",
-                desc: "장르, 마감일로 필터링",
-              },
-              {
-                num: 4,
-                title: "원클릭 지원",
-                desc: "버튼 하나로 지원 완료",
-              },
-            ].map((s) => (
-              <div key={s.num} className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-[#6366F1] text-white text-2xl font-extrabold flex items-center justify-center mx-auto mb-5">
-                  {s.num}
-                </div>
-                <h3 className="text-base font-bold mb-2">{s.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  {s.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING — 전부 무료 */}
-      <section className="py-24 px-6">
-        <div className="max-w-[1100px] mx-auto">
-          <p className="text-sm font-bold text-[#6366F1] uppercase tracking-wider mb-3">
-            Pricing
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold leading-snug mb-4">
-            지금은 모든 기능이 무료!
-          </h2>
-          <p className="text-base text-gray-500 mb-12">
-            오디션패스는 현재 오픈 기념으로 모든 기능을 무료로 제공하고
-            있습니다.
-          </p>
-          <div className="max-w-[560px] mx-auto bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-200 rounded-3xl p-12 text-center">
-            <span className="inline-block bg-gradient-to-r from-[#6366F1] to-[#EC4899] text-white px-6 py-2 rounded-full text-sm font-extrabold tracking-widest mb-5">
-              OPEN EVENT
-            </span>
-            <h3 className="text-2xl font-extrabold mb-2">전 기능 무료 이용</h3>
-            <p className="text-sm text-gray-500 mb-8">
-              가입만 하면 아래 모든 기능을 무료로 사용할 수 있어요
-            </p>
-            <ul className="text-left max-w-xs mx-auto mb-8 space-y-0">
-              {[
-                "오디션 공고 무제한 열람",
-                "원클릭 지원 무제한",
-                "프로필 등록 및 관리",
-                "마감 임박 알림",
-                "지원 이력 관리",
-                "매일 신규 공고 업데이트",
-              ].map((f) => (
-                <li
-                  key={f}
-                  className="flex items-center gap-3 py-3 text-sm border-b border-indigo-100/50"
-                >
-                  <span className="text-emerald-500 font-bold">&#10003;</span>
-                  {f}
-                </li>
+                  {c.name} <span className="text-[#8A8479]">{nf.format(c.count)}</span>
+                </Link>
               ))}
-            </ul>
-            <Link
-              href="/signup"
-              className="inline-block bg-[#6366F1] text-white px-10 py-4 rounded-full text-base font-bold hover:bg-[#4F46E5] transition-all shadow-lg shadow-indigo-300/30 hover:-translate-y-0.5"
-            >
-              무료로 시작하기
-            </Link>
+            </div>
+          </Reveal>
+
+          <Reveal>
+            <div className="mt-11 flex items-baseline border-b-2 border-[#141110] pb-4">
+              <h2 className="text-[24px] font-black tracking-[-0.04em] sm:text-[30px]">
+                오늘 올라온 공고
+              </h2>
+              <span className="ml-3.5 text-[15px] font-black text-[#F0330F] tabular-nums">
+                {nf.format(stats.today)}건
+              </span>
+              <span className="ml-auto hidden text-[13.5px] font-medium text-[#6B665C] sm:block">
+                마감 임박순
+              </span>
+            </div>
+          </Reveal>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {grid.map((a, i) => (
+              <Reveal key={a.id} delay={(i % 3) * 70}>
+                <AuditionCard a={a} />
+              </Reveal>
+            ))}
           </div>
+
+          <Reveal>
+            <div className="mt-8 flex flex-wrap items-center gap-5">
+              <Link
+                href="/auditions"
+                className="group inline-flex items-center gap-3 rounded-full bg-[#141110] px-7 py-3.5 text-[15px] font-bold text-[#F7F4EF] transition-transform duration-500 active:scale-[0.98]"
+              >
+                공고 {nf.format(stats.active)}건 전체 보기
+                <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
+                  <path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+              <span className="text-[14px] font-medium text-[#6B665C]">
+                가입 없이 전부 열람할 수 있습니다
+              </span>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="py-24 px-6 bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-white text-center">
-        <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
-          당신의 다음 무대,
-          <br />
-          오디션패스에서 시작하세요
-        </h2>
-        <p className="text-lg opacity-85 mb-9">
-          지금 가입하면 무료로 오디션 공고를 확인할 수 있습니다.
-        </p>
-        <Link
-          href="/signup"
-          className="inline-block bg-white text-[#4F46E5] px-10 py-4 rounded-full text-base font-bold hover:-translate-y-0.5 transition-all shadow-lg"
-        >
-          무료로 시작하기
-        </Link>
+      {/* ── 원클릭 지원: 글 대신 화면 ───────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-5 py-20 md:py-24">
+        <Reveal>
+          <h2 className="text-[30px] leading-[1.16] font-black tracking-[-0.05em] sm:text-[40px]">
+            원클릭 지원은 이렇게 갑니다
+          </h2>
+        </Reveal>
+
+        <div className="mt-9 grid gap-6 md:grid-cols-3 md:gap-5">
+          {/* 1컷 — 공고 상세. 원문 링크는 여기 안에서만 산다. */}
+          <Reveal delay={0}>
+            <div className="overflow-hidden rounded-2xl border border-[#E1D8CC] bg-[#FBF8F3]">
+              <div className="flex items-center gap-1.5 border-b border-[#E1D8CC] px-4 py-2.5">
+                {[0, 1, 2].map((k) => (
+                  <span key={k} className="size-2 rounded-full bg-[#DDD5C8]" />
+                ))}
+              </div>
+              <div className="min-h-[236px] bg-white p-5">
+                <p className="text-[10.5px] font-bold tracking-[0.12em] text-[#8A8479]">
+                  뮤지컬 &nbsp; 오늘 마감
+                </p>
+                <p className="mt-2.5 text-[15.5px] leading-snug font-black">
+                  어린이 뮤지컬 배우 모집
+                </p>
+                <div className="mt-3.5 space-y-1.5 border-y border-[#F0EAE0] py-3 text-[12px] text-[#6B665C]">
+                  <p>모집 배역 &nbsp; 여자 주연 1명, 앙상블 4명</p>
+                  <p>연령 &nbsp; 18세 이상 28세 이하</p>
+                  <p>보수 &nbsp; 회차당 협의</p>
+                </div>
+                <p className="mt-3 text-[11.5px] font-bold text-[#9A938A]">원문 공고 보기 →</p>
+                <div className="mt-3 rounded-full bg-[#F0330F] py-3 text-center text-[13.5px] font-black text-white">
+                  원클릭 지원
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-[15px] font-bold">버튼 하나 누르면</p>
+          </Reveal>
+
+          {/* 2컷 — AI 프로필 */}
+          <Reveal delay={90}>
+            <div className="overflow-hidden rounded-2xl border border-[#E1D8CC] bg-[#FBF8F3]">
+              <div className="flex items-center gap-1.5 border-b border-[#E1D8CC] px-4 py-2.5">
+                {[0, 1, 2].map((k) => (
+                  <span key={k} className="size-2 rounded-full bg-[#DDD5C8]" />
+                ))}
+              </div>
+              <div className="min-h-[236px] bg-white p-5">
+                <p className="text-[15.5px] font-black">프로필은 AI가 씁니다</p>
+                <p className="mt-1.5 text-[12px] text-[#7A7468]">넣으시는 건 이 정도가 전부입니다</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {["24세", "168cm", "뮤지컬 앙상블 2회", "보컬 가능"].map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-lg border border-[#EFE7DA] bg-[#FBF8F3] px-2.5 py-1.5 text-[11.5px] font-bold"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3.5 mb-1.5 text-[10.5px] font-bold tracking-[0.14em] text-[#F0330F]">
+                  AI가 다듬은 소개
+                </p>
+                <div className="rounded-xl border border-[#F5DDD5] bg-[#FFF8F5] px-3.5 py-3">
+                  <p className="text-[12px] leading-[1.72] text-[#37342E]">
+                    앙상블로 두 시즌을 보내며 군무와 화음을 몸으로 익혔습니다. 노래와 안무를 함께
+                    소화합니다.
+                  </p>
+                </div>
+                <div className="mt-3.5 rounded-full bg-[#141110] py-3 text-center text-[13.5px] font-black text-[#F7F4EF]">
+                  이대로 보내기
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-[15px] font-bold">정보만 넣으면 AI가 씁니다</p>
+          </Reveal>
+
+          {/* 3컷 — 지원 내역 */}
+          <Reveal delay={180}>
+            <div className="overflow-hidden rounded-2xl border border-[#E1D8CC] bg-[#FBF8F3]">
+              <div className="flex items-center gap-1.5 border-b border-[#E1D8CC] px-4 py-2.5">
+                {[0, 1, 2].map((k) => (
+                  <span key={k} className="size-2 rounded-full bg-[#DDD5C8]" />
+                ))}
+              </div>
+              <div className="min-h-[236px] bg-white p-5">
+                <p className="text-[15.5px] font-black">내 지원 내역</p>
+                <div className="mt-3.5">
+                  {[
+                    { t: "뮤지컬 배우 모집", s: "보냄 09:12 · 회신 도착 14:05", hot: true },
+                    { t: "연극 배역 오디션", s: "보냄 10:04 · 접수됨", hot: false },
+                    { t: "광고 촬영 모델", s: "보냄 11:37 · 회신 도착 11:02", hot: true },
+                    { t: "독립영화 주연", s: "보냄 14:50 · 접수됨", hot: false },
+                  ].map((r, i, arr) => (
+                    <div
+                      key={r.t}
+                      className={`py-2.5 ${i < arr.length - 1 ? "border-b border-[#F0EAE0]" : ""}`}
+                    >
+                      <p className="text-[12.5px] font-bold">{r.t}</p>
+                      <p
+                        className={`mt-1 text-[11.5px] tabular-nums ${
+                          r.hot ? "font-bold text-[#F0330F]" : "text-[#7A7468]"
+                        }`}
+                      >
+                        {r.s}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-[15px] font-bold">보낸 시각까지 남습니다</p>
+          </Reveal>
+        </div>
+
+        <Reveal>
+          <p className="mt-7 text-[14.5px] font-medium text-[#6B665C]">
+            지원자는 언제나 회원님 본인입니다. 회신도 오디션패스를 거치지 않고 회원님 메일로 바로
+            옵니다.
+          </p>
+        </Reveal>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-500 py-12 px-6 text-center">
-        <div className="text-lg font-extrabold text-white mb-2">
-          AUDITIONPASS
+      {/* ── 격차 — 띠 하나로 ────────────────────────────────────── */}
+      <section className="bg-[#141110] text-[#F7F4EF]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-16 md:flex-row md:items-center md:gap-14 md:py-[70px]">
+          <div className="flex flex-none items-baseline gap-10 sm:gap-11">
+            <div>
+              <p>
+                <span className="text-[46px] font-black tracking-[-0.045em] text-[#6E675E] tabular-nums sm:text-[54px]">
+                  15
+                </span>
+                <span className="ml-1.5 text-[16px] font-bold text-[#6E675E]">건</span>
+              </p>
+              <p className="mt-1.5 text-[12.5px] font-bold text-[#6E675E]">
+                소속사 있는 연예인의 주당 지원
+              </p>
+            </div>
+            <div>
+              <p>
+                <span className="text-[46px] font-black tracking-[-0.045em] text-[#F0330F] tabular-nums sm:text-[54px]">
+                  1
+                </span>
+                <span className="ml-1.5 text-[16px] font-bold text-[#B8B1A8]">건</span>
+              </p>
+              <p className="mt-1.5 text-[12.5px] font-bold text-[#B8B1A8]">
+                혼자 준비하는 연습생 및 지원자
+              </p>
+            </div>
+          </div>
+          <p className="text-[21px] leading-[1.56] font-black tracking-[-0.035em] sm:text-[24px]">
+            차이는 재능이 아니라 시간입니다.
+            <br />
+            <span className="text-[#FF8A1E]">그 시간을 우리가 씁니다.</span>
+          </p>
         </div>
-        <p className="text-sm leading-loose">
-          당신의 다음 무대, 오디션패스
-          <br />
-          <Link
-            href="https://instagram.com/auditionpass.kr"
-            className="text-indigo-300 hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            @auditionpass.kr
-          </Link>
-          <br />
-          <br />
-          &copy; 2026 AUDITIONPASS. All rights reserved.
-        </p>
-      </footer>
-    </div>
+      </section>
+
+      {/* ── 요금 ────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-5 py-20 md:py-24">
+        <Reveal>
+          <h2 className="text-[30px] leading-[1.16] font-black tracking-[-0.05em] sm:text-[40px]">
+            무료로 시작합니다
+          </h2>
+        </Reveal>
+
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <Reveal delay={0}>
+            <div className="h-full rounded-[22px] border border-[#E1D8CC] bg-white px-8 py-8">
+              <p className="text-[12.5px] font-black tracking-[0.16em] text-[#8A8479]">무료</p>
+              <p className="mt-3.5 text-[42px] font-black tracking-[-0.045em]">0원</p>
+              <div className="mt-6 space-y-3 border-t border-[#F0EAE0] pt-5 text-[15.5px] font-medium text-[#37342E]">
+                <p>전체 공고 열람 — 가입 없이</p>
+                <p>
+                  원클릭 지원 하루 <b className="font-black text-[#141110]">5건</b>
+                </p>
+                <p>
+                  광고를 한 번 보면 <b className="font-black text-[#141110]">3건</b> 추가
+                </p>
+                <p>지원 기록 열람</p>
+              </div>
+              <Link
+                href="/signup"
+                className="mt-7 block rounded-full border-[1.5px] border-[#141110] py-3.5 text-center text-[15px] font-bold transition-colors duration-500 hover:bg-[#141110] hover:text-[#F7F4EF]"
+              >
+                무료로 시작하기
+              </Link>
+            </div>
+          </Reveal>
+
+          <Reveal delay={100}>
+            <div className="relative h-full overflow-hidden rounded-[22px] bg-[#141110] px-8 py-8 text-[#F7F4EF]">
+              <div
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-1"
+                style={{ background: "linear-gradient(to right, #F0330F, #FF8A1E 60%, rgba(255,138,30,0))" }}
+              />
+              <div className="flex items-baseline">
+                <p className="text-[12.5px] font-black tracking-[0.16em] text-[#FF8A1E]">프로</p>
+                <span className="ml-auto rounded-full bg-[#F0330F]/[0.18] px-2.5 py-1 text-[11px] font-bold text-[#FF8A1E]">
+                  현재 무료
+                </span>
+              </div>
+              <p className="mt-3.5 flex items-baseline gap-3">
+                <span className="text-[22px] font-bold text-[#7E786F] line-through decoration-2">
+                  월 9,900원
+                </span>
+                <span className="text-[42px] font-black tracking-[-0.045em]">0원</span>
+              </p>
+              <p className="mt-1.5 text-[14px] text-[#9A938A]">지금은 전부 열어두고 있습니다</p>
+              <div className="mt-6 space-y-3 border-t border-[#33302B] pt-5 text-[15.5px] font-medium text-[#DCD6CE]">
+                <p>
+                  원클릭 지원 <b className="font-black text-[#F7F4EF]">무제한</b>, 광고 없이
+                </p>
+                <p>마감 하루 전 알림</p>
+                <p>새 공고가 올라오면 즉시 알림</p>
+                <p>지원 우선 처리</p>
+              </div>
+              <Link
+                href="/signup"
+                className="mt-7 block rounded-full bg-[#F0330F] py-3.5 text-center text-[15px] font-black text-white transition-transform duration-500 active:scale-[0.98]"
+              >
+                지금 무료로 쓰기
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── 자주 묻는 질문 ──────────────────────────────────────── */}
+      <section className="border-t border-[#EDE7DC] bg-white">
+        <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
+          <Reveal>
+            <h2 className="text-[30px] leading-[1.16] font-black tracking-[-0.05em] sm:text-[40px]">
+              먼저 궁금해하시는 것들
+            </h2>
+          </Reveal>
+          <dl className="mt-9 grid gap-x-16 md:grid-cols-2">
+            {[
+              {
+                q: "제 이름으로 지원되나요?",
+                a: "네. 지원자는 회원님 본인입니다. 오디션패스는 프로필을 대신 쓰고 대신 보낼 뿐이고, 회신도 회원님 메일로 직접 옵니다.",
+              },
+              {
+                q: "프로필은 어떻게 만드나요?",
+                a: "나이, 키, 해본 것 정도만 넣으시면 AI가 매력적인 소개로 다듬어 줍니다. 한 번 만들어 두면 이후 지원은 그대로 나갑니다.",
+              },
+              {
+                q: "지원했는데 연락이 없으면요?",
+                a: "보낸 시각과 접수 여부는 지원 내역에 그대로 남습니다. 다만 회신 여부는 공고를 낸 쪽의 몫이라 오디션패스가 약속드릴 수 없습니다.",
+              },
+              {
+                q: "참가비를 요구하는 공고는요?",
+                a: "참가비, 교육비, 프로필 촬영비를 요구하는 공고는 걸러냅니다. 걸러내지 못한 것이 보이면 신고해주세요.",
+              },
+            ].map((f, i) => (
+              <Reveal key={f.q} delay={(i % 2) * 60}>
+                <div
+                  className={`border-t py-6 ${i < 2 ? "border-[#141110]" : "border-[#E4DCD2]"}`}
+                >
+                  <dt className="text-[17px] font-black tracking-[-0.03em] sm:text-[18px]">
+                    {f.q}
+                  </dt>
+                  <dd className="mt-2.5 text-[15px] leading-[1.78] text-[#4B473E]">{f.a}</dd>
+                </div>
+              </Reveal>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ── 마무리 + 푸터 ───────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-[#141110] text-[#F7F4EF]">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1"
+          style={{ background: "linear-gradient(to right, #F0330F, #FF8A1E 46%, rgba(255,138,30,0) 82%)" }}
+        />
+        <div
+          aria-hidden
+          className="ap-dawn pointer-events-none absolute -top-[300px] -right-[160px] h-[720px] w-[900px]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 58% 40%, rgba(255,138,30,0.26), rgba(255,92,32,0.11) 40%, rgba(20,17,16,0) 74%)",
+          }}
+        />
+
+        <div className="relative mx-auto max-w-6xl px-5 pt-20 md:pt-24">
+          <Reveal>
+            <h2 className="text-[34px] leading-[1.14] font-black tracking-[-0.05em] sm:text-[48px]">
+              지금도 <span className="text-[#F0330F]">{nf.format(stats.active)}건</span>이
+              <br />
+              열려 있습니다
+            </h2>
+            <div className="mt-8 flex flex-wrap items-center gap-5">
+              <FlameCta href="/auditions">오늘의 공고 보기</FlameCta>
+              <span className="text-[14.5px] font-medium text-[#918A82]">
+                가입은 원클릭 지원할 때만 필요합니다
+              </span>
+            </div>
+          </Reveal>
+        </div>
+
+        <footer className="relative mx-auto mt-16 max-w-6xl border-t border-[#33302B] px-5 pt-7 pb-10 md:mt-20">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-[15px] font-black tracking-[-0.03em]">오디션패스</p>
+              <p className="mt-2.5 text-[12.5px] leading-[1.8] text-[#7E786F]">
+                당신의 매니저가 되어 드립니다
+              </p>
+            </div>
+            <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] font-medium text-[#918A82] sm:ml-auto">
+              <Link href="/auditions" className="transition-colors hover:text-[#F7F4EF]">
+                공고
+              </Link>
+              <Link href="/community" className="transition-colors hover:text-[#F7F4EF]">
+                커뮤니티
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-[#F7F4EF]">
+                이용약관
+              </Link>
+              <Link href="/privacy" className="transition-colors hover:text-[#F7F4EF]">
+                개인정보처리방침
+              </Link>
+            </nav>
+          </div>
+          <p className="mt-8 text-[11px] text-[#6E675E] tabular-nums">
+            © {new Date().getFullYear()} 오디션패스
+          </p>
+        </footer>
+      </section>
+    </main>
   );
 }
