@@ -94,7 +94,7 @@ export default async function Image({ params }: Props) {
               fontSize: 28,
               fontWeight: 700,
               color: "#ffffff",
-              background: "#6366F1",
+              background: "#F0330F",
               padding: "10px 28px",
               borderRadius: 9999,
             }}
@@ -163,7 +163,7 @@ export default async function Image({ params }: Props) {
               display: "flex",
               fontSize: 34,
               fontWeight: 900,
-              color: "#6366F1",
+              color: "#F0330F",
             }}
           >
             {BRAND}

@@ -1,13 +1,20 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 @import "tailwindcss";
 
+/*
+ * 동틀 녘 디자인 시스템 (2026-08-31, A안 확정 — design/FullA.dc.html 정본)
+ *
+ * 여명 #F7F4EF / 잉크 #141110 / 불꽃 #F0330F / 노을 #FF8A1E
+ * 랜딩과 앱이 같은 온도를 쓴다. 인디고(#6366F1) 시절 토큰은 전부 폐기.
+ * 어드민(/admin)은 별도 페이퍼 시스템(#FAFAF7/#4F46E5)을 유지한다 — 여기 토큰을 쓰지 않는다.
+ */
 :root {
-  --background: #F8FAFC;
-  --foreground: #171717;
-  --primary: #6366F1;
-  --primary-hover: #4F46E5;
-  --accent: #F59E0B;
-  --accent-hover: #D97706;
+  --background: #F7F4EF;
+  --foreground: #141110;
+  --primary: #F0330F;
+  --primary-hover: #D42A0B;
+  --accent: #FF8A1E;
+  --accent-hover: #E07000;
 }
 
 @theme inline {
@@ -17,6 +24,36 @@
   --color-primary-hover: var(--primary-hover);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+}
+
+@theme {
+  /* 회색을 웜 스톤으로 재정의 — 쿨 그레이가 여명 바탕 위에서 시퍼렇게 뜨는 것을 막는다.
+     기존 화면의 gray-* 클래스 300여 곳이 이 램프로 한 번에 다시 칠해진다. */
+  --color-gray-50: #FBF9F4;
+  --color-gray-100: #F0EAE0;
+  --color-gray-200: #E4DCD2;
+  --color-gray-300: #D1C9BD;
+  --color-gray-400: #9A938A;
+  --color-gray-500: #7A7468;
+  --color-gray-600: #57534A;
+  --color-gray-700: #46423A;
+  --color-gray-800: #2A2724;
+  --color-gray-900: #141110;
+
+  /* 빨강을 불꽃 계열로 — 마감 임박·에러가 브랜드 액센트와 같은 온도로 읽힌다. */
+  --color-red-50: #FFF1EC;
+  --color-red-100: #FFE2D8;
+  --color-red-200: #F8C4B4;
+  --color-red-400: #F55B33;
+  --color-red-500: #F0330F;
+  --color-red-600: #D42A0B;
+  --color-red-700: #B02407;
+
+  /* 앰버를 노을 계열로 */
+  --color-amber-50: #FFF4E8;
+  --color-amber-500: #FF8A1E;
+  --color-amber-600: #E07000;
+  --color-amber-700: #B85A00;
 }
 
 body {

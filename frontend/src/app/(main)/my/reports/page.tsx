@@ -22,7 +22,7 @@ interface MyReport {
 }
 
 const STATUS_STYLE: Record<ReportStatus, string> = {
-  received: "bg-indigo-50 text-primary",
+  received: "bg-red-50 text-primary",
   actioned: "bg-emerald-50 text-emerald-600",
   dismissed: "bg-gray-100 text-gray-500",
 };

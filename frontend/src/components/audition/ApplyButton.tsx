@@ -174,7 +174,7 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
         onClick={handleApplyTap}
       >
         <Send size={18} />
-        {isLoggedIn ? "원클릭 지원" : "지원하기"}
+        원클릭 지원
       </Button>
 
       <BottomSheet
@@ -427,7 +427,7 @@ function ProfileStep({
                 onClick={() => setGender(g)}
                 className={`min-h-11 rounded-lg border py-2.5 text-sm font-medium transition-colors ${
                   gender === g
-                    ? "border-primary bg-indigo-50 text-primary"
+                    ? "border-primary bg-red-50 text-primary"
                     : "border-gray-300 text-gray-600 active:bg-gray-50"
                 }`}
               >
@@ -457,7 +457,7 @@ function ProfileStep({
                   }
                   className={`min-h-10 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
                     active
-                      ? "border-primary bg-indigo-50 text-primary"
+                      ? "border-primary bg-red-50 text-primary"
                       : "border-gray-300 text-gray-600 active:bg-gray-50"
                   }`}
                 >

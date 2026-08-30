@@ -21,7 +21,7 @@ import type { Audition } from "@/types";
 export const revalidate = 600;
 
 const GENRE_COLORS: Record<string, string> = {
-  배우: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+  배우: "bg-red-50 text-red-700 border border-red-200",
   모델: "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200",
   기타: "bg-slate-100 text-slate-600 border border-slate-200",
 };
@@ -112,7 +112,7 @@ export default async function AuditionDetailPage({
                           ? "bg-red-50 text-red-600"
                           : isWarning
                             ? "bg-amber-50 text-amber-600"
-                            : "bg-indigo-50 text-indigo-600"
+                            : "bg-red-50 text-primary"
                     }`}
                   >
                     <Clock size={11} aria-hidden />
@@ -155,7 +155,7 @@ export default async function AuditionDetailPage({
           href={audition.source_url}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-sm text-primary font-semibold hover:bg-indigo-50 transition-colors"
+          className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-sm text-primary font-semibold hover:bg-red-50 transition-colors"
         >
           원문 공고 보기
           <ExternalLink size={15} aria-hidden />

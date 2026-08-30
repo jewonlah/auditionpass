@@ -62,6 +62,33 @@ export async function POST(req: Request) {
       );
     }
 
+    // 3.5. 일일 쿼터 스위치 (2026-08-31 제원 결정: 지금은 무제한, 스위치만 심어둔다)
+    //
+    // APPLY_DAILY_LIMIT 환경변수가 양수일 때만 작동한다. 미설정·0 = 무제한.
+    // BM 확정치는 무료 하루 5건 + 광고 시청 +3건 — 트래픽이 생기면 5로 켜고,
+    // 광고 보너스는 그때 별도 컬럼으로 붙인다. 날짜 경계는 KST 자정.
+    const dailyLimit = Number(process.env.APPLY_DAILY_LIMIT) || 0;
+    if (dailyLimit > 0) {
+      const kstMidnight = new Date(
+        new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10) + "T00:00:00+09:00"
+      ).toISOString();
+      const { count: sentToday } = await supabase
+        .from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("sent_at", kstMidnight);
+      if ((sentToday ?? 0) >= dailyLimit) {
+        return NextResponse.json(
+          {
+            error: `오늘의 원클릭 지원 ${dailyLimit}건을 모두 사용했습니다. 내일 다시 열립니다.`,
+            code: "DAILY_LIMIT_REACHED",
+            limit: dailyLimit,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     // 4. 오디션 정보 조회
     const { data: audition, error: auditionError } = await supabase
       .from("auditions")

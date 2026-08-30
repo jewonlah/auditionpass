@@ -32,7 +32,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   꿀팁: "bg-amber-50 text-amber-600",
   후기: "bg-emerald-50 text-emerald-600",
   질문: "bg-blue-50 text-blue-600",
-  구인: "bg-purple-50 text-purple-600",
+  구인: "bg-amber-50 text-amber-700",
 };
 
 function timeAgo(dateStr: string): string {
@@ -155,7 +155,7 @@ export default function CommunityPage() {
 
       {/* HOT 배너 */}
       {hotPosts.length > 0 && (
-        <div className="rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 mb-4">
+        <div className="rounded-xl bg-gradient-to-r from-red-50 to-amber-50 border border-red-100 p-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={16} className="text-primary" />
             <span className="text-xs font-bold text-primary">인기 게시글</span>

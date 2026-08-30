@@ -131,7 +131,7 @@ export default async function HomePage() {
           href="/profile?returnTo=%2Fhome"
           className="mb-4 flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-colors active:bg-gray-50"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50">
             <UserRound size={20} className="text-primary" />
           </div>
           <div className="min-w-0 flex-1">
@@ -200,7 +200,7 @@ export default async function HomePage() {
         href="/applications"
         className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-colors active:bg-gray-50"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50">
           <Send size={18} className="text-primary" />
         </div>
         <div className="min-w-0 flex-1">
@@ -293,7 +293,7 @@ function HomeAuditionRow({
               <Badge className="bg-gray-100 text-gray-500">
                 {audition.genre}
               </Badge>
-              {showOneClick && <Badge variant="success">원클릭 지원</Badge>}
+              {showOneClick && <Badge>원클릭 지원</Badge>}
             </div>
           </div>
           <span

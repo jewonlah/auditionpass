@@ -135,7 +135,7 @@ export default function MyPage() {
       {/* 프로필 헤더 */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(99,102,241,0.06)] mb-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center shrink-0">
             {profile?.photo_urls?.[0] ? (
               <img
                 src={profile.photo_urls[0]}
@@ -156,7 +156,7 @@ export default function MyPage() {
                 {profile.genre?.map((g) => (
                   <span
                     key={g}
-                    className="inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-primary"
+                    className="inline-block rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-primary"
                   >
                     {g}
                   </span>

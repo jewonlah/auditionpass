@@ -155,7 +155,7 @@ export function ReportButton({
                   onClick={() => setReason(r.code)}
                   className={`rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
                     reason === r.code
-                      ? "border-primary bg-indigo-50"
+                      ? "border-primary bg-red-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >

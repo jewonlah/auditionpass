@@ -26,7 +26,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   꿀팁: "bg-amber-50 text-amber-600",
   후기: "bg-emerald-50 text-emerald-600",
   질문: "bg-blue-50 text-blue-600",
-  구인: "bg-purple-50 text-purple-600",
+  구인: "bg-amber-50 text-amber-700",
 };
 
 function timeAgo(dateStr: string): string {
@@ -405,7 +405,7 @@ function CommentItem({
   return (
     <div className={cn(isReply && "ml-6 pl-3 border-l-2 border-gray-100")}>
       <div className="flex items-start gap-2">
-        <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
           {comment.author_photo ? (
             <img
               src={comment.author_photo}
