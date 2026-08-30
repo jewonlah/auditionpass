@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Clock,
   CheckCircle,
   XCircle,
   Calendar,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDate, formatDday, getDday } from "@/lib/utils";
+import { formatDday, getDday } from "@/lib/utils";
 
 interface ApplicationAudition {
   id: string;
@@ -89,6 +88,11 @@ export default function ApplicationsPage() {
       <h1 className="text-lg font-bold mb-1">지원</h1>
       <p className="text-sm text-gray-500 mb-6">
         지원한 오디션 {applications.length}건
+        {applications.length > 0 && (
+          <span className="mt-0.5 block text-xs text-gray-400">
+            회신은 회원님 메일로 직접 옵니다 — 받은편지함을 확인해주세요
+          </span>
+        )}
       </p>
 
       {applications.length === 0 ? (
@@ -104,10 +108,20 @@ export default function ApplicationsPage() {
   );
 }
 
+/** 랜딩의 약속 "보낸 시각까지 남습니다" — 분 단위로 남긴다 */
+function formatSentAt(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${hh}:${mm}`;
+}
+
 function ApplicationCard({ application }: { application: ApplicationRecord }) {
   const { audition } = application;
   const dday = getDday(audition.deadline);
   const isExpired = dday !== null && dday < 0;
+  const sentAt = formatSentAt(application.sent_at ?? application.created_at);
 
   return (
     <Link
@@ -116,25 +130,18 @@ function ApplicationCard({ application }: { application: ApplicationRecord }) {
         isExpired ? "opacity-60" : ""
       }`}
     >
-      {/* 상단: 제목 + 상태 */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-semibold text-sm leading-snug flex-1 min-w-0 truncate">
+      {/* 상단: 제목 + 메타 */}
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <h3 className="min-w-0 flex-1 truncate text-sm leading-snug font-semibold">
           {audition.title}
         </h3>
-        {application.email_sent ? (
-          <Badge variant="success" className="shrink-0">
-            <CheckCircle size={12} className="mr-1" />
-            발송완료
-          </Badge>
-        ) : (
-          <Badge variant="danger" className="shrink-0">
-            <XCircle size={12} className="mr-1" />
-            발송실패
-          </Badge>
+        {audition.deadline && (
+          <span className="flex shrink-0 items-center gap-1 text-xs text-gray-400">
+            <Calendar size={12} />
+            {isExpired ? "마감됨" : formatDday(audition.deadline)}
+          </span>
         )}
       </div>
-
-      {/* 중단: 메타 정보 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
         {audition.company && (
           <span className="flex items-center gap-1">
@@ -142,22 +149,32 @@ function ApplicationCard({ application }: { application: ApplicationRecord }) {
             {audition.company}
           </span>
         )}
-        <span className="flex items-center gap-1">
-          <Clock size={12} />
-          지원일: {formatDate(application.created_at)}
-        </span>
-        {audition.deadline && (
-          <span className="flex items-center gap-1">
-            <Calendar size={12} />
-            {isExpired ? "마감됨" : formatDday(audition.deadline)}
-          </span>
-        )}
-      </div>
-
-      {/* 하단: 장르 배지 */}
-      <div className="mt-2">
         <Badge>{audition.genre}</Badge>
       </div>
+
+      {/* 타임라인 — 우리가 실제로 아는 것만 표시한다. 회신은 우리를 거치지 않는다. */}
+      {application.email_sent ? (
+        <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-900">
+            <CheckCircle size={13} className="text-primary" />
+            프로필 발송
+            <span className="font-medium text-gray-500 tabular-nums">{sentAt}</span>
+          </span>
+          <span className="h-px w-4 bg-gray-200" aria-hidden />
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-900">
+            <CheckCircle size={13} className="text-primary" />
+            담당자 메일함 접수
+          </span>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
+            <XCircle size={13} />
+            발송 실패
+          </span>
+          <span className="text-xs text-gray-400">공고 상세에서 다시 시도해주세요</span>
+        </div>
+      )}
     </Link>
   );
 }
