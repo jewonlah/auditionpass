@@ -46,3 +46,8 @@ crawler/intake/
 # .env 백업본 (시크릿 포함) — 어떤 접미사가 붙어도 커밋 금지
 .env.bak*
 **/.env.bak*
+
+# 디자인 캔버스 산출물 — 시드된 페이로드(2.7MB)와 원본 이미지는 리포에 넣지 않는다
+design/auditionpass-landing*.html
+design/*.png
+design/*.jpg

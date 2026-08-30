@@ -26,6 +26,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    // 약관·처리방침은 가입 전 확인 문서이자 소셜 로그인 심사 요건이라 색인 대상이다
+    {
+      url: `${BASE_URL}/terms`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
     {
       url: `${BASE_URL}/login`,
       lastModified: new Date(),
