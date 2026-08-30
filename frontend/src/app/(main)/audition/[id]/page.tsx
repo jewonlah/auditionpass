@@ -162,7 +162,19 @@ export default async function AuditionDetailPage({
         </a>
       )}
 
-      <AuditionActions audition={audition} isExpired={isExpired} />
+      {/* 필요한 필드만 넘긴다 — 통째로 넘기면 description 원문이 RSC 페이로드로 실려 나간다 */}
+      <AuditionActions
+        audition={{
+          id: audition.id,
+          title: audition.title,
+          company: audition.company,
+          genre: audition.genre,
+          apply_type: audition.apply_type,
+          source_url: audition.source_url,
+          oneclick_blocked: audition.oneclick_blocked,
+        }}
+        isExpired={isExpired}
+      />
     </div>
   );
 }
