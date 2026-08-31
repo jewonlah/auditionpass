@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://auditionpass.co.kr"
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr"
   ),
   title: {
     default: "오디션패스 | 배우·모델 오디션 정보를 한 곳에서",

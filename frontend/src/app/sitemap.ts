@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { todayKST } from "@/lib/utils";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://auditionpass.co.kr";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr";
 
 // 빌드 시점 DB 쿼리가 실패하면 오디션 URL 0건으로 굳는 문제(2026-08-25 배포 실측) →
 // 1시간 ISR로 런타임 재생성. 실패해도 다음 주기에 회복된다.
