@@ -750,6 +750,15 @@ export default async function LandingPage() {
               <p className="mt-2.5 text-[12.5px] leading-[1.8] text-[#7E786F]">
                 당신의 매니저가 되어 드립니다
               </p>
+              {/* 전자상거래법 표시사항 — 상호는 운영사(턴오버), 서비스명과 다르다 */}
+              <p className="mt-4 text-[11.5px] leading-[1.9] text-[#6E675E]">
+                상호 턴오버 &nbsp; 대표 나현석
+                <br />
+                사업자등록번호 608-30-93687
+                <br />
+                업태 정보통신업 &nbsp; 종목 전자상거래 중개업, 포털 및 기타 인터넷 정보 매개
+                서비스업
+              </p>
             </div>
             <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] font-medium text-[#918A82] sm:ml-auto">
               <Link href="/auditions" className="transition-colors hover:text-[#F7F4EF]">
