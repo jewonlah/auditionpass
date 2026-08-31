@@ -144,15 +144,15 @@ function AuditionCard({ a }: { a: Card }) {
   return (
     <Link
       href={`/audition/${a.id}`}
-      className="group flex h-full flex-col rounded-[18px] border border-[#E1D8CC] bg-white px-5 py-4.5 transition-[transform,border-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 hover:border-[#C9BFAF]"
+      className="group flex h-full flex-col rounded-[18px] border border-[#CFC3AF] bg-white px-5 py-4.5 transition-[transform,border-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 hover:border-[#C9BFAF]"
     >
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-bold tracking-[0.1em] text-[#8A8479]">
+        <span className="text-[11px] font-bold tracking-[0.1em] text-[#736C5F]">
           {a.category || a.genre}
         </span>
         <span
           className={`ml-auto text-[12px] font-bold tabular-nums ${
-            d.urgent ? "text-[#F0330F]" : "text-[#6B665C]"
+            d.urgent ? "text-[#F0330F]" : "text-[#57524A]"
           }`}
         >
           {d.label}
@@ -162,14 +162,14 @@ function AuditionCard({ a }: { a: Card }) {
         {a.title}
       </p>
       {a.company && (
-        <p className="mt-2 truncate text-[12.5px] text-[#7A7468]">{a.company}</p>
+        <p className="mt-2 truncate text-[12.5px] text-[#645E53]">{a.company}</p>
       )}
-      <div className="mt-auto border-t border-[#F0EAE0] pt-3.5" style={{ marginTop: "auto" }}>
+      <div className="mt-auto border-t border-[#E3D9C9] pt-3.5" style={{ marginTop: "auto" }}>
         <span
           className={`inline-block rounded-full px-4 py-1.5 text-[12.5px] font-bold transition-colors duration-500 ${
             oneclick
-              ? "border-[1.3px] border-[#141110] text-[#141110] group-hover:bg-[#141110] group-hover:text-[#F7F4EF]"
-              : "text-[#8A8479]"
+              ? "border-2 border-[#141110] text-[#141110] group-hover:bg-[#141110] group-hover:text-[#F7F4EF]"
+              : "text-[#736C5F]"
           }`}
         >
           {oneclick ? "원클릭 지원" : "공고 보기"}
@@ -235,7 +235,7 @@ export default async function LandingPage() {
         {/* 종이 결 */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-multiply"
+          className="pointer-events-none absolute inset-0 opacity-[0.018] mix-blend-multiply"
           style={{
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E\")",
@@ -248,12 +248,12 @@ export default async function LandingPage() {
             오디션패스
           </Link>
           <div className="ml-auto flex items-center gap-5">
-            <Link href="/login" className="text-[14px] font-medium text-[#57534A] transition-colors hover:text-[#141110]">
+            <Link href="/login" className="text-[14px] font-medium text-[#454138] transition-colors hover:text-[#141110]">
               로그인
             </Link>
             <Link
               href="/signup"
-              className="rounded-full border-[1.4px] border-[#141110] px-4.5 py-2 text-[13.5px] font-bold transition-colors duration-500 hover:bg-[#141110] hover:text-[#F7F4EF]"
+              className="rounded-full bg-[#141110] px-5 py-2.5 text-[13.5px] font-bold text-[#F7F4EF] transition-opacity duration-300 hover:opacity-85"
             >
               무료로 시작
             </Link>
@@ -269,35 +269,35 @@ export default async function LandingPage() {
               <br />
               <span className="text-[#F0330F]">관리</span>하겠습니다
             </h1>
-            <p className="mt-6 max-w-[40ch] text-[16.5px] leading-[1.72] text-[#4B473E]">
+            <p className="mt-6 max-w-[40ch] text-[16.5px] leading-[1.72] text-[#3A362E]">
               소속사 있는 연예인은 매니저가 공고를 찾아주고, 프로필을 대신 써서 보내줍니다.
               그 일을 오디션패스가 합니다. 새 공고를 매일 모아 오고, 프로필은 AI가 다듬고,
               지원은 버튼 하나로 끝납니다.
             </p>
 
             {/* 근거는 숫자로. 형용사는 쓰지 않는다. */}
-            <div className="mt-9 flex gap-10 border-t border-[#E4DCD2] pt-7 sm:gap-12">
+            <div className="mt-9 flex gap-10 border-t border-[#D9CEBE] pt-7 sm:gap-12">
               <div>
                 <p className="text-[30px] font-black tracking-[-0.03em] tabular-nums sm:text-[32px]">
                   {nf.format(stats.active)}
                 </p>
-                <p className="mt-1 text-[12.5px] font-medium text-[#6B665C]">진행 중인 공고</p>
+                <p className="mt-1 text-[12.5px] font-medium text-[#57524A]">진행 중인 공고</p>
               </div>
               <div>
                 <p className="text-[30px] font-black tracking-[-0.03em] text-[#F0330F] tabular-nums sm:text-[32px]">
                   {nf.format(stats.today)}
                 </p>
-                <p className="mt-1 text-[12.5px] font-medium text-[#6B665C]">오늘 새로 올라온 공고</p>
+                <p className="mt-1 text-[12.5px] font-medium text-[#57524A]">오늘 새로 올라온 공고</p>
               </div>
               <div>
                 <p className="text-[30px] font-black tracking-[-0.03em] tabular-nums sm:text-[32px]">0원</p>
-                <p className="mt-1 text-[12.5px] font-medium text-[#6B665C]">지금은 전부 무료</p>
+                <p className="mt-1 text-[12.5px] font-medium text-[#57524A]">지금은 전부 무료</p>
               </div>
             </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-5">
               <FlameCta href="/auditions">오늘의 공고 보기</FlameCta>
-              <span className="text-[14px] font-medium text-[#6B665C]">
+              <span className="text-[14px] font-medium text-[#57524A]">
                 가입은 원클릭 지원할 때만 필요합니다
               </span>
             </div>
@@ -320,12 +320,12 @@ export default async function LandingPage() {
                     href={`/audition/${a.id}`}
                     className={`absolute block rounded-[20px] border px-6 py-5 ${pos} ${
                       front
-                        ? "border-[#E1D8CC] bg-white shadow-[0_26px_54px_-30px_rgba(72,32,16,0.4),0_6px_16px_-10px_rgba(72,32,16,0.2)]"
-                        : "border-[#E6DED4] bg-[#FDFCF8]"
+                        ? "border-[#CFC3AF] bg-white shadow-[0_26px_54px_-30px_rgba(72,32,16,0.4),0_6px_16px_-10px_rgba(72,32,16,0.2)]"
+                        : "border-[#D5C9B8] bg-[#FDFCF8]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-[10.5px] font-bold tracking-[0.12em] text-[#8B857A]">
+                      <span className="text-[10.5px] font-bold tracking-[0.12em] text-[#736C5F]">
                         {a.category || a.genre}
                       </span>
                       {front && a.apply_type === "email" && (
@@ -335,7 +335,7 @@ export default async function LandingPage() {
                       )}
                       <span
                         className={`ml-auto text-[11.5px] font-bold tabular-nums ${
-                          d.urgent ? "text-[#F0330F]" : "text-[#8B857A]"
+                          d.urgent ? "text-[#F0330F]" : "text-[#736C5F]"
                         }`}
                       >
                         {d.label}
@@ -343,13 +343,13 @@ export default async function LandingPage() {
                     </div>
                     <p
                       className={`mt-2.5 line-clamp-2 leading-snug font-bold tracking-[-0.02em] ${
-                        front ? "text-[18px] font-black text-[#141110]" : "text-[15px] text-[#55504A]"
+                        front ? "text-[18px] font-black text-[#141110]" : "text-[15px] text-[#3F3B34]"
                       }`}
                     >
                       {a.title}
                     </p>
                     {front && a.company && (
-                      <p className="mt-2 truncate text-[13px] text-[#7A7468]">{a.company}</p>
+                      <p className="mt-2 truncate text-[13px] text-[#645E53]">{a.company}</p>
                     )}
                   </Link>
                 );
@@ -360,19 +360,19 @@ export default async function LandingPage() {
       </section>
 
       {/* ── 오늘의 공고: 설명 대신 재고 ─────────────────────────── */}
-      <section className="border-t border-[#EDE7DC] bg-white">
+      <section className="border-t border-[#DCD2C1] bg-white">
         <div className="mx-auto max-w-6xl px-5 pt-14 pb-20 md:pt-16 md:pb-24">
           {/* 검색 — 랜딩에서는 목록으로 보내는 문이다 */}
           <Reveal>
             <Link
               href="/auditions"
-              className="flex items-center gap-3 rounded-full border-[1.5px] border-[#141110] py-2 pr-2 pl-5 transition-colors duration-500 hover:bg-[#FBF8F3]"
+              className="flex items-center gap-3 rounded-full border-2 border-[#141110] py-2 pr-2 pl-5 transition-colors duration-500 hover:bg-[#FBF8F3]"
             >
               <svg viewBox="0 0 20 20" className="size-[18px] flex-none" fill="none" aria-hidden>
-                <circle cx="9" cy="9" r="6.2" stroke="#8A8479" strokeWidth="1.8" />
-                <path d="M13.6 13.6L17.5 17.5" stroke="#8A8479" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="9" cy="9" r="6.2" stroke="#736C5F" strokeWidth="1.8" />
+                <path d="M13.6 13.6L17.5 17.5" stroke="#736C5F" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
-              <span className="flex-1 truncate text-[15px] text-[#9A938A] sm:text-[16px]">
+              <span className="flex-1 truncate text-[15px] text-[#847C6F] sm:text-[16px]">
                 배역, 분야, 지역으로 찾아보세요
               </span>
               <span className="rounded-full bg-[#F0330F] px-6 py-2.5 text-[14px] font-black text-white">
@@ -392,9 +392,9 @@ export default async function LandingPage() {
                 <Link
                   key={c.name}
                   href={`/auditions?filter=${encodeURIComponent(c.name)}`}
-                  className="rounded-full border border-[#E1D8CC] px-4 py-2 text-[13px] font-medium text-[#37342E] transition-colors duration-500 hover:border-[#141110]"
+                  className="rounded-full border border-[#CFC3AF] px-4 py-2 text-[13px] font-medium text-[#37342E] transition-colors duration-500 hover:border-[#141110]"
                 >
-                  {c.name} <span className="text-[#8A8479]">{nf.format(c.count)}</span>
+                  {c.name} <span className="text-[#736C5F]">{nf.format(c.count)}</span>
                 </Link>
               ))}
             </div>
@@ -408,7 +408,7 @@ export default async function LandingPage() {
               <span className="ml-3.5 text-[15px] font-black text-[#F0330F] tabular-nums">
                 {nf.format(stats.today)}건
               </span>
-              <span className="ml-auto hidden text-[13.5px] font-medium text-[#6B665C] sm:block">
+              <span className="ml-auto hidden text-[13.5px] font-medium text-[#57524A] sm:block">
                 마감 임박순
               </span>
             </div>
@@ -433,7 +433,7 @@ export default async function LandingPage() {
                   <path d="M2.5 8h11M9 3.5L13.5 8 9 12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
-              <span className="text-[14px] font-medium text-[#6B665C]">
+              <span className="text-[14px] font-medium text-[#57524A]">
                 가입 없이 전부 열람할 수 있습니다
               </span>
             </div>
@@ -452,25 +452,25 @@ export default async function LandingPage() {
         <div className="mt-9 grid gap-6 md:grid-cols-3 md:gap-5">
           {/* 1컷 — 공고 상세. 원문 링크는 여기 안에서만 산다. */}
           <Reveal delay={0}>
-            <div className="overflow-hidden rounded-2xl border border-[#E1D8CC] bg-[#FBF8F3]">
-              <div className="flex items-center gap-1.5 border-b border-[#E1D8CC] px-4 py-2.5">
+            <div className="overflow-hidden rounded-2xl border border-[#CFC3AF] bg-[#FBF8F3]">
+              <div className="flex items-center gap-1.5 border-b border-[#CFC3AF] px-4 py-2.5">
                 {[0, 1, 2].map((k) => (
-                  <span key={k} className="size-2 rounded-full bg-[#DDD5C8]" />
+                  <span key={k} className="size-2 rounded-full bg-[#C8BCA9]" />
                 ))}
               </div>
               <div className="min-h-[236px] bg-white p-5">
-                <p className="text-[10.5px] font-bold tracking-[0.12em] text-[#8A8479]">
+                <p className="text-[10.5px] font-bold tracking-[0.12em] text-[#736C5F]">
                   뮤지컬 &nbsp; 오늘 마감
                 </p>
                 <p className="mt-2.5 text-[15.5px] leading-snug font-black">
                   어린이 뮤지컬 배우 모집
                 </p>
-                <div className="mt-3.5 space-y-1.5 border-y border-[#F0EAE0] py-3 text-[12px] text-[#6B665C]">
+                <div className="mt-3.5 space-y-1.5 border-y border-[#E3D9C9] py-3 text-[12px] text-[#57524A]">
                   <p>모집 배역 &nbsp; 여자 주연 1명, 앙상블 4명</p>
                   <p>연령 &nbsp; 18세 이상 28세 이하</p>
                   <p>보수 &nbsp; 회차당 협의</p>
                 </div>
-                <p className="mt-3 text-[11.5px] font-bold text-[#9A938A]">원문 공고 보기 →</p>
+                <p className="mt-3 text-[11.5px] font-bold text-[#847C6F]">원문 공고 보기 →</p>
                 <div className="mt-3 rounded-full bg-[#F0330F] py-3 text-center text-[13.5px] font-black text-white">
                   원클릭 지원
                 </div>
@@ -481,20 +481,20 @@ export default async function LandingPage() {
 
           {/* 2컷 — AI 프로필 */}
           <Reveal delay={90}>
-            <div className="overflow-hidden rounded-2xl border border-[#E1D8CC] bg-[#FBF8F3]">
-              <div className="flex items-center gap-1.5 border-b border-[#E1D8CC] px-4 py-2.5">
+            <div className="overflow-hidden rounded-2xl border border-[#CFC3AF] bg-[#FBF8F3]">
+              <div className="flex items-center gap-1.5 border-b border-[#CFC3AF] px-4 py-2.5">
                 {[0, 1, 2].map((k) => (
-                  <span key={k} className="size-2 rounded-full bg-[#DDD5C8]" />
+                  <span key={k} className="size-2 rounded-full bg-[#C8BCA9]" />
                 ))}
               </div>
               <div className="min-h-[236px] bg-white p-5">
                 <p className="text-[15.5px] font-black">프로필은 AI가 씁니다</p>
-                <p className="mt-1.5 text-[12px] text-[#7A7468]">넣으시는 건 이 정도가 전부입니다</p>
+                <p className="mt-1.5 text-[12px] text-[#645E53]">넣으시는 건 이 정도가 전부입니다</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {["24세", "168cm", "뮤지컬 앙상블 2회", "보컬 가능"].map((chip) => (
                     <span
                       key={chip}
-                      className="rounded-lg border border-[#EFE7DA] bg-[#FBF8F3] px-2.5 py-1.5 text-[11.5px] font-bold"
+                      className="rounded-lg border border-[#DFD3C0] bg-[#FBF8F3] px-2.5 py-1.5 text-[11.5px] font-bold"
                     >
                       {chip}
                     </span>
@@ -519,10 +519,10 @@ export default async function LandingPage() {
 
           {/* 3컷 — 지원 내역 */}
           <Reveal delay={180}>
-            <div className="overflow-hidden rounded-2xl border border-[#E1D8CC] bg-[#FBF8F3]">
-              <div className="flex items-center gap-1.5 border-b border-[#E1D8CC] px-4 py-2.5">
+            <div className="overflow-hidden rounded-2xl border border-[#CFC3AF] bg-[#FBF8F3]">
+              <div className="flex items-center gap-1.5 border-b border-[#CFC3AF] px-4 py-2.5">
                 {[0, 1, 2].map((k) => (
-                  <span key={k} className="size-2 rounded-full bg-[#DDD5C8]" />
+                  <span key={k} className="size-2 rounded-full bg-[#C8BCA9]" />
                 ))}
               </div>
               <div className="min-h-[236px] bg-white p-5">
@@ -536,12 +536,12 @@ export default async function LandingPage() {
                   ].map((r, i, arr) => (
                     <div
                       key={r.t}
-                      className={`py-2.5 ${i < arr.length - 1 ? "border-b border-[#F0EAE0]" : ""}`}
+                      className={`py-2.5 ${i < arr.length - 1 ? "border-b border-[#E3D9C9]" : ""}`}
                     >
                       <p className="text-[12.5px] font-bold">{r.t}</p>
                       <p
                         className={`mt-1 text-[11.5px] tabular-nums ${
-                          r.hot ? "font-bold text-[#F0330F]" : "text-[#7A7468]"
+                          r.hot ? "font-bold text-[#F0330F]" : "text-[#645E53]"
                         }`}
                       >
                         {r.s}
@@ -556,7 +556,7 @@ export default async function LandingPage() {
         </div>
 
         <Reveal>
-          <p className="mt-7 text-[14.5px] font-medium text-[#6B665C]">
+          <p className="mt-7 text-[14.5px] font-medium text-[#57524A]">
             지원자는 언제나 회원님 본인입니다. 회신도 오디션패스를 거치지 않고 회원님 메일로 바로
             옵니다.
           </p>
@@ -608,10 +608,10 @@ export default async function LandingPage() {
 
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           <Reveal delay={0}>
-            <div className="h-full rounded-[22px] border border-[#E1D8CC] bg-white px-8 py-8">
-              <p className="text-[12.5px] font-black tracking-[0.16em] text-[#8A8479]">무료</p>
+            <div className="h-full rounded-[22px] border border-[#CFC3AF] bg-white px-8 py-8">
+              <p className="text-[12.5px] font-black tracking-[0.16em] text-[#736C5F]">무료</p>
               <p className="mt-3.5 text-[42px] font-black tracking-[-0.045em]">0원</p>
-              <div className="mt-6 space-y-3 border-t border-[#F0EAE0] pt-5 text-[15.5px] font-medium text-[#37342E]">
+              <div className="mt-6 space-y-3 border-t border-[#E3D9C9] pt-5 text-[15.5px] font-medium text-[#37342E]">
                 <p>전체 공고 열람 — 가입 없이</p>
                 <p>
                   원클릭 지원 하루 <b className="font-black text-[#141110]">5건</b>
@@ -623,7 +623,7 @@ export default async function LandingPage() {
               </div>
               <Link
                 href="/signup"
-                className="mt-7 block rounded-full border-[1.5px] border-[#141110] py-3.5 text-center text-[15px] font-bold transition-colors duration-500 hover:bg-[#141110] hover:text-[#F7F4EF]"
+                className="mt-7 block rounded-full border-2 border-[#141110] py-3.5 text-center text-[15px] font-bold transition-colors duration-500 hover:bg-[#141110] hover:text-[#F7F4EF]"
               >
                 무료로 시작하기
               </Link>
@@ -649,7 +649,7 @@ export default async function LandingPage() {
                 </span>
                 <span className="text-[42px] font-black tracking-[-0.045em]">0원</span>
               </p>
-              <p className="mt-1.5 text-[14px] text-[#9A938A]">지금은 전부 열어두고 있습니다</p>
+              <p className="mt-1.5 text-[14px] text-[#847C6F]">지금은 전부 열어두고 있습니다</p>
               <div className="mt-6 space-y-3 border-t border-[#33302B] pt-5 text-[15.5px] font-medium text-[#DCD6CE]">
                 <p>
                   원클릭 지원 <b className="font-black text-[#F7F4EF]">무제한</b>, 광고 없이
@@ -670,7 +670,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── 자주 묻는 질문 ──────────────────────────────────────── */}
-      <section className="border-t border-[#EDE7DC] bg-white">
+      <section className="border-t border-[#DCD2C1] bg-white">
         <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
           <Reveal>
             <h2 className="text-[30px] leading-[1.16] font-black tracking-[-0.05em] sm:text-[40px]">
@@ -698,12 +698,12 @@ export default async function LandingPage() {
             ].map((f, i) => (
               <Reveal key={f.q} delay={(i % 2) * 60}>
                 <div
-                  className={`border-t py-6 ${i < 2 ? "border-[#141110]" : "border-[#E4DCD2]"}`}
+                  className={`border-t py-6 ${i < 2 ? "border-[#141110]" : "border-[#D9CEBE]"}`}
                 >
                   <dt className="text-[17px] font-black tracking-[-0.03em] sm:text-[18px]">
                     {f.q}
                   </dt>
-                  <dd className="mt-2.5 text-[15px] leading-[1.78] text-[#4B473E]">{f.a}</dd>
+                  <dd className="mt-2.5 text-[15px] leading-[1.78] text-[#3A362E]">{f.a}</dd>
                 </div>
               </Reveal>
             ))}

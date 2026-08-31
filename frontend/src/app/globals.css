@@ -31,11 +31,11 @@
      기존 화면의 gray-* 클래스 300여 곳이 이 램프로 한 번에 다시 칠해진다. */
   --color-gray-50: #FBF9F4;
   --color-gray-100: #F0EAE0;
-  --color-gray-200: #E4DCD2;
-  --color-gray-300: #D1C9BD;
-  --color-gray-400: #9A938A;
-  --color-gray-500: #7A7468;
-  --color-gray-600: #57534A;
+  --color-gray-200: #DCD1C1;
+  --color-gray-300: #C2B7A6;
+  --color-gray-400: #877F72;
+  --color-gray-500: #675F53;
+  --color-gray-600: #4A453C;
   --color-gray-700: #46423A;
   --color-gray-800: #2A2724;
   --color-gray-900: #141110;
