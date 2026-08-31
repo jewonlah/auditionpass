@@ -41,6 +41,8 @@ export const metadata: Metadata = {
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    // 네이버 서치어드바이저 소유 확인 (2026-09-01) — 검증 토큰이라 공개돼도 무방
+    other: { "naver-site-verification": "b90c09eec57f34ffa63ec71f4ac2ba765c491ccc" },
   },
 };
 
