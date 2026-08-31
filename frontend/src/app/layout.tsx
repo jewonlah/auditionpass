@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { AttributionTracker } from "@/components/Attribution";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -63,14 +64,28 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
         {/*
-          측정 도구 (2026-08-28 도입). 이전에는 아무 애널리틱스도 없어 방문자·유입경로·이탈을
-          전혀 알 수 없었다 — 가입 2명·7일 지원 0건이라는 DB 수치 외에 판단 근거가 없었다.
-          Vercel Analytics 는 쿠키를 쓰지 않아 개인정보 동의 배너 없이 바로 수집할 수 있다.
-          퍼널·이벤트 추적이 필요해지면 그때 GA4 를 동의 처리와 함께 추가한다.
+          측정 도구. Vercel Analytics(2026-08-28, 무쿠키)와 GA4(2026-09-01, 턴오버 계정
+          소유 — 속성 "오디션패스", 자산 허브 원칙)를 병행한다. GA4 는 프로덕션 env 에만
+          NEXT_PUBLIC_GA_ID 를 두어 로컬·프리뷰 트래픽이 지표를 오염시키지 않게 한다.
+          SPA 라우팅 page_view 는 GA4 향상된 측정(히스토리 변경)이 잡는다.
         */}
         <AttributionTracker />
         <Analytics />
         <SpeedInsights />
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');`}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );
