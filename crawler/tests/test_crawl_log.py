@@ -31,10 +31,14 @@ class _Res:
 
 
 def _patch(rows):
-    """supabase.table(...).select(...).gte(...).execute() 체인을 흉내낸다."""
+    """supabase.table(...).select(...).gte(...).order(...).order(...).range(...).execute() 체인을 흉내낸다.
+    (_fetch_logs의 페이지네이션 체인 — 1페이지에 다 들어가는 소량 데이터는 단일 execute()로 충분.)"""
     chain = mock.MagicMock()
     chain.select.return_value = chain
     chain.gte.return_value = chain
+    chain.in_.return_value = chain
+    chain.order.return_value = chain
+    chain.range.return_value = chain
     chain.execute.return_value = _Res(rows)
     table = mock.MagicMock(return_value=chain)
     return mock.patch.object(crawl_log.supabase, "table", table)
@@ -71,6 +75,77 @@ class TestDeadSources(unittest.TestCase):
         chain.select.side_effect = RuntimeError("relation crawl_logs does not exist")
         with mock.patch.object(crawl_log.supabase, "table", mock.MagicMock(return_value=chain)):
             self.assertEqual(crawl_log.dead_sources(), ([], []))
+
+    def test_retired_source_excluded_by_default(self):
+        # V오디션은 main.py 목록에서 완전히 뺀 소스 — RETIRED_SOURCES 기본값으로 늘 제외돼야 한다.
+        rows = _rows([
+            ("V오디션", 10, 20),
+            ("V오디션", 1, 0),     # 저장 이력은 있지만 퇴역 소스라 사망 목록에 넣지 않는다
+            ("필메코", 10, 40),
+            ("필메코", 1, 0),      # 진짜 사망
+        ])
+        with _patch(rows):
+            dead, never = crawl_log.dead_sources(days=3)
+        self.assertEqual(dead, ["필메코"])
+        self.assertNotIn("V오디션", dead)
+        self.assertNotIn("V오디션", never)
+
+    def test_retired_names_override(self):
+        rows = _rows([("필메코", 10, 40), ("필메코", 1, 0)])
+        with _patch(rows):
+            dead, never = crawl_log.dead_sources(days=3, retired_names={"필메코"})
+        self.assertEqual((dead, never), ([], []))
+
+
+class TestFetchLogsPagination(unittest.TestCase):
+    """PostgREST 기본 상한(1,000행)에 걸려 30일 창이 잘리는 사고 방지 회귀 테스트."""
+
+    def test_fetch_logs_paginates_beyond_1000_rows(self):
+        today = date.today().isoformat()
+        page1 = [
+            {"source_name": f"소스{i}", "total_saved": 1, "run_date": today}
+            for i in range(1000)
+        ]
+        page2 = [
+            {"source_name": f"소스{i}", "total_saved": 1, "run_date": today}
+            for i in range(1000, 1200)
+        ]
+        chain = mock.MagicMock()
+        chain.select.return_value = chain
+        chain.gte.return_value = chain
+        chain.order.return_value = chain
+        chain.range.return_value = chain
+        chain.execute.side_effect = [_Res(page1), _Res(page2)]
+        table = mock.MagicMock(return_value=chain)
+        with mock.patch.object(crawl_log.supabase, "table", table):
+            rows = crawl_log._fetch_logs(today)
+        self.assertEqual(len(rows), 1200)
+        self.assertEqual(chain.execute.call_count, 2)
+
+    def test_fetch_logs_falls_back_to_source_name_order_when_id_missing(self):
+        # id 컬럼이 없는 스키마(009 미적용)에서는 첫 시도가 실패하고 source_name 2차 정렬로 재시도한다.
+        today = date.today().isoformat()
+        rows = [{"source_name": "필메코", "total_saved": 1, "run_date": today}]
+        chain = mock.MagicMock()
+        chain.select.return_value = chain
+        chain.gte.return_value = chain
+        chain.range.return_value = chain
+
+        calls = {"n": 0}
+
+        def _order(*args, **kwargs):
+            calls["n"] += 1
+            # 1차 시도의 두 번째 .order(secondary_col) 호출("id")에서만 실패시킨다.
+            if calls["n"] == 2 and args and args[0] == "id":
+                raise RuntimeError('column "id" does not exist')
+            return chain
+
+        chain.order.side_effect = _order
+        chain.execute.return_value = _Res(rows)
+        table = mock.MagicMock(return_value=chain)
+        with mock.patch.object(crawl_log.supabase, "table", table):
+            out = crawl_log._fetch_logs(today)
+        self.assertEqual(out, rows)
 
 
 if __name__ == "__main__":

@@ -24,6 +24,7 @@ from sns_sources.backtrace import BacktraceScraper
 from sns_sources.naver_cafe import NaverCafeScraper
 from sns_sources.naver_web import NaverWebScraper
 from utils import crawl_log
+from utils.alerts import notify_dead_sources
 from utils.supabase_client import (
     upsert_auditions,
     expire_auditions,
@@ -150,9 +151,14 @@ def main():
             continue
 
     # 소스 생존 경보 (최근 3일 저장 0건) — 4개월 동안 모르고 지나간 필메코·캐스트링크 사례 방지
+    # "이번 실행에 돌았는가"(active_names)로 판단하면 조건부 스크레이퍼(NAVER_CAFE_ENABLED)가
+    # 빠질 때 그 소스 경보가 같이 꺼지고, 별도 실행 엔트리(run_social.ps1)는 어떤 실행에도
+    # 안 잡혀 영영 경보가 안 나간다. 대신 dead_sources()의 명시적 retired_names(기본
+    # crawl_log.RETIRED_SOURCES)로 진짜 퇴역 소스(예: V오디션)만 뺀다(적대적 리뷰 2026-09).
     dead, never = crawl_log.dead_sources(days=3)
     if dead:
         logger.error(f"⚠ 소스 사망 의심 — 최근 30일엔 저장했는데 3일째 0건: {', '.join(dead)}")
+        notify_dead_sources(dead, never)
     if never:
         logger.info(f"  (참고) 30일간 저장 0건인 소스: {', '.join(never)}")
 

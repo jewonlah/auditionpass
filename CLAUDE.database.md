@@ -28,6 +28,8 @@
 | **018_expire_auditions** | 만료 처리 정본 함수 `expire_auditions()` + pg_cron `expire-auditions` 등록, 003 옛 함수 제거 | ✅ 2026-08-27 적용. **003은 라이브에 적용된 적이 없어 `cron` 스키마가 없었다** — pg_cron 자동 만료는 018부터가 처음 |
 | **019_archive_old_auditions** | 지난 공고 본문 비우기 `archive_old_auditions(after_days, dry_run)` + pg_cron `archive-old-auditions` | ✅ 2026-08-27 적용. **삭제 아님** — 지원·신고 이력이 cascade로 사라지고 source_url이 없어지면 재수집으로 되살아난다 |
 
+> 2-3 인코딩 수복: 2026-08-27 완료(코드 7곳 + DB 27행), 2026-09-03 실측 4개 테이블 U+FFFD 0건. 회귀 테스트 `crawler/tests/test_no_mojibake.py`
+
 > **CLI 마이그레이션 거버넌스 (2026-08-27 시작, 2-7 전환의 첫 발)**: 009b는 `supabase db push --linked`로 적용했다.
 > 원격 `supabase_migrations.schema_migrations`에는 **009b 1건만** 기록돼 있고 001~017은 SQL 편집기로 직접 적용해 이력이 없다.
 > 앞으로 `db push`를 다시 쓰기 전에 기존 마이그레이션을 `supabase migration repair --status applied <version>`으로 등록할 것 —
@@ -79,7 +81,6 @@ subscriptions   (잔존·미사용)
 
 ## 예정 작업
 - 재분류가 필요하면 `crawler/scripts/backfill_categories.py`(dry-run 기본 → `--apply`, 멱등)
-- 2-3 인코딩 손상 `source_name` 레코드 정정
 - 2-7 Supabase CLI 마이그레이션 전환, profiles.phone 드리프트 정리
 - R2: `boards`(토큰) / R3: 결제 신규 스키마(payments·webhook·갱신)
 
