@@ -28,7 +28,7 @@
 | **018_expire_auditions** | 만료 처리 정본 함수 `expire_auditions()` + pg_cron `expire-auditions` 등록, 003 옛 함수 제거 | ✅ 2026-08-27 적용. **003은 라이브에 적용된 적이 없어 `cron` 스키마가 없었다** — pg_cron 자동 만료는 018부터가 처음 |
 | **019_archive_old_auditions** | 지난 공고 본문 비우기 `archive_old_auditions(after_days, dry_run)` + pg_cron `archive-old-auditions` | ✅ 2026-08-27 적용. **삭제 아님** — 지원·신고 이력이 cascade로 사라지고 source_url이 없어지면 재수집으로 되살아난다 |
 | **020_candidate_triage** | `source_candidates.ai_*` 5컬럼(DeepSeek 분류 제안) + 검수 인덱스 2개 | ✅ 적용(2026-09-02 실측: ai_verdict 604건). AI 판정은 제안일 뿐, status는 사람만 바꾼다 |
-| **021_description_raw** | `auditions.description_raw text` — 정제(DeepSeek/규칙 요약) 전 원문 보존. 위험 판정(`risk_text`)·어드민 게이트는 이 컬럼을 우선 읽는다 | ⏳ 미적용(2026-09-02 작성). 미적용 상태에서도 크롤러·어드민은 폴백으로 정상 동작(원문 보존만 생략). 백필 없음 — 기존 행은 원문 유실 |
+| **021_description_raw** | `auditions.description_raw text` — 정제(DeepSeek/규칙 요약) 전 원문 보존. 위험 판정(`risk_text`)·어드민 게이트는 이 컬럼을 우선 읽는다 | ✅ 2026-09-03 적용(`supabase db push --linked`, 원격 이력 4건째). 백필 없음 — 기존 행은 원문 유실, 판정은 description 폴백 |
 
 > **CLI 마이그레이션 거버넌스 (2026-08-27 시작, 2-7 전환의 첫 발)**: 009b는 `supabase db push --linked`로 적용했다.
 > 원격 `supabase_migrations.schema_migrations`에는 **009b 1건만** 기록돼 있고 001~017은 SQL 편집기로 직접 적용해 이력이 없다.
