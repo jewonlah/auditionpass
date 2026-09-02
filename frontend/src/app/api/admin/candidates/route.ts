@@ -23,9 +23,10 @@ export async function GET(req: Request) {
   if (!admin) return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
 
   const url = new URL(req.url);
-  const verdict = url.searchParams.get("verdict"); // approve | reject | review | (전체)
+  const verdict = url.searchParams.get("verdict"); // approve | reject | review | unclassified | (전체)
   const kind = url.searchParams.get("kind");
-  const limit = Math.min(Number(url.searchParams.get("limit") ?? 300), 600);
+  const rawLimit = Number(url.searchParams.get("limit"));
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.trunc(rawLimit), 1), 600) : 300;
 
   const supabase = createAdminServiceClient();
   let q = supabase
@@ -36,7 +37,8 @@ export async function GET(req: Request) {
     .eq("status", "new")
     .order("hits", { ascending: false })
     .limit(limit);
-  if (verdict) q = q.eq("ai_verdict", verdict);
+  if (verdict === "unclassified") q = q.is("ai_verdict", null);
+  else if (verdict) q = q.eq("ai_verdict", verdict);
   if (kind) q = q.eq("kind", kind);
 
   const { data, error } = await q;
@@ -47,22 +49,37 @@ export async function GET(req: Request) {
     );
   }
 
-  // 상단 요약 — 판정별·종류별 잔여 건수. kind 필터가 걸려 있으면 그 안에서 센다.
-  let sumQ = supabase
-    .from("source_candidates")
-    .select("ai_verdict,kind,covered_by")
-    .eq("status", "new")
-    .limit(2000);
-  if (kind) sumQ = sumQ.eq("kind", kind);
-  const { data: all } = await sumQ;
+  // 상단 요약 — 판정별·종류별 잔여 건수. 2000건 넘는 목록에서도 정확하도록 count-only 쿼리로 센다.
+  // kind 필터가 걸려 있으면 그 안에서 센다.
+  const countBase = () => {
+    let c = supabase.from("source_candidates").select("*", { count: "exact", head: true }).eq("status", "new");
+    if (kind) c = c.eq("kind", kind);
+    return c;
+  };
+  const [totalRes, approveRes, rejectRes, reviewRes, unclassifiedRes, coveredRes] = await Promise.all([
+    countBase(),
+    countBase().eq("ai_verdict", "approve"),
+    countBase().eq("ai_verdict", "reject"),
+    countBase().eq("ai_verdict", "review"),
+    countBase().is("ai_verdict", null),
+    countBase().not("covered_by", "is", null),
+  ]);
 
-  const counts = { approve: 0, reject: 0, review: 0, unclassified: 0, covered: 0, total: all?.length ?? 0 };
+  const counts = {
+    approve: approveRes.count ?? 0,
+    reject: rejectRes.count ?? 0,
+    review: reviewRes.count ?? 0,
+    unclassified: unclassifiedRes.count ?? 0,
+    covered: coveredRes.count ?? 0,
+    total: totalRes.count ?? 0,
+  };
+
+  // kind별 잔여 건수 — 종류 필터 배지용. verdict 요약 카운트가 아니라서 기존 방식(최대 2000건 샘플)을 유지한다.
+  let kindQ = supabase.from("source_candidates").select("kind").eq("status", "new").limit(2000);
+  if (kind) kindQ = kindQ.eq("kind", kind);
+  const { data: kindRows } = await kindQ;
   const kinds: Record<string, number> = {};
-  for (const r of all ?? []) {
-    const v = r.ai_verdict as "approve" | "reject" | "review" | null;
-    if (v === "approve" || v === "reject" || v === "review") counts[v] += 1;
-    else counts.unclassified += 1;
-    if (r.covered_by) counts.covered += 1;
+  for (const r of kindRows ?? []) {
     const k = (r.kind as string) || "기타";
     kinds[k] = (kinds[k] ?? 0) + 1;
   }
@@ -74,7 +91,12 @@ export async function POST(req: Request) {
   const admin = await getAdminEmail();
   if (!admin) return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
 
-  const body = (await req.json()) as { ids?: string[]; status?: string; expectedCount?: number };
+  let body: { ids?: string[]; status?: string; expectedCount?: number };
+  try {
+    body = (await req.json()) as { ids?: string[]; status?: string; expectedCount?: number };
+  } catch {
+    return NextResponse.json({ error: "요청 본문이 올바른 JSON이 아닙니다." }, { status: 400 });
+  }
   const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : null;
   const status = body.status;
 

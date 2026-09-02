@@ -14,6 +14,8 @@ export interface AdminAuditionRow {
   deadline: string | null;
   apply_email: string | null;
   description: string | null;
+  // 021 미적용 라이브·정제 전 기존 행에서는 없거나 null (riskText가 description으로 폴백)
+  description_raw?: string | null;
   requirements: string | null;
   source_url: string | null;
   source_name: string | null;
@@ -51,11 +53,24 @@ function isPastDeadline(deadline: string | null): boolean {
   return deadline < kstToday;
 }
 
+// 위험 판정에 넣을 본문 — 화면에 보이는 요약본이 아니라 **원문**을, requirements까지 합쳐서.
+// ① 크롤러가 긴 본문을 요약해 description에 덮어쓴다(021 전에는 원문이 아예 없었다).
+//    요약에서 "참가비 20만원 입금" 한 줄이 빠지면 스캠 공고가 게이트를 그대로 통과한다.
+// ② requirements는 지금까지 아무도 읽지 않았다 — 징수·신분증 요구가 자격 요건 칸에 적히는
+//    공고가 실제로 있다(Codex 교차 리뷰 2026-09-02).
+// 크롤러(crawler/utils/supabase_client.py risk_text)와 동일 규칙 — 한쪽 수정 시 같이 갱신.
+function riskText(row: AdminAuditionRow): string {
+  return [row.description_raw || row.description, row.requirements]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function evaluateGate(
   row: AdminAuditionRow,
   opts: { trusted: boolean; dedup: DedupHit[]; suppressionHit?: string | null }
 ): GateResult {
-  const risk = riskScore(row.title, row.description);
+  const text = riskText(row);
+  const risk = riskScore(row.title, text);
   const blocked: string[] = [];
   const check: string[] = [];
 
@@ -95,8 +110,9 @@ export function evaluateGate(
   if (risk.score > 0) check.push(`위험 신호 ${risk.score}점: ${risk.reasons.join(", ")}`);
   if (opts.dedup.length > 0) check.push(`중복 후보 ${opts.dedup.length}건 — 병합 검토`);
   if ((row.quality_score ?? 0) < 0.5) check.push(`품질 점수 낮음 (${row.quality_score ?? 0})`);
+  // 페이 언급도 요약본이 아니라 원문 기준으로 본다(요약에서 자주 잘려 나간다)
   const payAmbiguous = !/(페이|출연료|회차비|보수|급여|무페이|무급)/.test(
-    `${row.title || ""}${row.description || ""}`
+    `${row.title || ""}${text}`
   );
   if (payAmbiguous) check.push("페이 불명확 — 원문 확인 권장");
 

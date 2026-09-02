@@ -109,6 +109,36 @@ test("미신뢰 출처는 CHECK", () => {
   assert.equal(g.decision, "CHECK");
 });
 
+test("요약본이 아니라 원문(description_raw)으로 위험을 판정한다", () => {
+  // 021 이전의 실제 사고 시나리오: 요약이 징수 문장을 통째로 날려 스캠이 SAFE로 통과했다
+  const g = evaluateGate(
+    row({
+      description: "• 배역: 신인 배우\n• 지원: 이메일",
+      description_raw: "신인 배우 모집. 참가비 20만원을 입금해 주세요.",
+    }),
+    clean
+  );
+  assert.equal(g.decision, "BLOCKED");
+  assert.ok(g.blockedReasons.some((r) => r.includes("금전 요구")));
+});
+
+test("requirements에만 적힌 위험 신호도 판정에 들어간다", () => {
+  const g = evaluateGate(
+    row({ requirements: "지원 시 신분증 사본과 통장 사본을 함께 보내주세요." }),
+    clean
+  );
+  assert.notEqual(g.decision, "SAFE");
+  assert.ok(g.risk.reasons.includes("신분증·금융정보 요구"));
+});
+
+test("description_raw가 없으면 description으로 폴백한다 (021 미적용·기존 행)", () => {
+  const r = row({ description: "참가비 5만원 입금 후 오디션 진행합니다." });
+  delete (r as Partial<AdminAuditionRow>).description_raw;
+  const g = evaluateGate(r, clean);
+  assert.equal(g.decision, "BLOCKED");
+  assert.ok(g.blockedReasons.some((r2) => r2.includes("금전 요구")));
+});
+
 test("015 미적용(컬럼 undefined)에서도 판정이 깨지지 않는다", () => {
   const r = row();
   delete (r as Partial<AdminAuditionRow>).oneclick_blocked;

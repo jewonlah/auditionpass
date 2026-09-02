@@ -49,6 +49,17 @@ review: 판단이 갈리거나 정보가 부족한 경우. 애매하면 review. 
 
 JSON만 출력."""
 
+_FIXED_KEYS = ("id", "url", "kind", "hits", "sample_title", "found_by")
+
+
+def build_output_row(r: dict, d: dict) -> dict:
+    """결과 행 조립. 모델 JSON(d)이 id 등 고정 식별 필드를 덮어쓰지 못하도록
+    고정 필드를 마지막에 둔다(d에 id가 섞여 있으면 먼저 제거)."""
+    fixed = {k: r.get(k) for k in _FIXED_KEYS}
+    d = dict(d)
+    d.pop("id", None)
+    return {**d, **fixed}
+
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -60,15 +71,21 @@ def main() -> None:
     done = set()
     if os.path.exists(args.out):
         for line in open(args.out, encoding="utf-8"):
-            try: done.add(json.loads(line)["id"])
-            except Exception: pass
+            try:
+                rec = json.loads(line)
+                # 실패 행(_error 있음)은 done에 넣지 않는다 — 재실행 시 재시도 가능하게
+                if "_error" not in rec:
+                    done.add(rec["id"])
+            except Exception:
+                pass
         print(f"이미 처리 {len(done):,}건 건너뜀")
 
     sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
     rows, off = [], 0
     while True:
         b = (sb.table("source_candidates").select("id,url,kind,found_by,hits,sample_title")
-             .eq("status", "new").order("hits", desc=True).range(off, off + 999).execute().data)
+             .eq("status", "new").order("hits", desc=True).order("id")
+             .range(off, off + 999).execute().data)
         if not b: break
         rows += b; off += 1000
     rows = [r for r in rows if r["id"] not in done]
@@ -97,8 +114,7 @@ def main() -> None:
             except Exception as e:
                 d = {"verdict": "review", "_error": f"{type(e).__name__}: {e}"}
                 err += 1
-            f.write(json.dumps({**{k: r.get(k) for k in ("id", "url", "kind", "hits", "sample_title", "found_by")}, **d},
-                               ensure_ascii=False) + "\n")
+            f.write(json.dumps(build_output_row(r, d), ensure_ascii=False) + "\n")
             f.flush()
             if i % 50 == 0 or i == len(rows):
                 cost = tin / 1e6 * 0.22 + tout / 1e6 * 0.66

@@ -83,13 +83,13 @@ export function CandidatesClient() {
     setErr(null);
     try {
       const qs = new URLSearchParams();
-      if (tab !== "all" && tab !== "unclassified") qs.set("verdict", tab);
+      if (tab !== "all") qs.set("verdict", tab);
       if (kind) qs.set("kind", kind);
       const res = await fetch(`/api/admin/candidates?${qs}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "조회 실패");
       const rows: Candidate[] = json.items ?? [];
-      setItems(tab === "unclassified" ? rows.filter((r) => !r.ai_verdict) : rows);
+      setItems(rows);
       setCounts(json.counts ?? null);
       setKinds(json.kinds ?? {});
       setSelected(new Set());

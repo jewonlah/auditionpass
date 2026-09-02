@@ -167,10 +167,25 @@ def suppression_hit(apply_email: str | None, source_url: str | None,
 QUARANTINE_STATUS = "quarantine"
 
 
+def risk_text(description_raw: str | None, description: str | None,
+              requirements: str | None) -> str | None:
+    """위험 판정에 넣을 본문 — 요약본이 아니라 **원문**을, 그리고 requirements까지 합친다.
+
+    ① 요약(summarize/DeepSeek)에서 "참가비 20만원 입금" 한 줄이 빠지면 스캠 게이트를
+       그대로 통과한다. 021 description_raw가 있으면 그쪽이 정본, 없으면 description 폴백
+       (021 미적용 라이브·기존 행은 원문이 없다).
+    ② requirements는 지금까지 아무도 보지 않았다 — 징수·신분증 요구가 자격 요건 칸에
+       적히는 공고가 실제로 있다(Codex 교차 리뷰 2026-09-02).
+    어드민 게이트(frontend/src/lib/admin/gate.ts riskText)와 동일 규칙 — 한쪽 수정 시 같이 갱신."""
+    joined = "\n".join(t for t in (description_raw or description, requirements) if t)
+    return joined or None
+
+
 def _review_fields(source_name: str | None, score: float | None,
                    title: str = "", description: str | None = None) -> dict:
     """게재 결정 (auto-triage v0, 플랜 37 §1). 011 미적용이면 빈 dict(기존 동작 유지).
-    위험 점수 ≥7 → quarantine(비활성, 신뢰 출처여도), 4~6 → pending 강등."""
+    위험 점수 ≥7 → quarantine(비활성, 신뢰 출처여도), 4~6 → pending 강등.
+    `description`에는 호출부가 risk_text()로 합친 원문+requirements를 넘긴다."""
     if not review_available():
         return {}
 
@@ -222,13 +237,70 @@ REFINE_MIN_CHARS = 400  # 이보다 짧으면 이미 요약 수준 — 검색 AP
 REFINE_ENABLED = os.environ.get("REFINE_ENABLED") == "1"
 
 
-def _refine_if_needed(description: str | None, title: str) -> str | None:
-    """긴 본문만 요약(600자). 기본 규칙 기반(비용 0), REFINE_ENABLED=1이면 DeepSeek 정제(실패 시 규칙 기반 폴백)."""
+def _refine_if_needed(description: str | None, title: str, use_llm: bool = False) -> str | None:
+    """긴 본문(REFINE_MIN_CHARS=400자 이상)만 압축. 짧으면 원문 그대로 반환.
+
+    - 기본: 규칙 기반 summarize() — 비용 0, 최대 600자.
+    - use_llm=True이고 REFINE_ENABLED=1일 때만 DeepSeek 정제(입력 2000자·출력 최대 600자,
+      실행당 호출 상한·연속 실패 서킷 브레이커 포함, 실패 시 refine_description 내부에서 규칙 기반 폴백).
+
+    use_llm은 호출부가 결정한다 — **노출되는 행(review_status='auto')만** LLM으로 보낸다.
+    pending/quarantine은 사람이 승인하기 전까지 보이지 않는데 여기에 토큰을 쓰면
+    수집량의 대부분(미신뢰 출처)에 헛돈이 나간다(F8)."""
     if description and len(description.strip()) >= REFINE_MIN_CHARS:
-        if REFINE_ENABLED:
+        if use_llm and REFINE_ENABLED:
             return refine_description(description, title)
         return summarize(description)
     return description
+
+
+# 021_description_raw.sql 미적용 라이브에서도 크롤러가 죽지 않도록 category 계열과 같은 방식으로
+# 최초 1회 존재 여부를 탐지하고, 없으면 원문 보존만 생략한다.
+_description_raw_available: bool | None = None
+
+
+def description_raw_column_available() -> bool:
+    """auditions.description_raw(021) 존재 여부 1회 탐지. 없으면 경고 후 False(이후 호출은 캐시)."""
+    global _description_raw_available
+    if _description_raw_available is None:
+        try:
+            supabase.table("auditions").select("description_raw").limit(1).execute()
+            _description_raw_available = True
+        except Exception as e:
+            _description_raw_available = False
+            logger.warning(
+                "auditions.description_raw 없음 — 021_description_raw.sql 미적용. "
+                f"원문 보존을 생략합니다(위험 판정은 요약본 폴백). ({str(e)[:80]})"
+            )
+    return _description_raw_available
+
+
+def _apply_refine(data: dict, title: str) -> None:
+    """description을 정제·요약하고, **실제로 바뀐 경우에만** 원문을 description_raw에 남긴다.
+
+    원문 == 결과(짧아서 그대로)일 때 굳이 복사하면 같은 텍스트를 두 번 저장하게 된다.
+    021 미적용이면 키 자체를 넣지 않는다(아래 _write_with_raw_fallback가 최후 안전망)."""
+    original = data.get("description")
+    refined = _refine_if_needed(original, title, use_llm=data.get("review_status") == "auto")
+    data["description"] = refined
+    if original and refined != original and description_raw_column_available():
+        data["description_raw"] = original
+
+
+def _write_with_raw_fallback(write, payload: dict):
+    """description_raw 컬럼이 없어 쓰기가 실패하면 그 키만 빼고 1회 재시도.
+
+    선탐지(description_raw_column_available)로 대부분 걸러지지만, 탐지 시점과 쓰기 시점 사이에
+    컬럼이 바뀌거나 스키마 캐시가 어긋날 수 있다. 컬럼 하나 때문에 수집이 통째로 멈추면 안 된다."""
+    try:
+        return write(payload)
+    except Exception as e:
+        if "description_raw" not in payload or "description_raw" not in str(e):
+            raise
+        global _description_raw_available
+        _description_raw_available = False
+        logger.warning("auditions.description_raw 쓰기 실패(021 미적용) — 원문 보존 생략하고 재시도")
+        return write({k: v for k, v in payload.items() if k != "description_raw"})
 
 
 def _is_more_detailed(new: dict, existing: dict) -> bool:
@@ -273,8 +345,12 @@ def upsert_auditions(auditions: list) -> int:
             continue
 
         # 검수 큐: 저품질·미신뢰 출처는 pending(비활성). 기존 행 업데이트 경로에서는 상태를 건드리지 않는다(아래에서 제거)
-        data.update(_review_fields(data["source_name"], data.get("quality_score"),
-                                   data.get("title", ""), data.get("description")))
+        # 위험 판정 입력은 정제 **전** 원문 + requirements (risk_text 참조).
+        # 이 시점의 description은 아직 원문이므로 description_raw는 None으로 넘긴다.
+        data.update(_review_fields(
+            data["source_name"], data.get("quality_score"), data.get("title", ""),
+            risk_text(None, data.get("description"), data.get("requirements")),
+        ))
 
         try:
             # 1) 제목+주최사+마감일로 기존 중복 확인
@@ -293,11 +369,14 @@ def upsert_auditions(auditions: list) -> int:
                 # source_url이 다르지만 같은 공고 → 더 상세한 데이터만 업데이트
                 if existing["source_url"] != data["source_url"]:
                     if _is_more_detailed(data, existing):
-                        data["description"] = _refine_if_needed(data["description"], audition.title)
+                        _apply_refine(data, audition.title)
                         upd = {k: v for k, v in data.items() if k not in ("review_status", "is_active")}  # 검수 상태 보존
-                        supabase.table("auditions").update(upd).eq(
-                            "id", existing["id"]
-                        ).execute()
+                        _write_with_raw_fallback(
+                            lambda p: supabase.table("auditions").update(p).eq(
+                                "id", existing["id"]
+                            ).execute(),
+                            upd,
+                        )
                         saved += 1
                         logger.info(f"  중복 공고 업데이트: {data['title']}")
                     else:
@@ -325,13 +404,12 @@ def upsert_auditions(auditions: list) -> int:
                     ).in_("review_status", ["auto", "approved"]).execute()
                 continue
 
-            # 신규 데이터만 description 정제 (Claude API 호출)
-            data["description"] = _refine_if_needed(data["description"], audition.title)
+            # 신규 데이터만 description 정제 (노출되는 auto 행만 DeepSeek, 나머지는 규칙 요약)
+            _apply_refine(data, audition.title)
 
-            result = (
-                supabase.table("auditions")
-                .upsert(data, on_conflict="source_url")
-                .execute()
+            result = _write_with_raw_fallback(
+                lambda p: supabase.table("auditions").upsert(p, on_conflict="source_url").execute(),
+                data,
             )
 
             if result.data:

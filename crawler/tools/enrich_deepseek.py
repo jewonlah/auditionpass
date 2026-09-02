@@ -50,6 +50,14 @@ SYSTEM = """오디션 공고 원문에서 아래 항목만 추출해 JSON으로 
 JSON만 출력. 설명·코드블록 금지."""
 
 
+def build_output_row(row: dict, d: dict) -> dict:
+    """결과 행 조립. 모델 JSON(d)이 id/title/source_name 같은 고정 식별 필드를
+    덮어쓰지 못하도록 고정 필드를 마지막에 둔다(d에 id가 섞여 있으면 먼저 제거)."""
+    d = dict(d)
+    d.pop("id", None)
+    return {**d, "id": row["id"], "title": row.get("title"), "source_name": row.get("source_name")}
+
+
 def build_client() -> OpenAI:
     key = os.environ.get("DEEPSEEK_API_KEY")
     if not key:
@@ -92,14 +100,17 @@ def main() -> None:
     args = ap.parse_args()
 
     out_path = args.out or os.path.join("logs", "enrich_sample.jsonl")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
 
     done: set[str] = set()
     if os.path.exists(out_path):
         with open(out_path, encoding="utf-8") as f:
             for line in f:
                 try:
-                    done.add(json.loads(line)["id"])
+                    rec = json.loads(line)
+                    # 실패 행(_error 있음)은 done에 넣지 않는다 — 재실행 시 재시도 가능하게
+                    if "_error" not in rec:
+                        done.add(rec["id"])
                 except Exception:
                     pass
         print(f"이미 처리됨 {len(done):,}건 — 건너뜀")
@@ -110,7 +121,7 @@ def main() -> None:
     rows, off = [], 0
     while True:
         b = (sb.table("auditions").select(cols).eq("is_active", True)
-             .is_("apply_email", "null").range(off, off + 999).execute().data)
+             .is_("apply_email", "null").order("id").range(off, off + 999).execute().data)
         if not b:
             break
         rows += b
@@ -136,8 +147,7 @@ def main() -> None:
                 u = d.pop("_usage", {})
                 tin += u.get("in", 0)
                 tout += u.get("out", 0)
-            f.write(json.dumps({"id": row["id"], "title": row.get("title"),
-                                "source_name": row.get("source_name"), **d}, ensure_ascii=False) + "\n")
+            f.write(json.dumps(build_output_row(row, d), ensure_ascii=False) + "\n")
             f.flush()
             if i % 25 == 0 or i == len(rows):
                 cost = tin / 1e6 * 0.22 + tout / 1e6 * 0.66  # 오프피크 기준

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { metaDescription } from "@/lib/audition/description";
+import { serializeJsonLd } from "@/lib/seo/jsonld";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://auditionpass.co.kr";
@@ -121,10 +122,12 @@ export default async function AuditionDetailLayout({ params, children }: Props) 
 
   return (
     <>
+      {/* 값은 크롤·LLM이 만든 신뢰할 수 없는 텍스트다. JSON.stringify는 `<`를 이스케이프하지
+          않아 본문의 `</script>` 가 여기서 스크립트를 끝내 버린다(저장형 XSS) — serializeJsonLd 필수. */}
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
         />
       )}
       {children}
