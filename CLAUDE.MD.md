@@ -75,6 +75,11 @@ auditionpass/
 ## 사용량 절감 도구 (2026-09-03)
 - Ponytail(전역 플러그인, 자동)·Headroom(`start.bat` → `headroom wrap claude`)·Graphify(`graphify-out/`, 코드베이스 질문은 `/graphify` 우선) 적용. 상세 규칙은 `~/.claude/CLAUDE.md` "사용량 절감 도구 3종".
 - **이 파일과 `CLAUDE.*.md`가 명시한 규칙(테스트·검증·검수·폐지 개념 금지)은 Ponytail YAGNI의 예외다.** 짧은 코드가 우선이지만 테스트를 빼거나 검증을 건너뛰는 근거로 쓰지 않는다.
+- **Graphify 사용 규칙(소유자 지시 2026-09-03 — 실측: 이번 주 전 프로젝트 그래프 생성에 5,900만 토큰, 조회 0회)**: 그래프는 **읽으라고 만든 것**이다.
+  - `graphify-out/graph.json`이 있으면, 파일을 찾거나 구조를 묻는 질문("X는 어디서 처리하나", "Y를 부르는 곳", "Z 흐름")은 저장소를 직접 뒤지기 전에 `graphify query "<질문>" --budget 1500`으로 먼저 답을 얻고, 거기서 나온 파일만 연다. 메인·워커 공통이며, **워커 프롬프트에 이 문장을 그대로 넣는다.**
+  - `graph.json`·`.graphify_ast.json`·`.graphify_semantic*.json`(각 3MB급)을 Read로 통째로 열지 않는다. 사람이 읽는 것은 `GRAPH_REPORT.md`뿐이다.
+  - 재생성은 큰 구조 변경 뒤 **한 번**, 추출 워커는 Haiku·동시 5개 이하. 세션마다 다시 만들지 않는다. 생성이 중단됐으면(`graph.json` 없음) `/graphify . --update`로 남은 청크만 이어서 만든다.
+  - 그래프가 없거나 오래됐으면 이 규칙을 건너뛰고 Grep·Glob으로 간다. 그래프 때문에 작업을 멈추지 않는다.
 
 ## 에이전트 승인 체계
 - 개발 에이전트(frontend·backend·crawler·database·email)는 자율 실행. 마케팅/디자인은 스킬 설치·외부 연동 시 운영(ops) 승인.
