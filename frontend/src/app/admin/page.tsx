@@ -3,11 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { getAdminGate } from "@/lib/admin/auth";
 import { createAdminServiceClient } from "@/lib/admin/service";
 import { fetchSourceHealth } from "@/lib/admin/sourceHealth";
+import { classifySources, fetchCrawlLogs } from "@/lib/admin/crawl-health";
 
 export const dynamic = "force-dynamic";
 
 // 오늘 홈 (39 §1 ①): "행동 필요한 것"만 4분면 — 마감 임박 pending / quarantine 신규 /
-// 소스 상태(3일 무저장) / 3일+ 묵은 pending. 상태 지표는 하단 축소.
+// 소스 상태(사망 의심 강조, 미개통은 접어서 노이즈 분리) / 3일+ 묵은 pending. 상태 지표는 하단 축소.
 
 interface SlimRow {
   id: string;
@@ -26,6 +27,11 @@ function dday(deadline: string | null): string {
   return diff === 0 ? "D-Day" : diff > 0 ? `D-${diff}` : `마감+${-diff}`;
 }
 
+function daysSince(kstDate: string, dateStr: string | null): number {
+  if (!dateStr) return 0;
+  return Math.round((new Date(kstDate).getTime() - new Date(dateStr).getTime()) / 86400000);
+}
+
 // 요청 시각 기준 조회 창. 컴포넌트 본문에서 직접 Date.now()를 부르면
 // React Compiler purity 규칙에 걸리므로 모듈 스코프 함수로 분리한다 (force-dynamic 페이지).
 function queryWindows() {
@@ -37,6 +43,7 @@ function queryWindows() {
     soon: new Date(new Date(kstDate).getTime() + 3 * 86400000).toISOString().slice(0, 10),
     threeDaysAgo: new Date(now - 3 * 86400000).toISOString(),
     oneDayAgo: new Date(now - 86400000).toISOString(),
+    thirtyDaysAgo: new Date(now - 30 * 86400000).toISOString().slice(0, 10),
   };
 }
 
@@ -46,7 +53,7 @@ export default async function AdminTodayPage() {
   if (gate.status === "forbidden") notFound();
 
   const supabase = createAdminServiceClient();
-  const { now, kstDate, soon, threeDaysAgo, oneDayAgo } = queryWindows();
+  const { now, kstDate, soon, threeDaysAgo, oneDayAgo, thirtyDaysAgo } = queryWindows();
 
   const [
     urgent,
@@ -97,11 +104,7 @@ export default async function AdminTodayPage() {
       .from("auditions")
       .select("id", { count: "exact", head: true })
       .gte("created_at", oneDayAgo),
-    supabase
-      .from("crawl_logs")
-      .select("source_name, run_date, total_saved")
-      .order("run_date", { ascending: false })
-      .limit(300),
+    fetchCrawlLogs(supabase, thirtyDaysAgo),
     supabase
       .from("admin_actions")
       .select("id", { count: "exact", head: true })
@@ -148,30 +151,18 @@ export default async function AdminTodayPage() {
   const severeReports = reports.filter((r) => r.severity === "severe").length;
   const overdueReports = reports.filter((r) => new Date(r.sla_due_at).getTime() < now).length;
 
-  // 소스 상태: 최근 crawl_logs에서 소스별 마지막 저장>0 날짜 → 3일+ 무저장 소스
-  let sourceAlerts: { source: string; lastSaved: string | null }[] = [];
+  // 소스 상태: 사망(30일 내 저장 이력 있었는데 최근 3일 0건) vs 미개통(30일 내내 0건) 분리 (crawl_log.py dead_sources()와 동일 규칙)
   const crawlLogsUnavailable = Boolean(crawlLogs.error);
-  if (!crawlLogsUnavailable) {
-    const lastSaved = new Map<string, string>();
-    const seen = new Set<string>();
-    for (const l of (crawlLogs.data ?? []) as {
-      source_name: string;
-      run_date: string;
-      total_saved: number;
-    }[]) {
-      seen.add(l.source_name);
-      if (l.total_saved > 0 && !lastSaved.has(l.source_name)) {
-        lastSaved.set(l.source_name, l.run_date);
-      }
-    }
-    const cutoff = new Date(new Date(kstDate).getTime() - 3 * 86400000)
-      .toISOString()
-      .slice(0, 10);
-    sourceAlerts = [...seen]
-      .map((s) => ({ source: s, lastSaved: lastSaved.get(s) ?? null }))
-      .filter((s) => !s.lastSaved || s.lastSaved < cutoff)
-      .slice(0, 5);
-  }
+  const sourceClassification = crawlLogsUnavailable
+    ? null
+    : classifySources(
+        (crawlLogs.data ?? []) as { source_name: string; run_date: string; total_saved: number }[],
+        new Date(now)
+      );
+  const deadSourcesAll = sourceClassification?.dead ?? [];
+  const deadSources = deadSourcesAll.slice(0, 8);
+  const deadSourcesHidden = deadSourcesAll.length - deadSources.length;
+  const neverSources = sourceClassification?.never ?? [];
 
   const mono =
     "font-mono text-[10.5px] font-semibold tracking-[0.08em] text-[#8A8A86] uppercase";
@@ -242,8 +233,8 @@ export default async function AdminTodayPage() {
         {/* 3. 소스 상태 */}
         <section className={card}>
           <div className={cardHead}>
-            <span className={pill("bg-[#FFFBEB] text-[#B45309]")}>{sourceAlerts.length}</span>
-            소스 상태 — 3일+ 무저장
+            <span className={pill("bg-[#FEF2F2] text-[#DC2626]")}>{deadSourcesAll.length}</span>
+            소스 상태 — 사망 의심
           </div>
           {demoteCandidates.length > 0 && (
             <div className={row}>
@@ -260,17 +251,36 @@ export default async function AdminTodayPage() {
             <p className="px-4 py-3 text-[13px] text-[#8A8A86]">
               crawl_logs 테이블 조회 불가 — 008/010 마이그레이션 라이브 적용 확인 필요
             </p>
-          ) : sourceAlerts.length === 0 ? (
-            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">모든 소스 정상 저장 중</p>
+          ) : deadSources.length === 0 ? (
+            <p className="px-4 py-3 text-[13px] text-[#8A8A86]">사망 의심 소스 없음</p>
           ) : (
-            sourceAlerts.map((s) => (
-              <div key={s.source} className={row}>
-                <span>{s.source}</span>
-                <span className="ml-auto text-[12.5px] text-[#8A8A86]">
-                  {s.lastSaved ? `마지막 저장 ${s.lastSaved}` : "저장 이력 없음"}
-                </span>
-              </div>
-            ))
+            <>
+              {deadSources.map((s) => (
+                <div key={s.source_name} className={row}>
+                  <span className="font-bold text-[#DC2626]">{s.source_name}</span>
+                  <span className="ml-auto text-[12.5px] text-[#8A8A86]">
+                    {daysSince(kstDate, s.lastSaved)}일째 0건 · 마지막 저장 {s.lastSaved}
+                  </span>
+                </div>
+              ))}
+              {deadSourcesHidden > 0 && (
+                <p className="px-4 py-2 text-[12px] text-[#8A8A86]">외 {deadSourcesHidden}건</p>
+              )}
+            </>
+          )}
+          {!crawlLogsUnavailable && neverSources.length > 0 && (
+            <details className="border-t border-[#F0F0EE] px-4 py-2.5">
+              <summary className="cursor-pointer text-[12.5px] font-semibold text-[#8A8A86]">
+                미개통 {neverSources.length}곳
+              </summary>
+              <ul className="mt-2 flex flex-col gap-1">
+                {neverSources.map((s) => (
+                  <li key={s.source_name} className="text-[12.5px] text-[#8A8A86]">
+                    {s.source_name}
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
         </section>
 

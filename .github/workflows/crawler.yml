@@ -49,6 +49,9 @@ jobs:
           NAVER_API_HUB_CLIENT_ID: ${{ secrets.NAVER_API_HUB_CLIENT_ID }}
           NAVER_API_HUB_CLIENT_SECRET: ${{ secrets.NAVER_API_HUB_CLIENT_SECRET }}
           NAVER_CAFE_ENABLED: ${{ vars.NAVER_CAFE_ENABLED }}
+          # 소스 사망 경보 (30 마스터플랜 2-4) — 둘 다 있어야 발송됨
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: python main.py
 
   generate-and-publish:

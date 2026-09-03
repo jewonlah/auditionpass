@@ -4,6 +4,13 @@ import { createAdminServiceClient } from "@/lib/admin/service";
 import { SuppressionManager } from "./SuppressionManager";
 import { DemoteButton } from "./DemoteButton";
 import { fetchSourceHealth, HEALTH_WINDOW_DAYS } from "@/lib/admin/sourceHealth";
+import {
+  classifySources,
+  fetchCrawlLogs,
+  CRAWL_GROUP_OF_PREFIX,
+  CRAWL_ONLY_GROUP_NOTE,
+  type CrawlSourceStatus,
+} from "@/lib/admin/crawl-health";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +46,8 @@ async function fetchAllAuditionRows(
   return { data: all, error: null };
 }
 
+type CrawlStatus = "dead" | "never" | "healthy" | "unknown";
+
 interface SourceStat {
   source: string;
   active: number;
@@ -46,6 +55,41 @@ interface SourceStat {
   quarantine: number;
   trusted: boolean;
   lastSaved: string | null;
+  crawlStatus: CrawlStatus;
+  savedLast3d: number;
+  savedLast30d: number;
+  // crawl_logs 그룹(공식페이지·역추적·SNS세션 등)에만 있고 auditions 접두로는 나타나지 않는
+  // 합성 행 — 실제 소스가 아니라 수집 파이프라인 그룹 자체의 상태를 보여주기 위한 것.
+  groupOnly: boolean;
+}
+
+// 정렬 순위: 사망 → 미개통 → (정상/불명은 동순위, 기존 강등·활성 기준으로 세분)
+const CRAWL_STATUS_RANK: Record<CrawlStatus, number> = {
+  dead: 0,
+  never: 1,
+  healthy: 2,
+  unknown: 2,
+};
+
+function crawlStatusBadge(status: CrawlStatus) {
+  if (status === "dead") {
+    return (
+      <span className="rounded-full bg-[#FEF2F2] px-2 py-0.5 text-[10.5px] font-bold text-[#DC2626]">
+        사망 의심
+      </span>
+    );
+  }
+  if (status === "never") {
+    return (
+      <span className="rounded-full bg-[#F0F0EE] px-2 py-0.5 text-[10.5px] font-bold text-[#8A8A86]">
+        미개통
+      </span>
+    );
+  }
+  if (status === "healthy") {
+    return <span className="text-[11px] text-[#8A8A86]">정상</span>;
+  }
+  return <span className="text-[#C9C7C1]">—</span>;
 }
 
 export default async function AdminSourcesPage({
@@ -60,14 +104,13 @@ export default async function AdminSourcesPage({
   const supabase = createAdminServiceClient();
   const { block } = await searchParams;
 
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10);
+
   const [rowsRes, trustedRes, logsRes, health] = await Promise.all([
     fetchAllAuditionRows(supabase),
     supabase.from("trusted_sources").select("source_name"),
-    supabase
-      .from("crawl_logs")
-      .select("source_name, run_date, total_saved")
-      .order("run_date", { ascending: false })
-      .limit(500),
+    fetchCrawlLogs(supabase, thirtyDaysAgo),
     fetchSourceHealth(supabase),
   ]);
 
@@ -79,22 +122,27 @@ export default async function AdminSourcesPage({
   const isGroupTrusted = (head: string) =>
     trustedNames.some((n) => n === head || n.startsWith(`${head}:`));
 
-  const lastSaved = new Map<string, string>();
+  // 사망/미개통/정상 판정 (crawl_log.py dead_sources()와 동일 규칙)
+  const crawlHealth = new Map<string, { status: CrawlStatus } & CrawlSourceStatus>();
   if (!logsRes.error) {
-    for (const l of (logsRes.data ?? []) as {
-      source_name: string;
-      run_date: string;
-      total_saved: number;
-    }[]) {
-      if (l.total_saved > 0 && !lastSaved.has(l.source_name)) {
-        lastSaved.set(l.source_name, l.run_date);
-      }
-    }
+    const classified = classifySources(logsRes.data, now);
+    for (const s of classified.dead) crawlHealth.set(s.source_name, { status: "dead", ...s });
+    for (const s of classified.never) crawlHealth.set(s.source_name, { status: "never", ...s });
+    for (const s of classified.healthy) crawlHealth.set(s.source_name, { status: "healthy", ...s });
   }
+  // auditions 접두 → crawl_logs 그룹명(공식페이지·SNS세션 등). crawl_logs는 그룹명으로
+  // 적재되고 auditions는 개별 소스 접두로 적재되어 그대로는 상태 조회가 어긋난다.
+  const crawlGroupOf = (head: string) => CRAWL_GROUP_OF_PREFIX[head] ?? head;
+  // auditions 접두를 통해 실제로 조회된 crawl_logs 그룹 — 여기 안 걸린 그룹(예: 역추적)은
+  // 공고가 없는 수집 그룹이므로 표 하단에 별도 행으로 보여준다.
+  const matchedCrawlGroups = new Set<string>();
 
   const bySource = new Map<string, SourceStat>();
   for (const r of rowsRes.data) {
     const head = (r.source_name ?? "출처 미상").split(":")[0].trim();
+    const crawlGroup = crawlGroupOf(head);
+    matchedCrawlGroups.add(crawlGroup);
+    const crawl = crawlHealth.get(crawlGroup);
     const stat =
       bySource.get(head) ??
       ({
@@ -103,15 +151,42 @@ export default async function AdminSourcesPage({
         pending: 0,
         quarantine: 0,
         trusted: isGroupTrusted(head),
-        lastSaved: lastSaved.get(head) ?? null,
+        lastSaved: crawl?.lastSaved ?? null,
+        crawlStatus: crawl?.status ?? "unknown",
+        savedLast3d: crawl?.savedLast3d ?? 0,
+        savedLast30d: crawl?.savedLast30d ?? 0,
+        groupOnly: false,
       } as SourceStat);
     if (r.is_active) stat.active += 1;
     if (r.review_status === "pending") stat.pending += 1;
     if (r.review_status === "quarantine") stat.quarantine += 1;
     bySource.set(head, stat);
   }
-  // 강등 후보(신뢰 출처인데 30일 기준 초과)를 맨 위로 올린다
+
+  // crawl_logs에는 있지만(역추적·공식페이지 등) 어떤 auditions 접두도 가리키지 않는 그룹은
+  // "수집 그룹(공고 없음)" 행으로 하단에 추가한다 — 그렇지 않으면 표에 아예 나타나지 않는다.
+  if (!logsRes.error) {
+    for (const [groupName, crawl] of crawlHealth) {
+      if (matchedCrawlGroups.has(groupName)) continue;
+      bySource.set(`__group__:${groupName}`, {
+        source: groupName,
+        active: 0,
+        pending: 0,
+        quarantine: 0,
+        trusted: false,
+        lastSaved: crawl.lastSaved,
+        crawlStatus: crawl.status,
+        savedLast3d: crawl.savedLast3d,
+        savedLast30d: crawl.savedLast30d,
+        groupOnly: true,
+      });
+    }
+  }
+
+  // 정렬: 사망 → 미개통 → 정상/불명, 동순위 안에서는 강등 후보(신뢰 출처인데 30일 기준 초과) → 활성 건수
   const stats = [...bySource.values()].sort((a, b) => {
+    const rankDiff = CRAWL_STATUS_RANK[a.crawlStatus] - CRAWL_STATUS_RANK[b.crawlStatus];
+    if (rankDiff !== 0) return rankDiff;
     const aDemote = a.trusted && health?.get(a.source)?.demote ? 1 : 0;
     const bDemote = b.trusted && health?.get(b.source)?.demote ? 1 : 0;
     if (aDemote !== bDemote) return bDemote - aDemote;
@@ -147,6 +222,9 @@ export default async function AdminSourcesPage({
           <thead>
             <tr className="border-b border-[#F0F0EE] text-left text-[11px] font-semibold tracking-wide text-[#8A8A86] uppercase">
               <th className="px-4 py-2.5">출처</th>
+              <th className="px-3 py-2.5">상태</th>
+              <th className="px-3 py-2.5 text-right">3일 저장</th>
+              <th className="px-3 py-2.5 text-right">30일 저장</th>
               <th className="px-3 py-2.5 text-right">활성</th>
               <th className="px-3 py-2.5 text-right">pending</th>
               <th className="px-3 py-2.5 text-right">격리</th>
@@ -158,8 +236,36 @@ export default async function AdminSourcesPage({
           </thead>
           <tbody>
             {stats.map((s) => (
-              <tr key={s.source} className="border-b border-[#F0F0EE] last:border-b-0">
-                <td className="px-4 py-2 font-semibold">{s.source}</td>
+              <tr
+                key={`${s.groupOnly ? "group" : "source"}:${s.source}`}
+                className="border-b border-[#F0F0EE] last:border-b-0"
+              >
+                <td className="px-4 py-2 font-semibold">
+                  {s.source}
+                  {s.groupOnly && (
+                    <span className="ml-2 rounded-full bg-[#F0F0EE] px-2 py-0.5 text-[10px] font-bold text-[#8A8A86]">
+                      수집 그룹 · 공고 없음
+                    </span>
+                  )}
+                  {CRAWL_ONLY_GROUP_NOTE[s.source] && (
+                    <p className="mt-0.5 text-[11px] font-normal text-[#8A8A86]">
+                      {CRAWL_ONLY_GROUP_NOTE[s.source]}
+                    </p>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {logsRes.error ? (
+                    <span className="text-[#C9C7C1]">—</span>
+                  ) : (
+                    crawlStatusBadge(s.crawlStatus)
+                  )}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {logsRes.error ? <span className="text-[#C9C7C1]">—</span> : s.savedLast3d}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {logsRes.error ? <span className="text-[#C9C7C1]">—</span> : s.savedLast30d}
+                </td>
                 <td className="px-3 py-2 text-right tabular-nums">{s.active}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{s.pending}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-[#DC2626]">
@@ -195,12 +301,14 @@ export default async function AdminSourcesPage({
                       reasons={health.get(s.source)!.reasons}
                     />
                   )}
-                  <a
-                    href={`?block=${encodeURIComponent(s.source)}`}
-                    className="ml-2 text-[12px] font-bold text-[#DC2626]"
-                  >
-                    긴급 차단
-                  </a>
+                  {!s.groupOnly && (
+                    <a
+                      href={`?block=${encodeURIComponent(s.source)}`}
+                      className="ml-2 text-[12px] font-bold text-[#DC2626]"
+                    >
+                      긴급 차단
+                    </a>
+                  )}
                 </td>
               </tr>
             ))}
