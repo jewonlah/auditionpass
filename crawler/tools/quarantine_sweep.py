@@ -15,20 +15,37 @@ import re
 import sys
 
 from utils.risk import risk_score
-from utils.supabase_client import QUARANTINE_STATUS, supabase as sb
+from utils.supabase_client import QUARANTINE_STATUS, risk_text, supabase as sb
 
 _MINOR = re.compile(r"아역|키즈|유아|아기|어린이|청소년|초등|중학생|고등학생|\b남아\b|\b여아\b")
 _MINOR_DANGER = {"신분증·금융정보 요구", "성인·노출", "비용 징수 문맥"}
+
+# 위험 판정은 요약본이 아니라 원문(021 description_raw)과 requirements까지 봐야 한다
+# (2026-09-02 검수: 요약에서 "참가비" 줄이 빠지면 게이트를 통과했다).
+# 021 미적용 라이브에서는 description_raw select가 실패하므로 그 컬럼만 빼고 폴백한다.
+_SELECT_WITH_RAW = "id,title,description,description_raw,requirements,source_name"
+_SELECT_LEGACY = "id,title,description,requirements,source_name"
+
+
+def _fetch_page(select: str, off: int) -> list[dict]:
+    return (sb.table("auditions").select(select)
+            .eq("is_active", True).order("id").range(off, off + 999).execute().data)
 
 
 def main() -> None:
     apply = "--apply" in sys.argv
     rows = []
     off = 0
+    select = _SELECT_WITH_RAW
     while off < 10000:
-        b = (sb.table("auditions")
-             .select("id,title,description,source_name")
-             .eq("is_active", True).range(off, off + 999).execute().data)
+        try:
+            b = _fetch_page(select, off)
+        except Exception as e:  # 021 미적용: description_raw 컬럼 부재
+            if select == _SELECT_WITH_RAW and "description_raw" in str(e):
+                print("description_raw 컬럼 없음(021 미적용) — 요약본 기준으로 판정합니다")
+                select = _SELECT_LEGACY
+                continue
+            raise
         if not b:
             break
         rows += b
@@ -40,10 +57,11 @@ def main() -> None:
         if "누드" in (r["source_name"] or ""):
             reason = "성인 컨셉 카페 출처"
         else:
-            s, why = risk_score(r["title"], r["description"])
+            text = risk_text(r.get("description_raw"), r.get("description"), r.get("requirements"))
+            s, why = risk_score(r["title"], text)
             if s >= 7:
                 reason = f"위험 {s}: {', '.join(why)}"
-            elif _MINOR.search(f"{r['title']} {r['description'] or ''}") and _MINOR_DANGER & set(why):
+            elif _MINOR.search(f"{r['title']} {text or ''}") and _MINOR_DANGER & set(why):
                 reason = f"미성년+위험 조합: {', '.join(_MINOR_DANGER & set(why))}"
         if reason:
             targets.append((r, reason))

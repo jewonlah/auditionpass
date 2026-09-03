@@ -21,8 +21,10 @@ function useInView<T extends HTMLElement>() {
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(true);
-      return;
+      // 이펙트 본문에서 곧바로 setState 하면 연쇄 렌더가 난다(react-hooks/set-state-in-effect).
+      // 다음 프레임으로 미룬다 — 사용자 눈에는 동일하게 '즉시 표시'다.
+      const id = requestAnimationFrame(() => setShown(true));
+      return () => cancelAnimationFrame(id);
     }
     const io = new IntersectionObserver(
       ([e]) => {

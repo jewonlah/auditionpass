@@ -77,7 +77,7 @@ def main() -> None:
                     "ai_risk": r["risk"],
                     "ai_classified_at": now,
                 }
-            ).eq("id", r["id"]).execute()
+            ).eq("id", r["id"]).eq("status", "new").execute()  # 이미 사람이 판정한 행은 건드리지 않는다
             ok += 1
         except Exception as e:
             fail += 1

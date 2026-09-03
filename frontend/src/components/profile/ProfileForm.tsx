@@ -295,8 +295,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                     bio: v.bio || null,
                   }),
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || "생성 실패");
+                // 400(검증)·413(과대 입력)·429(속도 제한) 모두 서버가 한국어 메시지를 준다 — 그대로 보여준다
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok)
+                  throw new Error(data.error || "소개문 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
                 setValue("bio", data.bio, { shouldValidate: true, shouldDirty: true });
               } catch (e) {
                 setPolishError(e instanceof Error ? e.message : "소개문 생성에 실패했습니다.");
