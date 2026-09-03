@@ -53,3 +53,6 @@ design/*.jpg
 
 # Graphify 출력
 graphify-out/
+
+# headroom wrap 런타임 상태(머신 로컬)
+.claude/.headroom_wrap_*
