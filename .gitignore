@@ -25,9 +25,8 @@ Thumbs.db
 .idea/
 
 # PWA
-public/sw.js
-public/workbox-*.js
-public/swe-worker-*.js
+# public/sw.js는 손으로 작성한 고정 소스 파일이라 커밋 대상이다(더 이상
+# next-pwa/workbox 빌드 산출물이 아니다 — 자세한 사유는 sw.js 헤더 주석).
 
 # Supabase CLI
 supabase/.temp/
@@ -51,3 +50,6 @@ crawler/intake/
 design/auditionpass-landing*.html
 design/*.png
 design/*.jpg
+
+# Graphify 출력
+graphify-out/

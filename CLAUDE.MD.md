@@ -65,6 +65,10 @@ auditionpass/
 | 마스터플랜·아키텍처 결정·Phase 검수·정본 관리 | Fable 5 |
 | 구현 에이전트(frontend/crawler/DB), 컨텍스트 수집, 반복 루프 | Opus 5 |
 
+## 사용량 절감 도구 (2026-09-03)
+- Ponytail(전역 플러그인, 자동)·Headroom(`start.bat` → `headroom wrap claude`)·Graphify(`graphify-out/`, 코드베이스 질문은 `/graphify` 우선) 적용. 상세 규칙은 `~/.claude/CLAUDE.md` "사용량 절감 도구 3종".
+- **이 파일과 `CLAUDE.*.md`가 명시한 규칙(테스트·검증·검수·폐지 개념 금지)은 Ponytail YAGNI의 예외다.** 짧은 코드가 우선이지만 테스트를 빼거나 검증을 건너뛰는 근거로 쓰지 않는다.
+
 ## 에이전트 승인 체계
 - 개발 에이전트(frontend·backend·crawler·database·email)는 자율 실행. 마케팅/디자인은 스킬 설치·외부 연동 시 운영(ops) 승인.
 - **금지 행위**: `main` 직접 푸시, 009 미확인 상태의 배포, `.env` 값 출력, `crawler/.env` 커밋.

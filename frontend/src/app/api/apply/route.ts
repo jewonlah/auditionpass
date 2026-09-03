@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendApplicationEmail } from "@/lib/email/sendApplicationEmail";
 import { getMissingFields } from "@/lib/profile";
+import { buildApplicationRow, sendFailureResponse } from "@/lib/apply/status";
 
 export async function POST(req: Request) {
   try {
@@ -48,14 +49,15 @@ export async function POST(req: Request) {
     }
 
     // 3. 이미 지원한 오디션인지 확인
+    //    발송이 실패한(status:'failed') 이력은 "지원함"이 아니다 — 재시도를 막으면 안 된다.
     const { data: existingApplication } = await supabase
       .from("applications")
-      .select("id")
+      .select("id, status")
       .eq("user_id", user.id)
       .eq("audition_id", auditionId)
-      .single();
+      .maybeSingle();
 
-    if (existingApplication) {
+    if (existingApplication && existingApplication.status !== "failed") {
       return NextResponse.json(
         { error: "이미 지원한 오디션입니다.", code: "ALREADY_APPLIED" },
         { status: 409 }
@@ -135,20 +137,32 @@ export async function POST(req: Request) {
     }
 
     // 5. 이메일 발송 — Reply-To 에 지원자 주소를 넣어 담당자 답장이 지원자에게 직접 가게 한다
-    await sendApplicationEmail({ audition, profile, replyToEmail: user.email });
+    //    실패해도 여기서 끝내지 않는다 — 이력이 안 남으면 지원 탭에 "발송 실패"가 뜰 수 없고,
+    //    유저는 지원했는지조차 알 수 없다 (11 PRD F6, applications/page.tsx 발송 실패 분기).
+    let sendError: Error | null = null;
+    try {
+      await sendApplicationEmail({ audition, profile, replyToEmail: user.email });
+    } catch (err) {
+      sendError = err instanceof Error ? err : new Error("메일 발송 실패");
+    }
 
-    // 6. 지원 이력 저장 (status는 F6 상태 모델 — R1은 sent/failed)
-    const { error: insertError } = await supabase
+    // 6. 지원 이력 저장 — unique(user_id, audition_id) 충돌 시 갱신(재시도로 성공하면 같은 행이 sent로 바뀐다)
+    const row = buildApplicationRow({
+      userId: user.id,
+      auditionId,
+      outcome: sendError ? "failed" : "sent",
+    });
+    const { error: upsertError } = await supabase
       .from("applications")
-      .insert({
-        user_id: user.id,
-        audition_id: auditionId,
-        email_sent: true,
-        sent_at: new Date().toISOString(),
-        status: "sent",
-      });
+      .upsert(row, { onConflict: "user_id,audition_id" });
 
-    if (insertError) {
+    if (sendError) {
+      console.error("[apply] 메일 발송 실패", sendError);
+      const { status, body } = sendFailureResponse();
+      return NextResponse.json(body, { status });
+    }
+
+    if (upsertError) {
       return NextResponse.json(
         { error: "지원 이력 저장에 실패했습니다." },
         { status: 500 }

@@ -104,11 +104,31 @@ export async function sendApplicationEmail({
   // 담당자가 "답장"을 누르면 지원자에게 바로 가야 한다. 없으면 noreply@ 로 떨어져 사라진다.
   const replyTo = replyToEmail?.trim();
 
+  // 개발환경 오발송 가드 — 프로덕션이 아니면 실제 apply_email 대신 테스트 수신자로 보낸다.
+  // (미리보기·로컬 실행에서 실제 캐스팅 담당자에게 메일이 나가는 사고 방지)
+  const isProduction = process.env.VERCEL_ENV === "production";
+  const allowRealEmail = process.env.ALLOW_REAL_EMAIL === "1";
+  let to = audition.apply_email;
+  let finalSubject = subject;
+
+  if (!isProduction && !allowRealEmail) {
+    const testTo = process.env.RESEND_TEST_TO?.trim();
+    if (!testTo) {
+      console.warn(
+        "[sendApplicationEmail] 비프로덕션 환경 + RESEND_TEST_TO 미설정 — 발송을 생략합니다.",
+        { auditionTitle: audition.title }
+      );
+      return { skipped: true } as const;
+    }
+    to = testTo;
+    finalSubject = `[TEST] ${subject}`;
+  }
+
   const { data, error } = await resend.emails.send({
     from: `오디션패스 <${FROM_EMAIL}>`,
-    to: audition.apply_email,
+    to,
     ...(replyTo ? { replyTo } : {}),
-    subject,
+    subject: finalSubject,
     html: emailHtml,
   });
 

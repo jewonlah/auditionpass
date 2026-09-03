@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Camera, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 interface PhotoUploadProps {
   photos: string[];
@@ -17,6 +18,7 @@ export function PhotoUpload({
 }: PhotoUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const toast = useToast();
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -37,10 +39,10 @@ export function PhotoUpload({
       if (res.ok) {
         onChange([...photos, data.url]);
       } else {
-        alert(data.error || "업로드에 실패했습니다.");
+        toast.error(data.error || "업로드에 실패했습니다.");
       }
     } catch {
-      alert("네트워크 오류가 발생했습니다.");
+      toast.error("네트워크 오류가 발생했습니다.");
     } finally {
       setUploading(false);
       // 같은 파일 재선택 가능하도록 초기화

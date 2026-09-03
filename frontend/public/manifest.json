@@ -4,8 +4,8 @@
   "description": "원클릭 오디션 지원 플랫폼",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F8FAFC",
-  "theme_color": "#6366F1",
+  "background_color": "#F7F4EF",
+  "theme_color": "#F7F4EF",
   "orientation": "portrait",
   "icons": [
     {

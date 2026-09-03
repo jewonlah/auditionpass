@@ -60,6 +60,9 @@ function isTabActive(item: NavItem, pathname: string): boolean {
 export function BottomNav() {
   const pathname = usePathname();
 
+  // 온보딩·글쓰기 등 풀스크린 태스크에서는 BottomNav 숨김 (12 §2.1)
+  if (pathname?.startsWith("/onboarding")) return null;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-md items-center justify-around">

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { resolveReturnTo, withReturnTo } from "@/lib/utils";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Mail, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { readAttribution } from "@/components/Attribution";
 
@@ -133,6 +134,16 @@ function SignupContent() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">회원가입</h1>
           <p className="text-gray-500">오디션패스에 가입하고 지원을 시작하세요</p>
+        </div>
+
+        {/* 구글 OAuth — 가입 화면 최상단 (11_prd F4 SHOULD, D8 R1은 구글만).
+            이메일 더블 옵트인의 메일함 이탈을 건너뛰는 주 동선이다. */}
+        <GoogleButton returnTo={rawReturnTo} label="Google로 시작하기" />
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-400">또는 이메일로 가입</span>
+          <span className="h-px flex-1 bg-gray-200" />
         </div>
 
         {/* 회원가입 폼 */}

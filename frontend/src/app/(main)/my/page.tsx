@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { WithdrawSheet } from "@/components/my/WithdrawSheet";
 import type { Profile } from "@/types";
 
 interface MenuItem {
@@ -34,6 +35,7 @@ export default function MyPage() {
   const supabase = createClient();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -190,6 +192,20 @@ export default function MyPage() {
         <LogOut size={18} />
         로그아웃
       </button>
+
+      {/* 회원 탈퇴 — 개인정보처리방침 §6 "회원 탈퇴 시 즉시 파기"의 실제 실행 지점.
+          파괴적 조작이라 눈에 띄지 않게 두되, 찾을 수는 있어야 한다(자기결정권). */}
+      <button
+        onClick={() => setWithdrawOpen(true)}
+        className="mt-4 mb-2 block w-full text-center text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600 transition-colors"
+      >
+        회원 탈퇴
+      </button>
+
+      <WithdrawSheet
+        open={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+      />
 
       {/* 앱 정보 */}
       <p className="mt-6 text-center text-[11px] text-gray-300">

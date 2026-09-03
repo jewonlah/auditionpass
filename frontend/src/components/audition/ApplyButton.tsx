@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { createClient } from "@/lib/supabase/client";
 import {
   PROFILE_GENRES,
@@ -227,7 +228,6 @@ function LoginStep({
   returnPath: string;
   onLoggedIn: () => Promise<void>;
 }) {
-  // 구글 OAuth 버튼은 Supabase provider 설정과 함께 추가 예정 (12 게이트 시트 ⓐ "구글로 계속하기")
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -265,6 +265,16 @@ function LoginStep({
       <p className="text-sm text-gray-500">
         로그인하면 이 자리에서 바로 지원을 이어갈 수 있어요.
       </p>
+
+      {/* 구글 OAuth — 12 §6.2 게이트 시트 ⓐ. returnTo 에 `apply=1` 이 붙어 있어
+          왕복 후 이 상세로 돌아오면 지원 시트가 자동 재오픈된다. */}
+      <GoogleButton returnTo={returnPath} label="Google로 계속하기" />
+
+      <div className="flex items-center gap-3 pt-1">
+        <span className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs text-gray-400">또는 이메일로 로그인</span>
+        <span className="h-px flex-1 bg-gray-200" />
+      </div>
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">

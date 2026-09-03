@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn } from "lucide-react";
 
 export function Header() {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
+
+  // 온보딩은 태스크형 헤더(닫기+타이틀)를 자체 렌더한다 — 12 §2.1·§2.2 "풀스크린 태스크"
+  if (pathname?.startsWith("/onboarding")) return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
