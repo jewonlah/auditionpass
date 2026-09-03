@@ -1,9 +1,27 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { Reveal } from "@/components/landing/Reveal";
 import { getDday } from "@/lib/utils";
+import { serializeJsonLd } from "@/lib/seo/jsonld";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "https://www.auditionpass.co.kr",
+  },
+};
+
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "오디션패스",
+  url: "https://www.auditionpass.co.kr",
+  logo: "https://www.auditionpass.co.kr/icons/icon-512x512.png",
+  description:
+    "배우·모델 오디션 정보를 자동 수집하고, 버튼 하나로 포트폴리오를 자동 전송하는 원클릭 오디션 지원 플랫폼",
+};
 
 /**
  * 랜딩 — A안 「동틀 녘」 (2026-08-31 확정).
@@ -196,6 +214,10 @@ export default async function LandingPage() {
 
   return (
     <main className="relative min-h-[100dvh] bg-[#F7F4EF] text-[#141110]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(ORGANIZATION_JSON_LD) }}
+      />
       {/* 동틀 녘 모션 — 전부 CSS, prefers-reduced-motion 이면 정지 */}
       <style>{`
         @keyframes ap-dawn {

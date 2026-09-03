@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 
 // 소스 후보 검수 — 「콜 시트」 언어(20_design-language.md): paper/ink/헤어라인·모노 라벨·정보 밀도.
 // 그라데이션·이모지 아이콘·둥근 카드 3열 그리드 금지.
@@ -77,6 +78,7 @@ export function CandidatesClient() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<"approved" | "rejected" | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -120,11 +122,15 @@ export function CandidatesClient() {
       return next;
     });
 
+  const requestAct = (status: "approved" | "rejected") => {
+    if (!selected.size) return;
+    setPendingAction(status);
+  };
+
   const act = async (status: "approved" | "rejected") => {
     const ids = [...selected];
     if (!ids.length) return;
     const verb = status === "approved" ? "승인" : "거부";
-    if (!confirm(`${ids.length}건을 ${verb}합니다. 계속할까요?`)) return;
     setBusy(true);
     setErr(null);
     setMsg(null);
@@ -152,6 +158,13 @@ export function CandidatesClient() {
       setBusy(false);
     }
   };
+
+  async function confirmPendingAction() {
+    if (!pendingAction) return;
+    const status = pendingAction;
+    await act(status);
+    setPendingAction(null);
+  }
 
   const summary = useMemo(() => {
     if (!counts) return null;
@@ -273,14 +286,14 @@ export function CandidatesClient() {
         </span>
         <div className="ml-auto flex items-center gap-2">
           <button
-            onClick={() => act("approved")}
+            onClick={() => requestAct("approved")}
             disabled={busy || !selected.size}
             className="border border-[#4F46E5] bg-[#4F46E5] px-3.5 py-1.5 text-[13px] font-semibold text-[#FAFAF7] disabled:border-[#E7E5E0] disabled:bg-[#F0F0EE] disabled:text-[#C9C7C1]"
           >
             선택 승인
           </button>
           <button
-            onClick={() => act("rejected")}
+            onClick={() => requestAct("rejected")}
             disabled={busy || !selected.size}
             className="border border-[#E7E5E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#4A4A48] hover:border-[#EF4444] hover:text-[#EF4444] disabled:text-[#C9C7C1]"
           >
@@ -418,6 +431,17 @@ export function CandidatesClient() {
           <span className="font-mono">official_pages</span>에 추가해야 실제로 수집됩니다.
         </p>
       </div>
+
+      <ConfirmSheet
+        open={pendingAction !== null}
+        title={`${selected.size}건을 ${pendingAction === "approved" ? "승인" : "거부"}합니다`}
+        description="계속할까요?"
+        confirmLabel={pendingAction === "approved" ? "승인" : "거부"}
+        danger={pendingAction === "rejected"}
+        submitting={busy}
+        onConfirm={confirmPendingAction}
+        onClose={() => setPendingAction(null)}
+      />
     </div>
   );
 }

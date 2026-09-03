@@ -66,3 +66,33 @@ export function resolveReturnTo(
 export function withReturnTo(basePath: string, returnTo: string): string {
   return `${basePath}?returnTo=${encodeURIComponent(returnTo)}`;
 }
+
+/**
+ * `/onboarding`으로 향하는 returnTo가 스스로를 감싸는 중첩을 재귀적으로 풀어낸다.
+ *
+ * proxy → login → auth/callback → onboarding 리다이렉트 체인이 서로의 returnTo를
+ * 감싸면서 `/onboarding?returnTo=/onboarding?returnTo=...`처럼 깊어질 수 있다
+ * (Codex 교차 리뷰 결함, 2026-09-03) — 최종 목적지 하나만 남을 때까지 벗겨낸다.
+ * 벗겨낸 끝이 `/onboarding` 자체(잔여 returnTo 없음)면 `/home`으로 떨어진다.
+ * `/onboarding`이 아닌 값은 그대로 반환한다(정상 케이스는 no-op).
+ */
+export function unwrapOnboardingReturnTo(returnTo: string): string {
+  let current = returnTo;
+
+  // 정상 케이스는 1~2단이면 충분 — 상한은 순수 방어용
+  for (let i = 0; i < 10; i++) {
+    let url: URL;
+    try {
+      url = new URL(current, "http://internal");
+    } catch {
+      return current;
+    }
+    if (url.pathname !== "/onboarding") return current;
+
+    const nested = url.searchParams.get("returnTo");
+    if (!nested) return "/home";
+    current = nested;
+  }
+
+  return "/home";
+}

@@ -6,7 +6,14 @@ import { Badge } from "@/components/ui/Badge";
 import { formatDday, getDday, todayKST } from "@/lib/utils";
 import { getMissingFields } from "@/lib/profile";
 import { cn } from "@/lib/utils";
+import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
 import type { Audition, Profile } from "@/types";
+
+/** apply_email은 select 자체에서 제외한다 — 홈 피드도 SSR이라 RSC 페이로드에
+ * 그대로 실려 나간다(auditions 탐색 SSR과 동일 원칙, Codex 리뷰). */
+function stripApplyEmail(rows: Audition[] | null): Audition[] {
+  return (rows ?? []).map((a) => ({ ...a, apply_email: null }));
+}
 import { ChevronRight, Send, UserRound, Zap, Clock, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -48,7 +55,7 @@ export default async function HomePage() {
       // ① 원클릭 오디션 — 이메일 지원 가능 공고 (핵심 기능, 항상 최상단)
       supabase
         .from("auditions")
-        .select("*")
+        .select(AUDITION_LIST_COLUMNS)
         .eq("is_active", true)
         .eq("apply_type", "email")
         .or(activeFilter)
@@ -57,7 +64,7 @@ export default async function HomePage() {
       // ③ 마감 임박 TOP
       supabase
         .from("auditions")
-        .select("*")
+        .select(AUDITION_LIST_COLUMNS)
         .eq("is_active", true)
         .not("deadline", "is", null)
         .gte("deadline", today)
@@ -79,15 +86,15 @@ export default async function HomePage() {
     redirect("/profile?welcome=1");
   }
 
-  const oneClickAuditions = (oneClickRes.data as Audition[] | null) ?? [];
-  const deadlineAuditions = (deadlineRes.data as Audition[] | null) ?? [];
+  const oneClickAuditions = stripApplyEmail(oneClickRes.data as Audition[] | null);
+  const deadlineAuditions = stripApplyEmail(deadlineRes.data as Audition[] | null);
   const applyCount = applyCountRes.count ?? 0;
 
   // ④ 내 분야 신규 공고 — 프로필 분야 기반, 없으면 전체 신규
   const myGenres = profile?.genre?.filter(Boolean) ?? [];
   let newQuery = supabase
     .from("auditions")
-    .select("*")
+    .select(AUDITION_LIST_COLUMNS)
     .eq("is_active", true)
     .or(activeFilter)
     .order("created_at", { ascending: false })
@@ -96,7 +103,7 @@ export default async function HomePage() {
     newQuery = newQuery.in("genre", myGenres);
   }
   const { data: newData } = await newQuery;
-  const newAuditions = (newData as Audition[] | null) ?? [];
+  const newAuditions = stripApplyEmail(newData as Audition[] | null);
 
   const completeness = getProfileCompleteness(profile);
 

@@ -89,7 +89,8 @@ export type CommunityCategory = '자유' | '꿀팁' | '후기' | '질문' | '구
 
 export interface CommunityPost {
   id: string;
-  user_id: string;
+  /** 022 마이그레이션: 작성자 탈퇴 시 FK가 SET NULL — null이면 "탈퇴한 회원"으로 표시 */
+  user_id: string | null;
   category: CommunityCategory;
   title: string;
   content: string;
@@ -108,7 +109,8 @@ export interface CommunityPost {
 export interface CommunityComment {
   id: string;
   post_id: string;
-  user_id: string;
+  /** 022 마이그레이션: 작성자 탈퇴 시 FK가 SET NULL — null이면 "탈퇴한 회원"으로 표시 */
+  user_id: string | null;
   parent_id: string | null;
   content: string;
   likes_count: number;

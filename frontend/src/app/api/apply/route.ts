@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendApplicationEmail } from "@/lib/email/sendApplicationEmail";
 import { getMissingFields } from "@/lib/profile";
+import {
+  buildApplicationRow,
+  buildReservationRow,
+  decideReservation,
+  applyInProgressResponse,
+  emailSkippedResponse,
+  isSkippedSend,
+  sendFailureResponse,
+} from "@/lib/apply/status";
 
 export async function POST(req: Request) {
   try {
@@ -48,18 +57,18 @@ export async function POST(req: Request) {
     }
 
     // 3. 이미 지원한 오디션인지 확인
+    //    발송이 실패한(status:'failed') 이력은 "지원함"이 아니다 — 재시도를 막으면 안 된다.
     const { data: existingApplication } = await supabase
       .from("applications")
-      .select("id")
+      .select("id, status")
       .eq("user_id", user.id)
       .eq("audition_id", auditionId)
-      .single();
+      .maybeSingle();
 
-    if (existingApplication) {
-      return NextResponse.json(
-        { error: "이미 지원한 오디션입니다.", code: "ALREADY_APPLIED" },
-        { status: 409 }
-      );
+    const reservation = decideReservation(existingApplication);
+    if (reservation.action === "reject") {
+      const { status, body } = reservation.response;
+      return NextResponse.json(body, { status });
     }
 
     // 3.5. 일일 쿼터 스위치 (2026-08-31 제원 결정: 지금은 무제한, 스위치만 심어둔다)
@@ -135,20 +144,73 @@ export async function POST(req: Request) {
     }
 
     // 5. 이메일 발송 — Reply-To 에 지원자 주소를 넣어 담당자 답장이 지원자에게 직접 가게 한다
-    await sendApplicationEmail({ audition, profile, replyToEmail: user.email });
+    //    실패해도 여기서 끝내지 않는다 — 이력이 안 남으면 지원 탭에 "발송 실패"가 뜰 수 없고,
+    //    유저는 지원했는지조차 알 수 없다 (11 PRD F6, applications/page.tsx 발송 실패 분기).
+    //    발송 직전에 'sending'으로 행을 선점한다 — 여기부터는 되돌릴 수 없다(메일은 회수가 안 된다).
+    //    공고 유효성 검사를 전부 통과한 뒤에 잡아야, 마감·차단으로 되돌아가는 경로에
+    //    'sending' 행이 남아 이후 재시도를 영구히 막는 일이 없다.
+    //    023 미적용 라이브에서는 CHECK 위반(23514)이므로 선점을 건너뛰고 기존 동작으로 강등한다.
+    const reservationRow = buildReservationRow({ userId: user.id, auditionId });
+    if (reservation.action === "insert") {
+      const { error } = await supabase.from("applications").insert(reservationRow);
+      if (error?.code === "23505") {
+        // 같은 사람이 두 탭에서 눌렀다 — 먼저 잡은 요청만 발송한다.
+        const { status, body } = applyInProgressResponse();
+        return NextResponse.json(body, { status });
+      }
+      if (error && error.code !== "23514") {
+        return NextResponse.json({ error: "지원 이력 저장에 실패했습니다." }, { status: 500 });
+      }
+    } else {
+      // 지난 발송이 실패한 행을 되살린다. status='failed' 조건이 동시 재시도를 하나로 좁힌다.
+      const { data: resumed, error } = await supabase
+        .from("applications")
+        .update(reservationRow)
+        .eq("user_id", user.id)
+        .eq("audition_id", auditionId)
+        .eq("status", "failed")
+        .select("id");
+      if (error && error.code !== "23514") {
+        return NextResponse.json({ error: "지원 이력 저장에 실패했습니다." }, { status: 500 });
+      }
+      if (!error && (resumed?.length ?? 0) === 0) {
+        const { status, body } = applyInProgressResponse();
+        return NextResponse.json(body, { status });
+      }
+    }
 
-    // 6. 지원 이력 저장 (status는 F6 상태 모델 — R1은 sent/failed)
-    const { error: insertError } = await supabase
+    let sendError: Error | null = null;
+    let sendSkipped = false;
+    try {
+      const result = await sendApplicationEmail({ audition, profile, replyToEmail: user.email });
+      sendSkipped = isSkippedSend(result);
+    } catch (err) {
+      sendError = err instanceof Error ? err : new Error("메일 발송 실패");
+    }
+
+    // 6. 지원 이력 저장 — unique(user_id, audition_id) 충돌 시 갱신(재시도로 성공하면 같은 행이 sent로 바뀐다)
+    const row = buildApplicationRow({
+      userId: user.id,
+      auditionId,
+      outcome: sendError || sendSkipped ? "failed" : "sent",
+    });
+    const { error: upsertError } = await supabase
       .from("applications")
-      .insert({
-        user_id: user.id,
-        audition_id: auditionId,
-        email_sent: true,
-        sent_at: new Date().toISOString(),
-        status: "sent",
-      });
+      .upsert(row, { onConflict: "user_id,audition_id" });
 
-    if (insertError) {
+    if (sendError) {
+      console.error("[apply] 메일 발송 실패", sendError);
+      const { status, body } = sendFailureResponse();
+      return NextResponse.json(body, { status });
+    }
+
+    // 발송 생략(비프로덕션 + RESEND_TEST_TO 미설정)은 성공이 아니다 — 완료 화면을 띄우면 안 된다.
+    if (sendSkipped) {
+      const { status, body } = emailSkippedResponse();
+      return NextResponse.json(body, { status });
+    }
+
+    if (upsertError) {
       return NextResponse.json(
         { error: "지원 이력 저장에 실패했습니다." },
         { status: 500 }

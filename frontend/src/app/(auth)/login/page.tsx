@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { resolveReturnTo, withReturnTo } from "@/lib/utils";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Mail, Eye, EyeOff } from "lucide-react";
 
 const loginSchema = z.object({
@@ -80,14 +81,24 @@ function LoginContent() {
           <p className="text-gray-500">로그인하고 오디션에 지원하세요</p>
         </div>
 
+        {/* 인증 콜백 안내 — 이메일/구글 어느 쪽이든 공통이라 폼 밖에 둔다 */}
+        {authNotice && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+            {authNotice}
+          </div>
+        )}
+
+        {/* 구글 OAuth — 주 동선 (12_ia-userflows §2.1 "구글 OAuth(주) + 이메일(보조)") */}
+        <GoogleButton returnTo={rawReturnTo} label="Google로 계속하기" />
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-400">또는 이메일로 로그인</span>
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+
         {/* 로그인 폼 */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {authNotice && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
-              {authNotice}
-            </div>
-          )}
-
           {serverError && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
               {serverError}

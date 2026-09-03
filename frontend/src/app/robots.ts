@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
     "/admin", // 운영자 전용 — 게이트가 있지만 크롤 대상도 아니다
     "/profile",
     "/home", // 로그인 후 개인화 피드
+    "/onboarding", // 가입 직후 1회성 게이트 — 색인 대상 아님
     "/applications",
     "/my",
   ];

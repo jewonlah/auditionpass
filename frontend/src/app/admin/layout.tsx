@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAdminGate } from "@/lib/admin/auth";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   title: "오디션패스 어드민",
@@ -21,6 +22,7 @@ export default async function AdminLayout({
   const admin = gate.email;
 
   return (
+    <ToastProvider>
     <div className="flex min-h-screen w-full bg-[#FAFAF7] text-[#141414]">
       <aside className="hidden w-52 shrink-0 flex-col border-r border-[#E7E5E0] bg-white lg:flex">
         <div className="px-5 pt-5 pb-3">
@@ -67,5 +69,6 @@ export default async function AdminLayout({
         {children}
       </div>
     </div>
+    </ToastProvider>
   );
 }

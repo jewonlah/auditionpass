@@ -26,6 +26,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${BASE_URL}/community`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
     // 약관·처리방침은 가입 전 확인 문서이자 소셜 로그인 심사 요건이라 색인 대상이다
     {
       url: `${BASE_URL}/terms`,
@@ -91,9 +97,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
-  } catch {
-    // DB 접속 실패 시 정적 페이지만 반환
+  } catch (e) {
+    // DB 접속 실패 시 정적 페이지만 반환 — 단, 조용히 삼키면 재발을 못 알아챈다 (F9 수용 기준)
+    console.error("[sitemap] 생성 실패", e);
   }
 
-  return [...staticPages, ...auditionPages];
+  // 동적 페이지: 활성 커뮤니티 글 상세 (F9 — 커뮤니티 상세 SSR·메타 전환과 짝)
+  let communityPages: MetadataRoute.Sitemap = [];
+
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const rows: { id: string; updated_at: string }[] = [];
+    for (let from = 0; from < MAX_SITEMAP_URLS; from += PAGE) {
+      const { data, error } = await supabase
+        .from("community_posts")
+        .select("id, updated_at")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error || !data?.length) break;
+      rows.push(...data);
+      if (data.length < PAGE) break;
+    }
+
+    communityPages = rows.map((p) => ({
+      url: `${BASE_URL}/community/${p.id}`,
+      lastModified: new Date(p.updated_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+  } catch (e) {
+    console.error("[sitemap] 커뮤니티 URL 생성 실패", e);
+  }
+
+  return [...staticPages, ...auditionPages, ...communityPages];
 }

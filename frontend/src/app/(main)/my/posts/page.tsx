@@ -15,6 +15,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import { cn } from "@/lib/utils";
 import type { CommunityPost } from "@/types";
 
@@ -43,6 +44,8 @@ export default function MyPostsPage() {
   const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchMyPosts = useCallback(async () => {
     const res = await fetch("/api/community?my=true");
@@ -64,13 +67,19 @@ export default function MyPostsPage() {
     fetchMyPosts();
   }, [user, authLoading, router, fetchMyPosts]);
 
-  async function handleDelete(postId: string) {
-    if (!confirm("정말 삭제하시겠습니까?")) return;
+  function requestDelete(postId: string) {
+    setPendingDeleteId(postId);
+  }
 
-    const res = await fetch(`/api/community/${postId}`, { method: "DELETE" });
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    const res = await fetch(`/api/community/${pendingDeleteId}`, { method: "DELETE" });
     if (res.ok) {
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      setPosts((prev) => prev.filter((p) => p.id !== pendingDeleteId));
     }
+    setDeleting(false);
+    setPendingDeleteId(null);
   }
 
   if (authLoading || loading) {
@@ -168,7 +177,7 @@ export default function MyPostsPage() {
                     수정
                   </Link>
                   <button
-                    onClick={() => handleDelete(post.id)}
+                    onClick={() => requestDelete(post.id)}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 size={12} />
@@ -180,6 +189,17 @@ export default function MyPostsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmSheet
+        open={pendingDeleteId !== null}
+        title="정말 삭제하시겠어요?"
+        description="삭제한 글은 되돌릴 수 없어요."
+        confirmLabel="삭제"
+        danger
+        submitting={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

@@ -29,13 +29,14 @@ export async function GET(req: Request) {
 
     let hasApplied = false;
     if (auditionId) {
+      // 발송 실패(status:'failed') 이력은 "지원함"이 아니다 — 재시도 버튼이 계속 눌려야 한다.
       const { data: application } = await supabase
         .from("applications")
-        .select("id")
+        .select("id, status")
         .eq("user_id", user.id)
         .eq("audition_id", auditionId)
         .maybeSingle();
-      hasApplied = !!application;
+      hasApplied = !!application && application.status !== "failed";
     }
 
     const typedProfile = (profile as Profile | null) ?? null;

@@ -56,5 +56,23 @@
       "Read(//c/tmp/**)",
       "Bash(node \"C:/Users/jewon/AppData/Local/Temp/fonttest.mjs\")"
     ]
+  },
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8787",
+    "ENABLE_TOOL_SEARCH": "true"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/jewon/AppData/Roaming/uv/tools/headroom-ai/Scripts/python.exe -m headroom.cli wrap selfheal --marker headroom-wrap-selfheal",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
