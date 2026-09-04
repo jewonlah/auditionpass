@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { AuditionCard } from "@/components/audition/AuditionCard";
 import { CATEGORIES, getCategoryBySlug } from "@/lib/categories";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
 import { getInitialAuditions } from "../page";
+import { AuditionsClient } from "../AuditionsClient";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr";
-const CATEGORY_LIMIT = 30;
+// AuditionsClient의 무한스크롤 페이지 크기(PAGE_SIZE=20)와 맞춰야 한다 — 어긋나면
+// 클라이언트 다음 페이지 range가 초기 목록과 겹쳐 카드가 중복 노출된다.
+const CATEGORY_LIMIT = 20;
 
 // 카테고리별 대표 공고는 크롤 주기(하루 1회)에 맞춰 갱신하면 충분하다 (12_ia-userflows §1.2).
 export const revalidate = 3600;
@@ -105,17 +107,14 @@ export default async function CategoryLandingPage({
         원클릭으로 지원하세요.
       </p>
 
-      {items.length > 0 ? (
-        <div className="mt-4 space-y-4">
-          {items.map((audition) => (
-            <AuditionCard key={audition.id} audition={audition} />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-8 text-center text-sm text-gray-400">
-          현재 진행 중인 {found.genre} 오디션이 없어요.
-        </p>
-      )}
+      <div className="mt-4">
+        <AuditionsClient
+          initialItems={items}
+          initialFilter="전체"
+          initialSearch=""
+          lockedCategory={found.genre}
+        />
+      </div>
 
       <nav className="mt-8 border-t border-gray-100 pt-4" aria-label="다른 분야 오디션">
         <p className="mb-2 text-xs font-semibold text-gray-400">다른 분야 오디션</p>

@@ -28,7 +28,7 @@ export function AuditionCard({ audition }: AuditionCardProps) {
         <Badge variant={ddayVariant}>{formatDday(audition.deadline)}</Badge>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Badge>{audition.genre}</Badge>
+        <Badge>{audition.category ?? audition.genre}</Badge>
         {audition.apply_type === "email" ? (
           <Badge>원클릭 지원</Badge>
         ) : (
