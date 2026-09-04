@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-const FILTERS = ["전체", "원클릭지원", "사이트지원", "배우", "모델"] as const;
+const FILTERS = ["전체", "원클릭지원", "사이트지원"] as const;
 
 interface AuditionFilterProps {
   selected: string;
