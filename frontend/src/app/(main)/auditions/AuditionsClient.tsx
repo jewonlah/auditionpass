@@ -7,7 +7,7 @@ import { AuditionFilter } from "@/components/audition/AuditionFilter";
 import { AuditionCardSkeleton } from "@/components/ui/Skeleton";
 import { Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { todayKST } from "@/lib/utils";
+import { cn, todayKST } from "@/lib/utils";
 import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
 import { CATEGORIES } from "@/lib/categories";
 import type { Audition } from "@/types";
@@ -45,9 +45,18 @@ export function AuditionsClient({
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const supabase = createClient();
   const observerRef = useRef<HTMLDivElement | null>(null);
+  const activeCategoryRef = useRef<HTMLButtonElement | null>(null);
   const pageRef = useRef(0);
 
   const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고 노출 (F10)
+
+  // 활성 분야 칩이 화면 밖이면 마운트 시 한 번만 가운데로 스크롤
+  useEffect(() => {
+    activeCategoryRef.current?.scrollIntoView({
+      inline: "center",
+      block: "nearest",
+    });
+  }, []);
 
   // URL 쿼리 파라미터 동기화
   const updateURL = useCallback(
@@ -127,28 +136,14 @@ export function AuditionsClient({
     [fetchPage]
   );
 
-  // 필터 변경 핸들러
+  // 필터 변경 핸들러 (전체/원클릭지원/사이트지원 — apply_type 토글, 분야 이동은 분야 칩이 담당)
   const handleFilterChange = useCallback(
     (filter: string) => {
-      // 카테고리 랜딩에서 장르 칩(배우/모델)을 누르면 그 분야의 SEO 랜딩으로 이동한다.
-      // 전체/원클릭지원/사이트지원은 apply_type 토글이므로 현재 랜딩에 그대로 남는다.
-      if (
-        lockedCategory &&
-        filter !== "전체" &&
-        filter !== "원클릭지원" &&
-        filter !== "사이트지원"
-      ) {
-        const target = CATEGORIES.find((c) => c.genre === filter);
-        if (target) {
-          router.push(`/auditions/${target.slug}`);
-          return;
-        }
-      }
       setSelectedFilter(filter);
       updateURL(filter, searchQuery);
       resetAndFetch(filter, searchQuery);
     },
-    [searchQuery, updateURL, resetAndFetch, lockedCategory, router]
+    [searchQuery, updateURL, resetAndFetch]
   );
 
   // 검색어 변경 핸들러 (디바운스)
@@ -216,7 +211,41 @@ export function AuditionsClient({
         />
       </div>
 
-      {/* 장르 필터 */}
+      {/* 분야 칩 — 누르면 해당 분야 SEO 랜딩(/auditions/[category])으로 이동 */}
+      <div className="flex gap-2 mb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <button
+          ref={!lockedCategory ? activeCategoryRef : undefined}
+          onClick={() => router.push("/auditions")}
+          className={cn(
+            "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+            !lockedCategory
+              ? "bg-primary text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          )}
+        >
+          전체
+        </button>
+        {CATEGORIES.map((c) => {
+          const active = lockedCategory === c.genre;
+          return (
+            <button
+              key={c.slug}
+              ref={active ? activeCategoryRef : undefined}
+              onClick={() => router.push(`/auditions/${c.slug}`)}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                active
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              )}
+            >
+              {c.genre}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 지원방식 필터 */}
       <AuditionFilter selected={selectedFilter} onSelect={handleFilterChange} />
 
       {/* 로딩 */}
