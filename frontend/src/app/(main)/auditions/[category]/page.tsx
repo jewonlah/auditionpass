@@ -27,7 +27,7 @@ export function generateMetadata({
     const found = getCategoryBySlug(category);
     if (!found) return { title: "카테고리 없음" };
 
-    const title = `${found.genre} 오디션 공고 | 오디션패스`;
+    const title = `${found.genre} 오디션 공고`;
     const description = `${found.genre} 분야 오디션 공고를 모아봤어요. 마감 임박순으로 확인하고 원클릭으로 지원하세요.`;
 
     return {
