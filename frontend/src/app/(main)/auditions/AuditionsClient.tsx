@@ -9,6 +9,7 @@ import { Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { todayKST } from "@/lib/utils";
 import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
+import { CATEGORIES } from "@/lib/categories";
 import type { Audition } from "@/types";
 
 const PAGE_SIZE = 20;
@@ -17,6 +18,10 @@ interface AuditionsClientProps {
   initialItems: Audition[];
   initialFilter: string;
   initialSearch: string;
+  /** 카테고리 랜딩(`[category]/page.tsx`)에서 넘기는 분야 고정값 — 설정 시 모든 쿼리에 이
+   * 분야(category 우선, genre 폴백) 제약이 항상 붙는다. 장르 칩(배우/모델)을 누르면 다른
+   * 분야 슬러그로 이동한다(URL이 곧 SEO 랜딩). */
+  lockedCategory?: string;
 }
 
 /**
@@ -28,6 +33,7 @@ export function AuditionsClient({
   initialItems,
   initialFilter,
   initialSearch,
+  lockedCategory,
 }: AuditionsClientProps) {
   const router = useRouter();
 
@@ -46,6 +52,8 @@ export function AuditionsClient({
   // URL 쿼리 파라미터 동기화
   const updateURL = useCallback(
     (filter: string, search: string) => {
+      // 카테고리 랜딩은 slug 경로가 URL 정본(SEO) — 필터/검색은 쿼리로 반영하지 않는다.
+      if (lockedCategory) return;
       const params = new URLSearchParams();
       if (filter !== "전체") params.set("filter", filter);
       if (search.trim()) params.set("q", search.trim());
@@ -53,7 +61,7 @@ export function AuditionsClient({
       // B3 버그 수정: 쿼리 빈 값이어도 /auditions 유지 (랜딩/홈 이탈 금지)
       router.replace(qs ? `/auditions?${qs}` : "/auditions", { scroll: false });
     },
-    [router]
+    [router, lockedCategory]
   );
 
   const fetchPage = useCallback(
@@ -66,6 +74,13 @@ export function AuditionsClient({
         .select(AUDITION_LIST_COLUMNS)
         .eq("is_active", true)
         .or(`deadline.gte.${today},deadline.is.null`);
+
+      // 카테고리 랜딩 고정 — category(007) 우선, 백필 누락 행은 genre로 폴백 (page.tsx와 동일 규칙)
+      if (lockedCategory) {
+        query = query.or(
+          `category.eq.${lockedCategory},and(category.is.null,genre.eq.${lockedCategory})`
+        );
+      }
 
       // 필터를 DB 쿼리에 적용
       if (filter === "원클릭지원") {
@@ -93,7 +108,7 @@ export function AuditionsClient({
         .filter((a) => !a.deadline || a.deadline >= today)
         .map((a) => ({ ...a, apply_email: null }));
     },
-    [supabase, today]
+    [supabase, today, lockedCategory]
   );
 
   // 필터/검색 변경 시 데이터 초기화 후 첫 페이지만 로드
@@ -115,11 +130,25 @@ export function AuditionsClient({
   // 필터 변경 핸들러
   const handleFilterChange = useCallback(
     (filter: string) => {
+      // 카테고리 랜딩에서 장르 칩(배우/모델)을 누르면 그 분야의 SEO 랜딩으로 이동한다.
+      // 전체/원클릭지원/사이트지원은 apply_type 토글이므로 현재 랜딩에 그대로 남는다.
+      if (
+        lockedCategory &&
+        filter !== "전체" &&
+        filter !== "원클릭지원" &&
+        filter !== "사이트지원"
+      ) {
+        const target = CATEGORIES.find((c) => c.genre === filter);
+        if (target) {
+          router.push(`/auditions/${target.slug}`);
+          return;
+        }
+      }
       setSelectedFilter(filter);
       updateURL(filter, searchQuery);
       resetAndFetch(filter, searchQuery);
     },
-    [searchQuery, updateURL, resetAndFetch]
+    [searchQuery, updateURL, resetAndFetch, lockedCategory, router]
   );
 
   // 검색어 변경 핸들러 (디바운스)
