@@ -70,7 +70,11 @@ export async function getInitialAuditions(
   } else if (filter === "사이트지원") {
     query = query.eq("apply_type", "external");
   } else if (filter !== "전체") {
-    query = query.eq("genre", filter);
+    // category(007, 14개 상세 분류) 우선, 백필 누락 행은 genre(배우/모델/기타 3개)로 폴백.
+    // 필터값에 콤마가 없으면 or() DSL 인용 없이 안전(PostgREST or 특수문자는 콤마만).
+    query = query.or(
+      `category.eq.${filter},and(category.is.null,genre.eq.${filter})`
+    );
   }
 
   if (q) {
