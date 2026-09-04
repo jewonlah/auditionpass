@@ -32,6 +32,8 @@ export interface Audition {
   title: string;
   company: string | null;
   genre: '배우' | '모델' | '기타';
+  /** 007_category_system — 14개 상세 분류. 백필 누락 시 null (genre로 폴백). */
+  category: string | null;
   deadline: string | null;
   apply_email: string | null;
   description: string | null;

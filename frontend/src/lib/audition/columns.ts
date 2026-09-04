@@ -4,4 +4,4 @@
 // 실려 브라우저 개발자도구·JS 실행 크롤러 어디서든 보인다 (Codex 리뷰, 36 §4 위반).
 // 상세 페이지(`audition/[id]/page.tsx`)와 같은 원칙.
 export const AUDITION_LIST_COLUMNS =
-  "id,title,company,genre,deadline,description,requirements,source_url,source_name,apply_type,is_active,oneclick_blocked,reports_count,review_status,crawled_at,created_at";
+  "id,title,company,genre,category,deadline,description,requirements,source_url,source_name,apply_type,is_active,oneclick_blocked,reports_count,review_status,crawled_at,created_at";

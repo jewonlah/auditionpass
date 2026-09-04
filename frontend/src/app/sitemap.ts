@@ -81,11 +81,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 2026-08-28: limit(500) 이었다. 활성 공고가 4,400여 건인데 500건만 제출하고 있었다 —
     // 나머지는 내부 링크로만 발견돼야 해서 사실상 색인 밖이었다. 페이지네이션으로 전량 제출한다.
     // (사이트맵 1개당 50,000 URL 이 상한이라 현재 규모는 한 파일로 충분하다)
-    const rows: { id: string; created_at: string; genre: string | null }[] = [];
+    const rows: {
+      id: string;
+      created_at: string;
+      genre: string | null;
+      category: string | null;
+    }[] = [];
     for (let from = 0; from < MAX_SITEMAP_URLS; from += PAGE) {
       const { data, error } = await supabase
         .from("auditions")
-        .select("id, created_at, genre")
+        .select("id, created_at, genre, category")
         .eq("is_active", true)
         .or(`deadline.gte.${today},deadline.is.null`)
         .order("created_at", { ascending: false })
@@ -103,7 +108,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-    activeGenres = new Set(rows.map((a) => a.genre).filter((g): g is string => !!g));
+    // category(007, 14개 상세 분류) 우선, 백필 누락 행은 genre로 폴백 — auditions/page.tsx와 동일 원칙.
+    activeGenres = new Set(
+      rows.map((a) => a.category ?? a.genre).filter((g): g is string => !!g)
+    );
   } catch (e) {
     // DB 접속 실패 시 정적 페이지만 반환 — 단, 조용히 삼키면 재발을 못 알아챈다 (F9 수용 기준)
     console.error("[sitemap] 생성 실패", e);
