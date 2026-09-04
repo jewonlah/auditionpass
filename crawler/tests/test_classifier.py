@@ -84,5 +84,29 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(to_legacy_genre("etc"), "기타")
 
 
+class LeadingTagTest(unittest.TestCase):
+    """제목 맨 앞 [분류명] 태그가 다른 키워드보다 우선해야 한다 (아이돌 오분류 회귀)"""
+
+    def test_tag_wins_over_body_keywords(self):
+        cases = {
+            "[뮤지컬]k-pop가족뮤지컬 <어린왕자> 배우 오디션": "뮤지컬",
+            "[연극]대구 동성로 연극 <봄날은 간다> 배우 모집": "연극",
+            "[가수][NEXT BEAT] 가창자 모집": "가수",
+            "[댄스]넌버벌 퍼포먼스 <K-POP ON STAGE>": "댄서",
+        }
+        for title, expected in cases.items():
+            r = classify_audition(title, "", "")
+            self.assertEqual(r.category, expected, title)
+            self.assertEqual(r.method, "rule", title)
+            self.assertEqual(r.confidence, 0.95, title)
+
+    def test_non_category_tag_falls_back_to_existing_logic(self):
+        # 태그가 분류명이 아니면 무시하고 기존 로직 유지 — 이 두 제목은 태그 규칙 범위 밖.
+        r1 = classify_audition("남자 아이돌 멤버 모집합니다.", "", "")
+        self.assertEqual(r1.category, "아이돌")
+        r2 = classify_audition("JTBC 아이돌 오디션 《PROJECT 7》", "", "")
+        self.assertEqual(r2.category, "아이돌")
+
+
 if __name__ == "__main__":
     unittest.main()
