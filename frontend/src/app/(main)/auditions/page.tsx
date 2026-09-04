@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import { todayKST } from "@/lib/utils";
 import { parseAuditionsSearchParams } from "@/lib/audition/searchParams";
 import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
+import { CATEGORIES } from "@/lib/categories";
 import { AuditionsClient } from "./AuditionsClient";
 import type { Audition } from "@/types";
 
@@ -45,8 +48,15 @@ export function generateMetadata(): Metadata {
  * apply_email:null은 타입(Audition)을 맞추기 위한 표기일 뿐, 실제로 DB에서 가져오지도
  * 않는다 — 초기 HTML/RSC 페이로드는 크롤러가 그대로 읽어가는 층이라 노출 표면이 크다.
  */
-async function getInitialAuditions(filter: string, q: string): Promise<Audition[]> {
-  const supabase = await createServerClient();
+export async function getInitialAuditions(
+  filter: string,
+  q: string,
+  limit: number = PAGE_SIZE,
+  // 카테고리 랜딩(`[category]/page.tsx`)은 쿠키 없는 anon 클라이언트를 넘겨 ISR을 유지한다.
+  // cookies()를 쓰는 createServerClient()는 라우트를 강제로 Dynamic으로 만든다(D3).
+  supabaseClient?: SupabaseClient
+): Promise<Audition[]> {
+  const supabase = supabaseClient ?? (await createServerClient());
   const today = todayKST();
 
   let query = supabase
@@ -69,7 +79,7 @@ async function getInitialAuditions(filter: string, q: string): Promise<Audition[
 
   const { data, error } = await query
     .order("deadline", { ascending: true, nullsFirst: false })
-    .range(0, PAGE_SIZE - 1);
+    .range(0, limit - 1);
 
   if (error || !data) return [];
 
@@ -87,10 +97,28 @@ export default async function AuditionsPage({
   const initialItems = await getInitialAuditions(filter, q);
 
   return (
-    <AuditionsClient
-      initialItems={initialItems}
-      initialFilter={filter}
-      initialSearch={q}
-    />
+    <>
+      <AuditionsClient
+        initialItems={initialItems}
+        initialFilter={filter}
+        initialSearch={q}
+      />
+
+      {/* 서버 렌더 내부 링크 — sitemap 밖에서 카테고리 랜딩을 발견할 유일한 경로 (D4) */}
+      <nav className="mt-8 border-t border-gray-100 pt-4" aria-label="분야별 오디션">
+        <p className="mb-2 text-xs font-semibold text-gray-400">분야별 오디션</p>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <Link
+              key={c.slug}
+              href={`/auditions/${c.slug}`}
+              className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600"
+            >
+              {c.genre}
+            </Link>
+          ))}
+        </div>
+      </nav>
+    </>
   );
 }

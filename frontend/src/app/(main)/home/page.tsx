@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { formatDday, getDday, todayKST } from "@/lib/utils";
-import { getMissingFields } from "@/lib/profile";
+import { getMissingFields, getProfileCompleteness } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
 import type { Audition, Profile } from "@/types";
@@ -22,20 +22,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-/** 프로필 완성도 (지원 필수 필드 + 사진) — 필수 null 체크 파생, 별도 컬럼 없음 */
-function getProfileCompleteness(profile: Profile | null): number {
-  const checks = [
-    !!profile?.name,
-    !!profile?.birth_year || !!profile?.age,
-    !!profile?.gender,
-    (profile?.activity_field?.length ?? 0) > 0,
-    (profile?.genre?.length ?? 0) > 0,
-    (profile?.photo_urls?.length ?? 0) > 0,
-  ];
-  const done = checks.filter(Boolean).length;
-  return Math.round((done / checks.length) * 100);
-}
 
 export default async function HomePage() {
   const supabase = await createServerClient();

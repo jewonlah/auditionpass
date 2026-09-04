@@ -21,6 +21,7 @@ import {
   type MiniProfileField,
 } from "@/lib/profile";
 import { withReturnTo } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 import type { Audition } from "@/types";
 
 interface ProfileSummary {
@@ -128,6 +129,8 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
 
   function handleApplyTap() {
     const next = resolveStep(check, isLoggedIn);
+    if (next === "login") track("apply_gate_blocked", { reason: "NOT_LOGGED_IN" });
+    if (next === "profile") track("apply_gate_blocked", { reason: "INCOMPLETE_PROFILE" });
     if (next) setStep(next);
   }
 
@@ -521,6 +524,7 @@ function ConfirmStep({
       const data = await res.json();
 
       if (res.ok) {
+        track("apply_send", { audition_id: audition.id });
         onSent();
         return;
       }

@@ -195,6 +195,20 @@ function SignupContent() {
             />
           </div>
 
+          {/* 미성년자 고지 (40 §권장) — 개인정보보호법 제22조의2.
+              체크박스 없이 문구만, 가입 버튼 바로 위에 둔다. */}
+          <p className="text-sm leading-relaxed text-gray-500">
+            만 14세 미만은 가입할 수 없습니다. 가입 시{" "}
+            <Link href="/terms" className="underline hover:text-gray-600">
+              이용약관
+            </Link>
+            ·
+            <Link href="/privacy" className="underline hover:text-gray-600">
+              개인정보처리방침
+            </Link>
+            에 동의한 것으로 봅니다.
+          </p>
+
           <Button
             type="submit"
             size="lg"

@@ -94,7 +94,22 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-gray-900 mb-2">7. 개인정보 보호책임자</h2>
+          <h2 className="font-bold text-gray-900 mb-2">7. 아동의 개인정보</h2>
+          <p>
+            회사는 만 14세 미만 아동의 개인정보를 수집하지 않으며, 만 14세
+            미만은 회원으로 가입할 수 없습니다. 만 14세 미만 아동의 개인정보가
+            수집된 사실을 알게 된 경우 회사는 지체 없이 해당 정보를 파기하고
+            계정을 삭제합니다. (개인정보 보호법 제22조의2 참조)
+          </p>
+          <p className="mt-2">
+            만 14세 이상이라도 만 19세 미만 회원이 오디션에 지원할 때에는,
+            오디션 주최측의 요구나 관련 법령에 따라 법정대리인의 동의가 필요할
+            수 있습니다. 지원 전에 보호자와 함께 확인해주세요.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-gray-900 mb-2">8. 개인정보 보호책임자</h2>
           <p>
             문의: support@auditionpass.co.kr
           </p>

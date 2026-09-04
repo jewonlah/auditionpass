@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { todayKST } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/categories";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr";
 
@@ -12,6 +13,10 @@ const PAGE = 1000;              // Supabase 한 번에 가져올 행 수
 const MAX_SITEMAP_URLS = 50000; // sitemaps.org 상한
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // 활성 공고가 1건 이상인 카테고리만 sitemap에 올린다 — 아래 auditionPages 조회 결과에서
+  // genre를 그대로 집계해 판단한다(추가 쿼리 없음, D4).
+  let activeGenres = new Set<string>();
+
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -76,11 +81,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 2026-08-28: limit(500) 이었다. 활성 공고가 4,400여 건인데 500건만 제출하고 있었다 —
     // 나머지는 내부 링크로만 발견돼야 해서 사실상 색인 밖이었다. 페이지네이션으로 전량 제출한다.
     // (사이트맵 1개당 50,000 URL 이 상한이라 현재 규모는 한 파일로 충분하다)
-    const rows: { id: string; created_at: string }[] = [];
+    const rows: { id: string; created_at: string; genre: string | null }[] = [];
     for (let from = 0; from < MAX_SITEMAP_URLS; from += PAGE) {
       const { data, error } = await supabase
         .from("auditions")
-        .select("id, created_at")
+        .select("id, created_at, genre")
         .eq("is_active", true)
         .or(`deadline.gte.${today},deadline.is.null`)
         .order("created_at", { ascending: false })
@@ -97,6 +102,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
+
+    activeGenres = new Set(rows.map((a) => a.genre).filter((g): g is string => !!g));
   } catch (e) {
     // DB 접속 실패 시 정적 페이지만 반환 — 단, 조용히 삼키면 재발을 못 알아챈다 (F9 수용 기준)
     console.error("[sitemap] 생성 실패", e);
@@ -135,5 +142,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] 커뮤니티 URL 생성 실패", e);
   }
 
-  return [...staticPages, ...auditionPages, ...communityPages];
+  // 카테고리 SEO 랜딩 — 활성 공고가 1건 이상인 slug만 (D7, D4; 12_ia-userflows §1.2)
+  const categoryPages: MetadataRoute.Sitemap = CATEGORIES.filter((c) =>
+    activeGenres.has(c.genre)
+  ).map((c) => ({
+    url: `${BASE_URL}/auditions/${c.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...categoryPages, ...auditionPages, ...communityPages];
 }
