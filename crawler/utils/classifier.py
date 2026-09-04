@@ -206,6 +206,36 @@ def _source_bias(source_name: str) -> Optional[str]:
     return None
 
 
+# 제목 맨 앞 [태그](연속 가능)가 분류명/동의어와 일치하면 최우선 확정.
+# 실측: "[뮤지컬]k-pop가족뮤지컬..." 처럼 제목 내 다른 키워드(K-POP 등)에 밀려
+# 아이돌로 오분류되던 버그 — 작성자가 붙인 말머리를 신뢰한다.
+_TAG_SYNONYMS: dict[str, str] = {
+    "댄스": "dancer",
+    "키즈": "kids_model",
+    "촬영": "photo_model",
+    "mc": "mc",
+    "인플루언서": "influencer",
+    "크리에이터": "influencer",
+}
+TAG_TO_CATEGORY: dict[str, str] = {
+    **{v.lower(): k for k, v in CATEGORIES.items()},  # "아이돌"→idol, "mc/진행자"→mc 등
+    **_TAG_SYNONYMS,
+}
+
+
+def _leading_tag_category(title: str) -> Optional[str]:
+    """제목 맨 앞 연속 [태그][태그]... 중 분류명/동의어와 일치하는 첫 태그의 카테고리 코드."""
+    import re
+    m = re.match(r"^\s*(?:\[[^\]]*\]\s*)+", title)
+    if not m:
+        return None
+    for tag in re.findall(r"\[([^\]]*)\]", m.group(0)):
+        code = TAG_TO_CATEGORY.get(tag.strip().lower())
+        if code:
+            return code
+    return None
+
+
 # 나이 조건 → 카테고리 매핑
 # (?<!\d) : "20~26세"의 "6세", "27세"의 "7세"처럼 다자리 나이의 끝자리만 잡히는 오탐 방지
 # (?!\s*(?:이상|대)) : "15세 이상"(성인 모집), "2세대" 제외
@@ -264,6 +294,16 @@ def classify_audition(
     Stage 1 (키워드) → Stage 2 (규칙) 순서로 실행.
     확신도 0.6 이상이면 결과 반환, 미만이면 "기타"로 저장 후 AI 배치 대기.
     """
+    # 태그 규칙: 제목 맨 앞 [분류명] 태그는 키워드/규칙보다 우선한다
+    tag_code = _leading_tag_category(title)
+    if tag_code:
+        return ClassifyResult(
+            category=CATEGORIES[tag_code],
+            category_code=tag_code,
+            confidence=0.95,
+            method="rule",
+        )
+
     # Stage 1
     result = classify_by_keyword(title, description)
 
