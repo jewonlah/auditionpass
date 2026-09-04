@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { maxBirthYear } from "@/lib/profile";
 
 // AI 소개문 생성(/api/profile/polish)의 입력 스키마와 팩트시트 조립.
 //
@@ -21,7 +22,8 @@ export const polishInputSchema = z.object({
     .number()
     .int("출생연도는 정수여야 합니다.")
     .min(1940, "출생연도를 확인해주세요.")
-    .max(CURRENT_YEAR, "출생연도를 확인해주세요.")
+    // 상한은 프로필 저장과 같은 소스(만 14세) — 여기만 CURRENT_YEAR 면 미성년 프로필이 LLM 에 간다.
+    .max(maxBirthYear(), "만 14세 이상만 가입할 수 있습니다.")
     .nullish(),
   gender: z.string().max(10, "성별은 10자 이내여야 합니다.").nullish(),
   height: z

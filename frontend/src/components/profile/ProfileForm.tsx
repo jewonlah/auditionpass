@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhotoUpload } from "@/components/profile/PhotoUpload";
 import { cn, resolveReturnTo } from "@/lib/utils";
+import { getProfileCompleteness, maxBirthYear } from "@/lib/profile";
+import { track } from "@/lib/analytics";
 import type { Profile } from "@/types";
 import {
   Save,
@@ -25,7 +27,8 @@ const profileSchema = z.object({
     .number({ error: "숫자를 입력해주세요" })
     .int()
     .min(1940, "올바른 출생연도를 입력해주세요")
-    .max(2015, "14세 이상만 가입 가능합니다"),
+    // 상한은 실행 시점 계산 — 연도를 박아 두면 해가 바뀔 때마다 미성년자가 통과한다.
+    .max(maxBirthYear(), "만 14세 이상만 가입할 수 있습니다"),
   gender: z.enum(["남성", "여성", "기타"], {
     error: "성별을 선택해주세요",
   }),
@@ -168,6 +171,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     if (!res.ok) {
       setServerError(result.error || "저장에 실패했습니다.");
       return;
+    }
+
+    if (getProfileCompleteness(initialData) < 100 && getProfileCompleteness(payload) === 100) {
+      track("profile_complete");
     }
 
     // F3: 저장 후 원래 맥락으로 복귀 (랜딩 추방 버그 A6 해소), 폴백 /my

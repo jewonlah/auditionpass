@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { sanitizeProfileBody, validateAgeFields } from "@/lib/profile";
+
+/**
+ * 만 14세 미만 차단은 **서버에서** 해야 한다 — 온보딩·프로필 폼은 이 라우트로 직접
+ * POST/PUT 하므로 클라이언트 zod 만으로는 우회된다(개인정보 보호법 제22조의2).
+ * birth_year 와 deprecated `age` 를 함께 본다 — 상세는 validateAgeFields 주석.
+ */
+function birthYearGuard(body: unknown): NextResponse | null {
+  const err = validateAgeFields(body as { birth_year?: unknown; age?: unknown } | null);
+  if (!err) return null;
+  return NextResponse.json({ error: err.message, code: err.code }, { status: 400 });
+}
 
 // GET /api/profile — 내 프로필 조회
 export async function GET() {
@@ -38,9 +50,12 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
+  const invalid = birthYearGuard(body);
+  if (invalid) return invalid;
+
   const { data, error } = await supabase
     .from("profiles")
-    .insert({ id: user.id, ...body })
+    .insert({ ...sanitizeProfileBody(body), id: user.id })
     .select()
     .single();
 
@@ -73,9 +88,12 @@ export async function PUT(request: Request) {
 
   const body = await request.json();
 
+  const invalid = birthYearGuard(body);
+  if (invalid) return invalid;
+
   const { data, error } = await supabase
     .from("profiles")
-    .update(body)
+    .update(sanitizeProfileBody(body))
     .eq("id", user.id)
     .select()
     .single();

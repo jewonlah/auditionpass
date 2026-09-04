@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send } from "lucide-react";
 import { ApplyButton } from "@/components/audition/ApplyButton";
 import { ReportButton } from "@/components/audition/ReportButton";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/lib/analytics";
 import type { Audition } from "@/types";
 
 /**
@@ -51,6 +52,10 @@ export function AuditionActions({
   isExpired: boolean;
 }) {
   const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    track("audition_view", { audition_id: audition.id });
+  }, [audition.id]);
 
   return (
     <>
