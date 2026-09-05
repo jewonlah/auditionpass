@@ -553,7 +553,6 @@ export default async function LandingPage() {
                   {[
                     { t: "뮤지컬 배우 모집", s: "보냄 09:12 · 회신 도착 14:05", hot: true },
                     { t: "연극 배역 오디션", s: "보냄 10:04 · 접수됨", hot: false },
-                    { t: "광고 촬영 모델", s: "보냄 11:37 · 회신 도착 11:02", hot: true },
                     { t: "독립영화 주연", s: "보냄 14:50 · 접수됨", hot: false },
                   ].map((r, i, arr) => (
                     <div
@@ -626,21 +625,22 @@ export default async function LandingPage() {
           <h2 className="text-[30px] leading-[1.16] font-black tracking-[-0.05em] sm:text-[40px]">
             무료로 시작합니다
           </h2>
+          <p className="mt-2 text-[15px] font-bold text-[#736C5F]">
+            지금은 모든 기능을 무료로 열어두고 있습니다
+          </p>
         </Reveal>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <Reveal delay={0}>
+        <div className="mt-8 max-w-lg">
+          <Reveal>
             <div className="h-full rounded-[22px] border border-[#CFC3AF] bg-white px-8 py-8">
               <p className="text-[12.5px] font-black tracking-[0.16em] text-[#736C5F]">무료</p>
               <p className="mt-3.5 text-[42px] font-black tracking-[-0.045em]">0원</p>
               <div className="mt-6 space-y-3 border-t border-[#E3D9C9] pt-5 text-[15.5px] font-medium text-[#37342E]">
                 <p>전체 공고 열람 — 가입 없이</p>
                 <p>
-                  원클릭 지원 하루 <b className="font-black text-[#141110]">5건</b>
+                  원클릭 지원 — <b className="font-black text-[#141110]">횟수 제한 없이</b>
                 </p>
-                <p>
-                  광고를 한 번 보면 <b className="font-black text-[#141110]">3건</b> 추가
-                </p>
+                <p>프로필 한 번 등록하면 지원 메일까지 자동으로</p>
                 <p>지원 기록 열람</p>
               </div>
               <Link
@@ -648,43 +648,6 @@ export default async function LandingPage() {
                 className="mt-7 block rounded-full border-2 border-[#141110] py-3.5 text-center text-[15px] font-bold transition-colors duration-500 hover:bg-[#141110] hover:text-[#F7F4EF]"
               >
                 무료로 시작하기
-              </Link>
-            </div>
-          </Reveal>
-
-          <Reveal delay={100}>
-            <div className="relative h-full overflow-hidden rounded-[22px] bg-[#141110] px-8 py-8 text-[#F7F4EF]">
-              <div
-                aria-hidden
-                className="absolute inset-x-0 top-0 h-1"
-                style={{ background: "linear-gradient(to right, #F0330F, #FF8A1E 60%, rgba(255,138,30,0))" }}
-              />
-              <div className="flex items-baseline">
-                <p className="text-[12.5px] font-black tracking-[0.16em] text-[#FF8A1E]">프로</p>
-                <span className="ml-auto rounded-full bg-[#F0330F]/[0.18] px-2.5 py-1 text-[11px] font-bold text-[#FF8A1E]">
-                  현재 무료
-                </span>
-              </div>
-              <p className="mt-3.5 flex items-baseline gap-3">
-                <span className="text-[22px] font-bold text-[#7E786F] line-through decoration-2">
-                  월 9,900원
-                </span>
-                <span className="text-[42px] font-black tracking-[-0.045em]">0원</span>
-              </p>
-              <p className="mt-1.5 text-[14px] text-[#847C6F]">지금은 전부 열어두고 있습니다</p>
-              <div className="mt-6 space-y-3 border-t border-[#33302B] pt-5 text-[15.5px] font-medium text-[#DCD6CE]">
-                <p>
-                  원클릭 지원 <b className="font-black text-[#F7F4EF]">무제한</b>, 광고 없이
-                </p>
-                <p>마감 하루 전 알림</p>
-                <p>새 공고가 올라오면 즉시 알림</p>
-                <p>지원 우선 처리</p>
-              </div>
-              <Link
-                href="/signup"
-                className="mt-7 block rounded-full bg-[#F0330F] py-3.5 text-center text-[15px] font-black text-white transition-transform duration-500 active:scale-[0.98]"
-              >
-                지금 무료로 쓰기
               </Link>
             </div>
           </Reveal>
