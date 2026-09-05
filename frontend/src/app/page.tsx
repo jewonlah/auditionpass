@@ -284,7 +284,7 @@ export default async function LandingPage() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl gap-12 px-5 pt-14 pb-20 md:grid-cols-[1.1fr_1fr] md:items-center md:gap-14 md:pt-24 md:pb-28">
           {/* 왼쪽: 약속 */}
-          <Reveal>
+          <div>
             <Eyebrow>당신의 매니저가 되어 드립니다</Eyebrow>
             <h1 className="mt-5 text-[38px] leading-[1.12] font-black tracking-[-0.05em] sm:text-[52px] md:text-[60px]">
               당신의 꿈은, 우리가
@@ -323,10 +323,10 @@ export default async function LandingPage() {
                 가입은 원클릭 지원할 때만 필요합니다
               </span>
             </div>
-          </Reveal>
+          </div>
 
           {/* 오른쪽: 실제 공고가 쌓인 카드 스택 (모바일에서는 감춘다 — 그리드가 바로 아래 있다) */}
-          <Reveal delay={120} className="hidden md:block">
+          <div className="hidden md:block">
             <div className="relative h-[420px]">
               {stack.map((a, i) => {
                 const d = dday(a.deadline);
@@ -377,7 +377,7 @@ export default async function LandingPage() {
                 );
               })}
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
