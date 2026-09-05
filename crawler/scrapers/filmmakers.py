@@ -134,16 +134,13 @@ class FilmmakersScraper(BaseScraper):
         if self.is_noise_title(title):
             return None
 
-        # 메타 필드 추출 (라벨: 값 패턴)
-        meta_spans = card.select("div.flex.flex-wrap span")
+        # 메타 필드 추출 (div.grid 안의 라벨(text-xs)/값(text-sm) 쌍 — 2026-09 마크업)
         company = None
-        for span in meta_spans:
-            label_el = span.select_one("span.text-xs")
-            if label_el:
-                label = label_el.get_text(strip=True)
-                value = span.get_text(strip=True).replace(label, "").strip()
-                if label == "제작" and value:
-                    company = value
+        for col in card.select("div.grid > div"):
+            label_el = col.select_one("div.text-xs")
+            value_el = col.select_one("div.text-sm")
+            if label_el and value_el and label_el.get_text(strip=True) == "제작":
+                company = value_el.get_text(strip=True) or None
 
         # 카테고리 배지에서 장르 보강
         category_el = card.select_one("span.bg-neutral-200, span[class*='bg-neutral']")
@@ -160,7 +157,7 @@ class FilmmakersScraper(BaseScraper):
 
         return AuditionData(
             title=title,
-            company=company or detail.get("company"),
+            company=company,
             genre=genre,
             deadline=deadline,
             apply_email=apply_email,
@@ -174,7 +171,6 @@ class FilmmakersScraper(BaseScraper):
         result = {
             "full_text": None, "email": None, "phone": None,
             "location": None, "deadline": None, "requirements": None,
-            "company": None,
         }
         try:
             resp = requests.get(url, timeout=30, headers=_HEADERS)
@@ -215,19 +211,6 @@ class FilmmakersScraper(BaseScraper):
                     break
         if not result["deadline"]:
             result["deadline"] = self.parse_deadline_smart(full_text, require_label=True)
-
-        # 제작사 (상세 페이지에서 재시도)
-        for kw in ["제작사", "제작", "주최", "기획"]:
-            el = soup.find(string=re.compile(kw))
-            if el:
-                parent = el.find_parent()
-                if parent:
-                    sibling = parent.find_next_sibling()
-                    if sibling:
-                        val = sibling.get_text(strip=True)
-                        if val and len(val) > 1:
-                            result["company"] = val[:100]
-                            break
 
         # 지원 자격
         req_el = soup.find(
