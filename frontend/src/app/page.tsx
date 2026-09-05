@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { Reveal } from "@/components/landing/Reveal";
+import { StatCount } from "@/components/landing/StatCount";
 import { getDday } from "@/lib/utils";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
 
@@ -234,6 +235,44 @@ export default async function LandingPage() {
         @media (prefers-reduced-motion: reduce) {
           .ap-dawn, .ap-lift-a, .ap-lift-b, .ap-lift-c { animation: none; }
         }
+
+        /* 스크롤 진입 리빌(Reveal.tsx) — @supports 로 감싼 안쪽에서만 숨김 상태가 생긴다.
+           미지원 브라우저·JS 없음·reduced-motion 이면 이 블록 자체가 무시되어 그냥 보인다.
+           entry 구간 58% 에서 끝나 완전히 들어오기 전에 선명해진다(끝까지 흐리면 못 읽는다).
+           --ap-reveal-shift(px, Reveal 의 delay prop) 만큼 시작점을 늦춰 같은 줄 요소를 스태거한다. */
+        @supports (animation-timeline: view()) {
+          @media (prefers-reduced-motion: no-preference) {
+            @keyframes ap-reveal-in {
+              from { opacity: 0; transform: translateY(28px); filter: blur(6px); }
+              to { opacity: 1; transform: translateY(0); filter: blur(0); }
+            }
+            .ap-reveal {
+              animation: ap-reveal-in linear both;
+              animation-timeline: view();
+              animation-range: entry calc(0% + var(--ap-reveal-shift, 0px)) entry calc(58% + var(--ap-reveal-shift, 0px));
+            }
+          }
+        }
+
+        /* 히어로 카드 스택 패럴랙스 — 부유(ap-lift-*)는 안쪽 Link, 패럴랙스는 바깥 래퍼가
+           맡는다. 같은 transform 을 두 애니메이션이 다투면 하나가 무시되므로 레이어를
+           나눴다(부모=스크롤 패럴랙스, 자식=부유). 이동폭은 절제해서 수십 px 이내. */
+        @supports (animation-timeline: scroll()) {
+          @media (prefers-reduced-motion: no-preference) {
+            @keyframes ap-parallax-0 { to { transform: translateY(-14px); } }
+            @keyframes ap-parallax-1 { to { transform: translateY(-24px); } }
+            @keyframes ap-parallax-2 { to { transform: translateY(-38px); } }
+            .ap-parallax-0, .ap-parallax-1, .ap-parallax-2 {
+              animation-timeline: scroll(root block);
+              animation-range: 0vh 60vh;
+              animation-fill-mode: both;
+              animation-timing-function: linear;
+            }
+            .ap-parallax-0 { animation-name: ap-parallax-0; }
+            .ap-parallax-1 { animation-name: ap-parallax-1; }
+            .ap-parallax-2 { animation-name: ap-parallax-2; }
+          }
+        }
       `}</style>
 
       {/* 상단 불꽃 띠 — 페이지를 열자마자 온도가 먼저 보인다 */}
@@ -301,13 +340,13 @@ export default async function LandingPage() {
             <div className="mt-9 flex gap-10 border-t border-[#D9CEBE] pt-7 sm:gap-12">
               <div>
                 <p className="text-[30px] font-black tracking-[-0.03em] tabular-nums sm:text-[32px]">
-                  {nf.format(stats.active)}
+                  <StatCount value={stats.active} />
                 </p>
                 <p className="mt-1 text-[12.5px] font-medium text-[#57524A]">진행 중인 공고</p>
               </div>
               <div>
                 <p className="text-[30px] font-black tracking-[-0.03em] text-[#F0330F] tabular-nums sm:text-[32px]">
-                  {nf.format(stats.today)}
+                  <StatCount value={stats.today} />
                 </p>
                 <p className="mt-1 text-[12.5px] font-medium text-[#57524A]">오늘 새로 올라온 공고</p>
               </div>
@@ -330,50 +369,49 @@ export default async function LandingPage() {
             <div className="relative h-[420px]">
               {stack.map((a, i) => {
                 const d = dday(a.deadline);
-                const pos = [
-                  "ap-lift-a top-0 left-1 w-[86%]",
-                  "ap-lift-b top-[88px] left-9 w-[86%]",
-                  "ap-lift-c top-[186px] left-0 w-[94%]",
-                ][i];
+                // 위치는 바깥 래퍼(패럴랙스), 부유(ap-lift-*)는 안쪽 Link — transform 레이어 분리.
+                const posClass = ["top-0 left-1 w-[86%]", "top-[88px] left-9 w-[86%]", "top-[186px] left-0 w-[94%]"][i];
+                const liftClass = ["ap-lift-a", "ap-lift-b", "ap-lift-c"][i];
                 const front = i === 2;
                 return (
-                  <Link
-                    key={a.id}
-                    href={`/audition/${a.id}`}
-                    className={`absolute block rounded-[20px] border px-6 py-5 ${pos} ${
-                      front
-                        ? "border-[#CFC3AF] bg-white shadow-[0_26px_54px_-30px_rgba(72,32,16,0.4),0_6px_16px_-10px_rgba(72,32,16,0.2)]"
-                        : "border-[#D5C9B8] bg-[#FDFCF8]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[10.5px] font-bold tracking-[0.12em] text-[#736C5F]">
-                        {a.category || a.genre}
-                      </span>
-                      {front && a.apply_type === "email" && (
-                        <span className="rounded-full bg-[#FFE7E0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#F0330F]">
-                          원클릭 지원
-                        </span>
-                      )}
-                      <span
-                        className={`ml-auto text-[11.5px] font-bold tabular-nums ${
-                          d.urgent ? "text-[#F0330F]" : "text-[#736C5F]"
-                        }`}
-                      >
-                        {d.label}
-                      </span>
-                    </div>
-                    <p
-                      className={`mt-2.5 line-clamp-2 leading-snug font-bold tracking-[-0.02em] ${
-                        front ? "text-[18px] font-black text-[#141110]" : "text-[15px] text-[#3F3B34]"
+                  <div key={a.id} className={`absolute ${posClass} ap-parallax-${i}`}>
+                    <Link
+                      href={`/audition/${a.id}`}
+                      className={`block rounded-[20px] border px-6 py-5 ${liftClass} ${
+                        front
+                          ? "border-[#CFC3AF] bg-white shadow-[0_26px_54px_-30px_rgba(72,32,16,0.4),0_6px_16px_-10px_rgba(72,32,16,0.2)]"
+                          : "border-[#D5C9B8] bg-[#FDFCF8]"
                       }`}
                     >
-                      {a.title}
-                    </p>
-                    {front && a.company && (
-                      <p className="mt-2 truncate text-[13px] text-[#645E53]">{a.company}</p>
-                    )}
-                  </Link>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[10.5px] font-bold tracking-[0.12em] text-[#736C5F]">
+                          {a.category || a.genre}
+                        </span>
+                        {front && a.apply_type === "email" && (
+                          <span className="rounded-full bg-[#FFE7E0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#F0330F]">
+                            원클릭 지원
+                          </span>
+                        )}
+                        <span
+                          className={`ml-auto text-[11.5px] font-bold tabular-nums ${
+                            d.urgent ? "text-[#F0330F]" : "text-[#736C5F]"
+                          }`}
+                        >
+                          {d.label}
+                        </span>
+                      </div>
+                      <p
+                        className={`mt-2.5 line-clamp-2 leading-snug font-bold tracking-[-0.02em] ${
+                          front ? "text-[18px] font-black text-[#141110]" : "text-[15px] text-[#3F3B34]"
+                        }`}
+                      >
+                        {a.title}
+                      </p>
+                      {front && a.company && (
+                        <p className="mt-2 truncate text-[13px] text-[#645E53]">{a.company}</p>
+                      )}
+                    </Link>
+                  </div>
                 );
               })}
             </div>
