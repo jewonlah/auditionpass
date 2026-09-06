@@ -1,47 +1,22 @@
-"use client";
-
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 /**
- * 스크롤 진입 리빌.
+ * 스크롤 진입 리빌 — `animation-timeline: view()` 전용, JS 없음.
  *
- * GSAP·Lenis 를 쓰지 않는다. 이 페이지는 검색·AI 색인이 목적이라 번들과 Core Web Vitals 가
- * 미감보다 우선한다. 시네마틱한 인상은 타이포·명암·타이밍으로 만들고, 모션은
- * transform·opacity·filter 만 건드려 레이아웃 재계산을 일으키지 않는다.
+ * 이전 버전은 IntersectionObserver 로 `shown` 을 뒤집었는데, 발화 전 숨김 클래스
+ * (`opacity-0` 등)가 SSR HTML 에 그대로 나갔다. JS 가 늦거나 막히면 랜딩 본문이 영구히
+ * 안 보이는 사고였다(라이브 실측 `opacity-0` 25건).
  *
- * scroll 이벤트 대신 IntersectionObserver — 연속 리플로우로 모바일 프레임이 떨어진다.
- * prefers-reduced-motion 이면 즉시 표시한다.
+ * 지금은 숨김 상태 자체를 `@supports (animation-timeline: view())` 블록 안에서만
+ * 정의한다(CSS 는 `page.tsx` 의 인라인 `<style>` — 랜딩 전용이라 그 파일 주석 참고).
+ * 미지원 브라우저·JS 없음·`prefers-reduced-motion: reduce` 면 그 블록이 통째로
+ * 무시되어 기본값(보임)이 그대로 유지된다. GSAP·Lenis 를 쓰지 않는 이유도 같다 — 이
+ * 페이지는 검색·AI 색인이 목적이라 번들과 Core Web Vitals 가 미감보다 우선한다.
+ *
+ * `delay` 는 더 이상 시간이 아니라 `--ap-reveal-shift`(px) 로 넘어가 스크롤 타임라인의
+ * `animation-range` 시작점을 늦춘다 — 한 줄에 있는 여러 요소가 스크롤에 따라 순서대로
+ * 나타나는 스태거를 만든다.
  */
-
-function useInView<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [shown, setShown] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // 이펙트 본문에서 곧바로 setState 하면 연쇄 렌더가 난다(react-hooks/set-state-in-effect).
-      // 다음 프레임으로 미룬다 — 사용자 눈에는 동일하게 '즉시 표시'다.
-      const id = requestAnimationFrame(() => setShown(true));
-      return () => cancelAnimationFrame(id);
-    }
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setShown(true);
-          io.disconnect(); // 한 번만 — 되감기는 산만하다
-        }
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -6% 0px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return { ref, shown };
-}
-
 export function Reveal({
   children,
   delay = 0,
@@ -51,48 +26,12 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
-  const { ref, shown } = useInView<HTMLDivElement>();
   return (
     <div
-      ref={ref}
-      style={{ transitionDelay: shown ? `${delay}ms` : "0ms" }}
-      className={`transition-[opacity,transform,filter] duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        shown ? "translate-y-0 opacity-100 blur-0" : "translate-y-10 opacity-0 blur-[8px]"
-      } ${className}`}
+      style={{ "--ap-reveal-shift": `${delay}px` } as CSSProperties}
+      className={`ap-reveal ${className}`}
     >
       {children}
     </div>
-  );
-}
-
-/**
- * 헤드라인 전용 — 줄 단위로 마스크 뒤에서 올라온다.
- * 텍스트는 서버 HTML 에 그대로 있으므로 JS 가 없거나 크롤러가 읽어도 내용은 온전하다.
- */
-export function RevealLines({
-  lines,
-  className = "",
-  lineClassName = "",
-}: {
-  lines: string[];
-  className?: string;
-  lineClassName?: string;
-}) {
-  const { ref, shown } = useInView<HTMLHeadingElement>();
-  return (
-    <h1 ref={ref} className={className}>
-      {lines.map((line, i) => (
-        <span key={line} className="block overflow-hidden">
-          <span
-            style={{ transitionDelay: shown ? `${i * 110}ms` : "0ms" }}
-            className={`block transition-[transform,opacity] duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              shown ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-            } ${lineClassName}`}
-          >
-            {line}
-          </span>
-        </span>
-      ))}
-    </h1>
   );
 }
