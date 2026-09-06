@@ -107,17 +107,12 @@ class StarletScraper(BaseScraper):
         if not full_text:
             return None
 
-        # 제목 — h1/h2/h3 우선
-        title = ""
-        for sel in ("h1", "h2", "h3"):
-            el = soup.select_one(sel)
-            if el:
-                t = el.get_text(strip=True)
-                if t and len(t) >= 5:
-                    title = t
-                    break
+        # 제목 — 실제 공고 제목은 .view-subject h2 (페이지 골격 헤더 "#Audition"은 .list-subject h2).
+        # h1/h2/h3 범용 폴백은 골격 헤더를 다시 집으므로 두지 않는다 — 없으면 수집 제외.
+        title_el = soup.select_one(".view-subject h2")
+        title = title_el.get_text(strip=True) if title_el else ""
 
-        if not title or self.is_noise_title(title):
+        if not title or len(title) < 5 or self.is_noise_title(title):
             return None
 
         company = self._extract_label(full_text, ["제작사", "회사명"])
