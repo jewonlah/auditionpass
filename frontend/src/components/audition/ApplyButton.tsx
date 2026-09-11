@@ -23,8 +23,11 @@ import {
 import { withReturnTo } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import type { Audition } from "@/types";
+import { ProfilePdf } from "@/components/profile/ProfilePdf";
 
 interface ProfileSummary {
+  profileVersionId?: string | null;
+  documentVersion?: number | null;
   name: string;
   birthYear: number | null;
   age: number | null;
@@ -37,6 +40,8 @@ interface ProfileSummary {
 interface ApplyCheck {
   loading: boolean;
   hasApplied: boolean;
+  isSending: boolean;
+  error: boolean;
   missingFields: MiniProfileField[];
   profileSummary: ProfileSummary | null;
 }
@@ -44,6 +49,8 @@ interface ApplyCheck {
 const INITIAL_CHECK: ApplyCheck = {
   loading: true,
   hasApplied: false,
+  isSending: false,
+  error: false,
   missingFields: [],
   profileSummary: null,
 };
@@ -66,7 +73,6 @@ interface ApplyButtonProps {
  * 완료 → 시트 ⓒ(확인·발송) → 성공 시트. 전 과정 페이지 이탈 0.
  */
 export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [check, setCheck] = useState<ApplyCheck>(INITIAL_CHECK);
@@ -81,13 +87,15 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
       const next: ApplyCheck = {
         loading: false,
         hasApplied: data.hasApplied,
+        isSending: data.isSending === true,
+        error: false,
         missingFields: data.missingFields ?? [],
         profileSummary: data.profileSummary ?? null,
       };
       setCheck(next);
       return next;
     } catch {
-      const next = { ...INITIAL_CHECK, loading: false };
+      const next = { ...INITIAL_CHECK, loading: false, error: true };
       setCheck(next);
       return next;
     }
@@ -106,7 +114,7 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
   const resolveStep = useCallback(
     (c: ApplyCheck, loggedIn: boolean): SheetStep => {
       if (!loggedIn) return "login";
-      if (c.hasApplied) return null;
+      if (c.hasApplied || c.isSending || c.error) return null;
       if (c.missingFields.length > 0) return "profile";
       return "confirm";
     },
@@ -147,8 +155,8 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
   // 시트 ⓑ 저장 성공 → 확인 단계로
   const handleProfileSaved = useCallback(async () => {
     const fresh = await fetchCheck();
-    setStep(fresh.missingFields.length > 0 ? "profile" : "confirm");
-  }, [fetchCheck]);
+    setStep(resolveStep(fresh, true));
+  }, [fetchCheck, resolveStep]);
 
   const handleSent = useCallback(() => {
     setCheck((prev) => ({ ...prev, hasApplied: true }));
@@ -158,6 +166,9 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
   if (authLoading || (isLoggedIn && check.loading)) {
     return <div className="h-12 animate-pulse rounded-xl bg-gray-200" />;
   }
+
+  if (check.error) return <Button variant="outline" className="w-full" onClick={() => fetchCheck()}>지원 정보 다시 확인하기</Button>;
+  if (check.isSending) return <Link href="/applications" className="block rounded-xl bg-gray-100 px-4 py-3 text-center text-sm font-semibold">발송 결과 확인 중 · 지원 내역 보기</Link>;
 
   // 이미 지원 완료 (수용 기준 5)
   if (check.hasApplied && step !== "success") {
@@ -510,6 +521,7 @@ function ConfirmStep({
 }) {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState(false);
 
   async function handleSend() {
     setError("");
@@ -519,11 +531,14 @@ function ConfirmStep({
       const res = await fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ auditionId: audition.id }),
+        body: JSON.stringify({ auditionId: audition.id, expectedProfileVersion: summary?.documentVersion ?? undefined }),
       });
       const data = await res.json();
 
-      if (res.ok) {
+      if (data.pending || data.code === "APPLY_IN_PROGRESS") {
+        setPending(true);
+        setError(data.error || "발송 결과를 확인 중입니다.");
+      } else if (res.ok && data.success) {
         track("apply_send", { audition_id: audition.id });
         onSent();
         return;
@@ -566,10 +581,11 @@ function ConfirmStep({
       </div>
 
       {/* 첨부 프로필 요약 (발송 메일 스냅샷) */}
+      {summary?.profileVersionId && <ProfilePdf key={summary.profileVersionId} versionId={summary.profileVersionId} />}
       {summary && (
         <div className="rounded-xl border border-gray-200 p-4">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-            첨부되는 프로필
+            메일에 담기는 프로필
           </p>
           <p className="text-[15px] font-semibold text-gray-900">
             {summary.name}
@@ -601,11 +617,12 @@ function ConfirmStep({
         size="lg"
         className="w-full gap-2"
         onClick={handleSend}
-        disabled={submitting}
+        disabled={submitting || pending}
       >
         <Send size={17} />
         {submitting ? "발송 중..." : error ? "다시 발송하기" : "지원 발송"}
       </Button>
+      {pending && <Link href="/applications" className="block py-3 text-center text-sm font-semibold text-primary">지원 내역에서 결과 확인하기</Link>}
     </div>
   );
 }

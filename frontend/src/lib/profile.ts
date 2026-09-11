@@ -136,7 +136,6 @@ export function getProfileCompleteness(profile: CompletenessInput): number {
     !!profile?.name,
     !!profile?.birth_year || !!profile?.age,
     !!profile?.gender,
-    (profile?.activity_field?.length ?? 0) > 0,
     (profile?.genre?.length ?? 0) > 0,
     (profile?.photo_urls?.length ?? 0) > 0,
   ];

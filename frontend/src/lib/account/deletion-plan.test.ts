@@ -10,6 +10,7 @@ test("삭제 순서가 정본과 일치한다", () => {
   assert.deepEqual(
     buildDeletionPlan().map((s) => s.key),
     [
+      "storage_profile_documents",
       "storage_profiles",
       "bookmarks",
       "applications",
@@ -26,6 +27,7 @@ test("삭제 순서가 정본과 일치한다", () => {
 test("스토리지 삭제가 auth.users 삭제보다 먼저다 (FK CASCADE 밖이라 나중이면 고아 파일)", () => {
   const keys = buildDeletionPlan().map((s) => s.key);
   assert.ok(keys.indexOf("storage_profiles") < keys.indexOf("auth_user"));
+  assert.ok(keys.indexOf("storage_profile_documents") < keys.indexOf("auth_user"));
 });
 
 test("auth.users 삭제는 언제나 마지막 단계다", () => {

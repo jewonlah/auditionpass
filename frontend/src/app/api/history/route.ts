@@ -23,6 +23,8 @@ export async function GET() {
         `
         id,
         email_sent,
+        status,
+        profile_version_id,
         sent_at,
         created_at,
         audition:auditions (

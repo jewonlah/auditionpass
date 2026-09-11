@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
-import { todayKST } from "@/lib/utils";
 import { parseAuditionsSearchParams } from "@/lib/audition/searchParams";
-import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
+import { fetchAuditions } from "@/lib/audition/query";
 import { CATEGORIES } from "@/lib/categories";
 import { AuditionsClient } from "./AuditionsClient";
 import type { Audition } from "@/types";
@@ -54,42 +53,12 @@ export async function getInitialAuditions(
   limit: number = PAGE_SIZE,
   // 카테고리 랜딩(`[category]/page.tsx`)은 쿠키 없는 anon 클라이언트를 넘겨 ISR을 유지한다.
   // cookies()를 쓰는 createServerClient()는 라우트를 강제로 Dynamic으로 만든다(D3).
-  supabaseClient?: SupabaseClient
+  supabaseClient?: SupabaseClient,
+  sort: "deadline" | "latest" = "deadline",
+  category?: string,
 ): Promise<Audition[]> {
   const supabase = supabaseClient ?? (await createServerClient());
-  const today = todayKST();
-
-  let query = supabase
-    .from("auditions")
-    .select(AUDITION_LIST_COLUMNS)
-    .eq("is_active", true)
-    .or(`deadline.gte.${today},deadline.is.null`);
-
-  if (filter === "원클릭지원") {
-    query = query.eq("apply_type", "email");
-  } else if (filter === "사이트지원") {
-    query = query.eq("apply_type", "external");
-  } else if (filter !== "전체") {
-    // category(007, 14개 상세 분류) 우선, 백필 누락 행은 genre(배우/모델/기타 3개)로 폴백.
-    // 필터값에 콤마가 없으면 or() DSL 인용 없이 안전(PostgREST or 특수문자는 콤마만).
-    query = query.or(
-      `category.eq.${filter},and(category.is.null,genre.eq.${filter})`
-    );
-  }
-
-  if (q) {
-    query = query.or(`title.ilike.%${q}%,company.ilike.%${q}%`);
-  }
-
-  const { data, error } = await query
-    .order("deadline", { ascending: true, nullsFirst: false })
-    .range(0, limit - 1);
-
-  if (error || !data) return [];
-
-  return data
-    .filter((a) => !a.deadline || a.deadline >= today)
-    .map((a) => ({ ...a, apply_email: null }) as Audition);
+  return fetchAuditions(supabase, { filter, search: q, limit, sort, category });
 }
 
 export default async function AuditionsPage({
@@ -97,15 +66,19 @@ export default async function AuditionsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { filter, q } = parseAuditionsSearchParams(await searchParams);
-  const initialItems = await getInitialAuditions(filter, q);
+  const params = await searchParams;
+  const { filter, q } = parseAuditionsSearchParams(params);
+  const sort = params.sort === "latest" ? "latest" : "deadline";
+  const initialItems = await getInitialAuditions(filter, q, PAGE_SIZE, undefined, sort);
 
   return (
     <>
       <AuditionsClient
+        key={`${filter}/${q}/${sort}`}
         initialItems={initialItems}
         initialFilter={filter}
         initialSearch={q}
+        initialSort={sort}
       />
 
       {/* 서버 렌더 내부 링크 — sitemap 밖에서 카테고리 랜딩을 발견할 유일한 경로 (D4) */}

@@ -36,7 +36,7 @@ function LoginContent() {
   const authError = searchParams.get("error");
   const authNotice =
     authError === "expired_link"
-      ? "인증 링크가 만료되었거나 이미 사용되었습니다. 아래에서 다시 로그인하거나 가입을 다시 진행해 주세요."
+      ? "인증 링크가 만료되었거나 이미 사용되었습니다. 아래 ‘계정에 다시 연결하기’에서 새 메일을 요청해주세요."
       : authError === "auth_failed" || authError === "missing_code"
         ? "인증에 실패했습니다. 다시 시도해 주세요."
         : null;
@@ -89,6 +89,7 @@ function LoginContent() {
         )}
 
         {/* 구글 OAuth — 주 동선 (12_ia-userflows §2.1 "구글 OAuth(주) + 이메일(보조)") */}
+        <Link href={withReturnTo("/forgot-password", returnTo)} className="mb-4 block py-2 text-center text-sm font-semibold text-primary">비밀번호를 잊었나요? · 계정에 다시 연결하기</Link>
         <GoogleButton returnTo={rawReturnTo} label="Google로 계속하기" />
 
         <div className="my-5 flex items-center gap-3">

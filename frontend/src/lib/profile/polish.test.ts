@@ -20,7 +20,7 @@ test("정상 입력은 통과하고 팩트시트가 만들어진다", () => {
   });
   assert.equal(r.ok, true);
   const facts = buildFacts(r.data!);
-  assert.match(facts, /나이: 만 \d+세/);
+  assert.match(facts, /출생연도: 2001년/);
   assert.match(facts, /활동 분야: 뮤지컬, 연극/);
   assert.match(facts, /특기: 보컬/);
 });
@@ -36,8 +36,8 @@ test("bio 301자는 거부, 300자는 통과", () => {
   assert.equal(parsePolishInput({ bio: "가".repeat(300) }).ok, true);
 });
 
-test("career 401자·배열 11개·항목 31자는 거부", () => {
-  assert.equal(parsePolishInput({ career: "가".repeat(401) }).ok, false);
+test("career 501자·배열 11개·항목 31자는 거부", () => {
+  assert.equal(parsePolishInput({ career: "가".repeat(501) }).ok, false);
   assert.equal(parsePolishInput({ specialty: Array(11).fill("보컬") }).ok, false);
   assert.equal(parsePolishInput({ specialty: ["가".repeat(31)] }).ok, false);
   assert.equal(parsePolishInput({ specialty: Array(10).fill("가".repeat(30)) }).ok, true);

@@ -75,7 +75,8 @@ export function OnboardingClient({ returnTo }: { returnTo: string }) {
     // 방어적 재검증 — 이 컴포넌트에 전달되는 returnTo는 서버(onboarding/page.tsx)에서
     // 이미 벗겨낸 값이어야 하지만, 혹시라도 `/onboarding?returnTo=...`가 흘러들면
     // 여기서도 한 번 더 풀어 온보딩으로 되돌아가는 루프를 만들지 않는다.
-    router.replace(unwrapOnboardingReturnTo(returnTo));
+    const target = unwrapOnboardingReturnTo(returnTo);
+    router.replace(reason === "skip" && !profileCreated && target === "/home" ? "/auditions" : target);
   }
 
   function goToAudition(id: string) {

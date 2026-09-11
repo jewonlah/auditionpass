@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pdfkit", "sharp"],
+  outputFileTracingIncludes: { "/api/**": ["./assets/fonts/NanumGothic-Regular.ttf"] },
   turbopack: {},
   // VERCEL_ENV(시스템 변수)는 기본적으로 클라이언트 번들에 노출되지 않는다.
   // instrumentation-client.ts에서 Sentry environment로 쓰기 위해 명시적으로 인라인한다.
@@ -33,7 +35,7 @@ const nextConfig: NextConfig = {
       // 준비 중 알림 스텁 제거 (F11)
       {
         source: "/my/notifications",
-        destination: "/my",
+        destination: "/my/updates",
         permanent: true,
       },
     ];

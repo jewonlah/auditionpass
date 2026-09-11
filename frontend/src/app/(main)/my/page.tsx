@@ -14,6 +14,7 @@ import {
   Loader2,
   PenSquare,
   ShieldAlert,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -84,7 +85,7 @@ export default function MyPage() {
       desc: profile ? "프로필 수정" : "프로필 등록하기",
     },
     // 지원 이력은 바텀 탭(/applications)으로 1급 승격 — 메뉴 제거 (F6)
-    // 알림 설정은 실기능 출시 전까지 메뉴 숨김 (F11, /my/notifications → 301 /my)
+    { href: "/my/updates", icon: Bell, label: "맞춤 소식", desc: "찜한 공고 마감 · 내 분야 새 공고" },
     {
       href: "/my/posts",
       icon: PenSquare,

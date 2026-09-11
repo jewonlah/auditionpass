@@ -30,13 +30,14 @@ async function getAudition(id: string): Promise<Audition | null> {
   // 상세는 공개 페이지다. RLS 정책에 걸려 빈 페이지가 나가는 일이 없도록 서비스 클라이언트로
   // 읽되, 노출하는 필드는 화면에 쓰는 것으로 한정한다(apply_email 은 절대 내보내지 않는다 — 36 §4).
   const supabase = createServiceRoleClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("auditions")
     .select(
       "id,title,company,genre,deadline,description,requirements,source_url,source_name,apply_type,oneclick_blocked,is_active,quality_score,review_status,created_at"
     )
     .eq("id", id)
     .maybeSingle();
+  if (error) throw new Error("공고를 불러오지 못했습니다.", { cause: error });
   return (data as Audition | null) ?? null;
 }
 
