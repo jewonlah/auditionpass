@@ -35,7 +35,7 @@ export const polishInputSchema = z.object({
   genre: chipList("분야"),
   activity_field: chipList("활동 분야"),
   specialty: chipList("특기"),
-  career: z.string().max(400, "경력은 400자 이내로 입력해주세요.").nullish(),
+  career: z.string().max(500, "경력은 500자 이내로 입력해주세요.").nullish(),
   // 기존 초안 — 있으면 결을 살린다. 폼 자체는 100자 제한이지만 여유를 둔다.
   bio: z.string().max(300, "한 줄 소개는 300자 이내로 입력해주세요.").nullish(),
 });
@@ -66,7 +66,7 @@ export function buildFacts(f: PolishInput): string {
   if (f.birth_year) {
     const age = CURRENT_YEAR - f.birth_year;
     // 검증을 통과해도 방어한다 — 여기서 NaN이 새면 프롬프트에 "만 NaN세"가 박힌다.
-    if (Number.isFinite(age) && age >= 0) lines.push(`나이: 만 ${age}세`);
+    if (Number.isFinite(age) && age >= 0) lines.push(`출생연도: ${f.birth_year}년`);
   }
   if (f.gender) lines.push(`성별: ${f.gender}`);
   if (f.height) lines.push(`키: ${f.height}cm`);

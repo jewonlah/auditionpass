@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhotoUpload } from "@/components/profile/PhotoUpload";
+import { ProfilePreview } from "@/components/profile/ProfilePreview";
+import Link from "next/link";
+import { PROFILE_TEMPLATES } from "@/lib/profile/document";
 import { cn, resolveReturnTo } from "@/lib/utils";
-import { getProfileCompleteness, maxBirthYear } from "@/lib/profile";
+import { getProfileCompleteness, PROFILE_GENRES } from "@/lib/profile";
+import { profileFormSchema, buildPolishRequest, type ProfileFormData } from "@/lib/profile/form";
 import { track } from "@/lib/analytics";
 import type { Profile } from "@/types";
 import {
@@ -21,36 +24,8 @@ import {
   Plus,
 } from "lucide-react";
 
-const profileSchema = z.object({
-  name: z.string().min(1, "이름을 입력해주세요").max(20, "20자 이내로 입력해주세요"),
-  birth_year: z.coerce
-    .number({ error: "숫자를 입력해주세요" })
-    .int()
-    .min(1940, "올바른 출생연도를 입력해주세요")
-    // 상한은 실행 시점 계산 — 연도를 박아 두면 해가 바뀔 때마다 미성년자가 통과한다.
-    .max(maxBirthYear(), "만 14세 이상만 가입할 수 있습니다"),
-  gender: z.enum(["남성", "여성", "기타"], {
-    error: "성별을 선택해주세요",
-  }),
-  height: z.coerce.number().int().min(100).max(250).nullable().optional(),
-  weight: z.coerce.number().int().min(30).max(200).nullable().optional(),
-  bio: z.string().max(100, "100자 이내로 입력해주세요").nullable().optional(),
-  instagram_url: z.string().url("올바른 URL을 입력해주세요").nullable().optional().or(z.literal("")),
-  youtube_url: z.string().url("올바른 URL을 입력해주세요").nullable().optional().or(z.literal("")),
-  other_url: z.string().url("올바른 URL을 입력해주세요").nullable().optional().or(z.literal("")),
-  genre: z.array(z.string()).min(1, "장르를 하나 이상 선택해주세요"),
-  activity_field: z.array(z.string()).min(1, "활동 분야를 하나 이상 선택해주세요"),
-  phone: z.string().max(20, "20자 이내로 입력해주세요").nullable().optional(),
-  agency: z.string().max(50, "50자 이내로 입력해주세요").nullable().optional(),
-  specialty: z.array(z.string()).max(3, "특기는 최대 3개까지 입력 가능합니다"),
-  career: z.string().max(500, "500자 이내로 입력해주세요").nullable().optional(),
-});
-
-type ProfileFormData = z.infer<typeof profileSchema>;
-
 const GENDERS = ["남성", "여성", "기타"] as const;
-const GENRES = ["배우", "모델"] as const;
-const ACTIVITY_FIELDS = ["배우", "모델", "가수"] as const;
+const GENRES = PROFILE_GENRES;
 
 interface ProfileFormProps {
   initialData: Profile | null;
@@ -67,6 +42,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   // AI 소개문 — 랜딩의 약속 "프로필은 AI가 씁니다". 초안은 AI, 확정은 본인.
   const [polishing, setPolishing] = useState(false);
   const [polishError, setPolishError] = useState("");
+  const [suggestedBio, setSuggestedBio] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const {
     register,
@@ -76,8 +54,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     getValues,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema) as Resolver<ProfileFormData>,
+    resolver: zodResolver(profileFormSchema) as Resolver<ProfileFormData>,
     defaultValues: {
+      template_id: initialData?.template_id ?? "casting",
       name: initialData?.name ?? "",
       // 구 데이터(age만 보유)는 출생연도로 환산해 프리필 (009 마이그레이션과 동일 규칙)
       birth_year:
@@ -86,13 +65,13 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           ? new Date().getFullYear() - initialData.age
           : (undefined as unknown as number)),
       gender: initialData?.gender ?? undefined,
-      height: initialData?.height ?? undefined,
-      weight: initialData?.weight ?? undefined,
+      height: initialData?.height ?? null,
+      weight: initialData?.weight ?? null,
       bio: initialData?.bio ?? "",
       instagram_url: initialData?.instagram_url ?? "",
       youtube_url: initialData?.youtube_url ?? "",
       other_url: initialData?.other_url ?? "",
-      genre: initialData?.genre ?? [],
+      genre: (initialData?.genre ?? []).filter((g): g is typeof PROFILE_GENRES[number] => (PROFILE_GENRES as readonly string[]).includes(g)),
       activity_field: initialData?.activity_field ?? [],
       phone: initialData?.phone ?? "",
       agency: initialData?.agency ?? "",
@@ -103,25 +82,17 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
   const selectedGender = watch("gender");
   const selectedGenre = watch("genre");
-  const selectedActivityField = watch("activity_field");
   const specialtyList = watch("specialty");
   const bioValue = watch("bio") ?? "";
   const careerValue = watch("career") ?? "";
+  const previewValues = watch();
 
-  function toggleGenre(g: string) {
+  function toggleGenre(g: typeof PROFILE_GENRES[number]) {
     const current = selectedGenre ?? [];
     const next = current.includes(g)
       ? current.filter((v) => v !== g)
       : [...current, g];
     setValue("genre", next, { shouldValidate: true });
-  }
-
-  function toggleActivityField(f: string) {
-    const current = selectedActivityField ?? [];
-    const next = current.includes(f)
-      ? current.filter((v) => v !== f)
-      : [...current, f];
-    setValue("activity_field", next, { shouldValidate: true });
   }
 
   function addSpecialty() {
@@ -148,6 +119,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
     const payload = {
       ...data,
+      activity_field: data.genre,
       height: data.height || null,
       weight: data.weight || null,
       bio: data.bio || null,
@@ -160,6 +132,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       photo_urls: photos,
     };
 
+    try {
     const res = await fetch("/api/profile", {
       method: isEdit ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -182,10 +155,27 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     const fallback = searchParams.get("welcome") === "1" ? "/home" : "/my";
     router.push(resolveReturnTo(searchParams.get("returnTo"), fallback));
     router.refresh();
+    } catch {
+      setServerError("연결이 끊겨 저장하지 못했습니다. 입력 내용은 유지돼요. 다시 저장해주세요.");
+    }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-4">
+        <p className="font-semibold">사진과 정보가 한 장의 프로필로</p>
+        <p className="mt-1 text-sm leading-relaxed text-gray-500">입력한 정보에 맞춰 구성을 정돈해요. 소개는 AI 초안을 확인한 뒤 선택할 수 있어요.</p>
+        <fieldset className="mt-4">
+          <legend className="text-sm font-semibold">프로필 스타일</legend>
+          <div className="mt-2 grid grid-cols-3 gap-2">{PROFILE_TEMPLATES.map((template) => <label key={template.id} className={cn("cursor-pointer rounded-xl border p-2 text-center text-sm", previewValues.template_id === template.id ? "border-primary bg-orange-50" : "border-gray-200")}>
+            <input type="radio" value={template.id} {...register("template_id")} className="mb-2 accent-primary" onClick={() => setShowPreview(true)} />
+            <span className="block font-semibold">{template.name}</span><span className="mt-1 block text-xs leading-relaxed text-gray-500">{template.description}</span>
+          </label>)}</div>
+        </fieldset>
+        <Button type="button" variant="outline" className="mt-3 w-full" aria-expanded={showPreview} onClick={() => setShowPreview((v) => !v)}>{showPreview ? "미리보기 접기" : "내 프로필 미리보기"}</Button>
+        {isEdit && <Link href="/profile/versions" className="mt-3 block py-2 text-center text-sm font-semibold text-primary">저장한 프로필 보기</Link>}
+      </section>
+      {showPreview && <div><ProfilePreview profile={previewValues} photos={photos} /><p className="mt-2 text-xs leading-relaxed text-gray-500">현재 편집 내용의 구성 예시예요. 저장한 정보가 지원 메일에 사용되며, 메일 화면은 수신 환경에 따라 달라질 수 있어요.</p></div>}
       {serverError && (
         <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
           {serverError}
@@ -193,7 +183,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       )}
 
       {/* 사진 업로드 */}
-      <PhotoUpload photos={photos} onChange={setPhotos} />
+      <PhotoUpload photos={photos} onChange={setPhotos} onUploadingChange={setUploadingPhoto} />
 
       {/* 기본 정보 */}
       <div className="space-y-4">
@@ -291,22 +281,13 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 const res = await fetch("/api/profile/polish", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    birth_year: v.birth_year || null,
-                    gender: v.gender || null,
-                    height: v.height || null,
-                    genre: v.genre,
-                    activity_field: v.activity_field,
-                    specialty: v.specialty,
-                    career: v.career || null,
-                    bio: v.bio || null,
-                  }),
+                  body: JSON.stringify(buildPolishRequest(v)),
                 });
                 // 400(검증)·413(과대 입력)·429(속도 제한) 모두 서버가 한국어 메시지를 준다 — 그대로 보여준다
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok)
                   throw new Error(data.error || "소개문 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
-                setValue("bio", data.bio, { shouldValidate: true, shouldDirty: true });
+                setSuggestedBio(data.bio);
               } catch (e) {
                 setPolishError(e instanceof Error ? e.message : "소개문 생성에 실패했습니다.");
               } finally {
@@ -321,7 +302,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 쓰는 중…
               </>
             ) : (
-              "AI로 소개 쓰기"
+              "AI 소개 초안 만들기"
             )}
           </button>
         </div>
@@ -342,46 +323,17 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           <p className="text-xs text-gray-400 ml-auto">{bioValue.length}/100</p>
         </div>
         <p className="mt-1 text-xs text-gray-400">
-          분야·특기·경력을 채운 뒤 누르면 더 잘 씁니다. 고쳐 쓰셔도 됩니다.
+          분야·특기·경력을 바탕으로 초안을 만들어요. 확인 후 내 소개에 반영해주세요.
         </p>
-      </div>
-
-      {/* 활동 분야 */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-3">
-          활동 분야 *
-        </h3>
-        <div className="flex gap-3">
-          {ACTIVITY_FIELDS.map((f) => {
-            const selected = selectedActivityField?.includes(f);
-            return (
-              <button
-                key={f}
-                type="button"
-                onClick={() => toggleActivityField(f)}
-                className={cn(
-                  "flex-1 rounded-lg border-2 py-3 text-sm font-semibold transition-colors",
-                  selected
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-gray-200 text-gray-500 hover:border-gray-300"
-                )}
-              >
-                {f}
-              </button>
-            );
-          })}
-        </div>
-        {errors.activity_field && (
-          <p className="mt-1 text-sm text-red-500">{errors.activity_field.message}</p>
-        )}
+        {suggestedBio && <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4"><p className="text-xs font-semibold text-primary">AI가 제안한 소개</p><p className="mt-2 text-sm leading-relaxed">{suggestedBio}</p><div className="mt-3 flex gap-2"><Button type="button" size="sm" onClick={() => { setValue("bio", suggestedBio, { shouldValidate: true, shouldDirty: true }); setSuggestedBio(null); }}>이 소개 사용하기</Button><Button type="button" size="sm" variant="ghost" onClick={() => setSuggestedBio(null)}>기존 소개 유지</Button></div></div>}
       </div>
 
       {/* 장르 선택 */}
       <div>
         <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-3">
-          장르 선택 *
+          지원 분야 * <span className="font-normal text-gray-500">복수 선택 가능</span>
         </h3>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {GENRES.map((g) => {
             const selected = selectedGenre?.includes(g);
             return (
@@ -389,6 +341,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 key={g}
                 type="button"
                 onClick={() => toggleGenre(g)}
+                aria-pressed={selected}
                 className={cn(
                   "flex-1 rounded-lg border-2 py-3 text-sm font-semibold transition-colors",
                   selected
@@ -544,7 +497,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         type="submit"
         size="lg"
         className="w-full"
-        disabled={isSubmitting}
+        disabled={isSubmitting || uploadingPhoto}
       >
         {isSubmitting ? (
           "저장 중..."

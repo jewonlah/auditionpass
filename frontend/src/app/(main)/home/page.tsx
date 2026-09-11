@@ -7,6 +7,7 @@ import { formatDday, getDday, todayKST } from "@/lib/utils";
 import { getMissingFields, getProfileCompleteness } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
+import { categoryFilter } from "@/lib/audition/filters";
 import type { Audition, Profile } from "@/types";
 
 /** apply_email은 select 자체에서 제외한다 — 홈 피드도 SSR이라 RSC 페이로드에
@@ -85,8 +86,9 @@ export default async function HomePage() {
     .or(activeFilter)
     .order("created_at", { ascending: false })
     .limit(3);
-  if (myGenres.length > 0) {
-    newQuery = newQuery.in("genre", myGenres);
+  const matching = categoryFilter(myGenres);
+  if (matching) {
+    newQuery = newQuery.or(matching);
   }
   const { data: newData } = await newQuery;
   const newAuditions = stripApplyEmail(newData as Audition[] | null);

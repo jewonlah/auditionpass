@@ -93,6 +93,10 @@ export async function GET(request: Request) {
    */
   async function landingAfterAuth(): Promise<NextResponse> {
     const finalReturnTo = unwrapOnboardingReturnTo(returnTo);
+    // Recovery must go to the password form, including accounts with no profile yet.
+    if (finalReturnTo === "/reset-password" || type === "recovery") {
+      return NextResponse.redirect(new URL("/reset-password", origin));
+    }
 
     const {
       data: { user },

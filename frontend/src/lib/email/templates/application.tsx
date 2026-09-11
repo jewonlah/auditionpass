@@ -11,8 +11,10 @@ import {
   Row,
   Column,
 } from "@react-email/components";
+import type { ProfileTemplate } from "@/lib/profile/document";
 
 interface ApplicationEmailProps {
+  templateId?: ProfileTemplate;
   auditionTitle: string;
   applicantName: string;
   /** "만 22세 (2004년생)" 형식 — 발신부에서 포맷 */
@@ -32,6 +34,7 @@ interface ApplicationEmailProps {
 }
 
 export function ApplicationEmail({
+  templateId = "casting",
   auditionTitle,
   applicantName,
   applicantAgeLabel,
@@ -59,31 +62,32 @@ export function ApplicationEmail({
           <Text style={subtext}>
             안녕하세요, <strong>{auditionTitle}</strong> 오디션에 지원합니다.
           </Text>
+          <Text style={subtext}>사진과 경력을 정리한 프로필 PDF를 첨부했습니다.</Text>
 
           {/* 프로필 사진 — 본문 상단 인라인 노출 */}
-          {photoUrls.length > 0 && (
+          {templateId !== "career" && photoUrls.length > 0 && (
             <Section style={{ margin: "0 0 8px 0" }}>
               {/* 대표 사진 (첫 번째, 크게) */}
               <Img
                 src={photoUrls[0]}
                 alt={`${applicantName} 프로필 사진 1`}
-                width="536"
-                style={heroPhoto}
+                width={templateId === "portfolio" ? "536" : "320"}
+                style={{ ...heroPhoto, maxWidth: templateId === "portfolio" ? "536px" : "320px" }}
               />
               {/* 나머지 사진 2장씩 배치 */}
               {photoUrls.length > 1 && (
-                <Row style={{ marginTop: "8px" }}>
-                  {photoUrls.slice(1).map((url, i) => (
+                <>{[1, 3].filter((start) => start < photoUrls.length).map((start) => <Row key={start} style={{ marginTop: "8px" }}>
+                  {photoUrls.slice(start, start + 2).map((url, i) => (
                     <Column key={i} style={photoGridCell}>
                       <Img
                         src={url}
-                        alt={`${applicantName} 프로필 사진 ${i + 2}`}
+                        alt={`${applicantName} 프로필 사진 ${start + i + 1}`}
                         width="260"
                         style={gridPhoto}
                       />
                     </Column>
                   ))}
-                </Row>
+                </Row>)}</>
               )}
             </Section>
           )}
@@ -171,6 +175,12 @@ export function ApplicationEmail({
           )}
 
           {/* 포트폴리오 링크 */}
+          {templateId === "career" && photoUrls.length > 0 && <Section>
+            <Heading as="h3" style={sectionTitle}>프로필 사진</Heading>
+            {[0, 2, 4].filter((start) => start < photoUrls.length).map((start) => <Row key={start}>
+              {photoUrls.slice(start, start + 2).map((url, i) => <Column key={i} style={photoGridCell}><Img src={url} alt={`${applicantName} 프로필 사진 ${start + i + 1}`} width="260" style={gridPhoto} /></Column>)}
+            </Row>)}
+          </Section>}
           {hasLinks && (
             <Section>
               <Heading as="h3" style={sectionTitle}>
@@ -226,7 +236,7 @@ export function ApplicationEmail({
 // --- 스타일 ---
 
 const main: React.CSSProperties = {
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#F7F4EF",
   fontFamily: "Arial, sans-serif",
   padding: "20px 0",
 };
@@ -241,7 +251,7 @@ const container: React.CSSProperties = {
 };
 
 const heading: React.CSSProperties = {
-  color: "#6366F1",
+  color: "#141110",
   fontSize: "20px",
   margin: "0 0 8px 0",
 };
@@ -316,8 +326,8 @@ const bodyText: React.CSSProperties = {
 
 const tag: React.CSSProperties = {
   display: "inline-block",
-  backgroundColor: "#eef2ff",
-  color: "#4f46e5",
+  backgroundColor: "#F0EAE0",
+  color: "#46423A",
   fontSize: "13px",
   fontWeight: "bold",
   padding: "4px 12px",

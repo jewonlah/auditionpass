@@ -8,6 +8,7 @@ import { ReportButton } from "@/components/audition/ReportButton";
 import { useAuth } from "@/hooks/useAuth";
 import { track } from "@/lib/analytics";
 import type { Audition } from "@/types";
+import { BookmarkButton } from "./Bookmarks";
 
 /**
  * 공고 상세의 인터랙티브 부분만 담는 클라이언트 아일랜드 (2026-08-28 분리).
@@ -59,7 +60,7 @@ export function AuditionActions({
 
   return (
     <>
-      <ReportButton auditionId={audition.id} isLoggedIn={!!user} />
+      <div className="flex items-center justify-between"><ReportButton auditionId={audition.id} isLoggedIn={!!user} /><BookmarkButton auditionId={audition.id} /></div>
 
       <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 py-3">
         <div className="mx-auto max-w-md">

@@ -7,6 +7,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -21,6 +22,9 @@ interface ToastApi {
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
+const subscribeHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
 /** 자동 소멸 시간 (23_design-system §2.9 — 3초, 접근성 체크리스트상 액션 있으면 6초) */
 const AUTO_DISMISS_MS = 3000;
@@ -43,6 +47,7 @@ const ICON_COLOR: Record<ToastKind, string> = {
  * `app/(main)/layout.tsx` · `app/admin/layout.tsx` · `app/(auth)/layout.tsx`에 마운트한다.
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const hydrated = useSyncExternalStore(subscribeHydration, clientSnapshot, serverSnapshot);
   const [items, setItems] = useState<ToastItem[]>([]);
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -90,7 +95,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {typeof document !== "undefined" &&
+      {hydrated &&
         createPortal(
           <div
             className="pointer-events-none fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom)+12px)] z-[60] flex flex-col items-center gap-2 px-4"

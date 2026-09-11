@@ -1,291 +1,118 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { fetchAuditions } from "@/lib/audition/query";
+import { CATEGORIES } from "@/lib/categories";
 import { AuditionCard } from "@/components/audition/AuditionCard";
 import { AuditionFilter } from "@/components/audition/AuditionFilter";
 import { AuditionCardSkeleton } from "@/components/ui/Skeleton";
-import { Search } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { cn, todayKST } from "@/lib/utils";
-import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
-import { CATEGORIES } from "@/lib/categories";
+import { Button } from "@/components/ui/Button";
 import type { Audition } from "@/types";
 
-const PAGE_SIZE = 20;
-
-interface AuditionsClientProps {
+interface Props {
   initialItems: Audition[];
   initialFilter: string;
   initialSearch: string;
-  /** 카테고리 랜딩(`[category]/page.tsx`)에서 넘기는 분야 고정값 — 설정 시 모든 쿼리에 이
-   * 분야(category 우선, genre 폴백) 제약이 항상 붙는다. 장르 칩(배우/모델)을 누르면 다른
-   * 분야 슬러그로 이동한다(URL이 곧 SEO 랜딩). */
+  initialSort?: "deadline" | "latest";
   lockedCategory?: string;
 }
-
-/**
- * `/auditions`의 상호작용 부분 — 필터·검색·무한스크롤·북마크 등.
- * 초기 첫 페이지는 서버 컴포넌트(`page.tsx`)가 이미 렌더해 props로 내려준다
- * (F7+F9 SSR 전환). 여기서는 그 위에 클라이언트 상태로 이어 붙인다.
- */
-export function AuditionsClient({
-  initialItems,
-  initialFilter,
-  initialSearch,
-  lockedCategory,
-}: AuditionsClientProps) {
-  const router = useRouter();
-
-  const [auditions, setAuditions] = useState<Audition[]>(initialItems);
+export function AuditionsClient({ initialItems, initialFilter, initialSearch, initialSort = "deadline", lockedCategory }: Props) {
+  const pathname = usePathname();
+  const [items, setItems] = useState(initialItems);
+  const [filter, setFilter] = useState(initialFilter);
+  const [search, setSearch] = useState(initialSearch);
+  const [sort, setSort] = useState(initialSort);
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(initialItems.length >= PAGE_SIZE);
-  const [selectedFilter, setSelectedFilter] = useState(initialFilter);
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const supabase = createClient();
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const activeCategoryRef = useRef<HTMLButtonElement | null>(null);
-  const pageRef = useRef(0);
+  const [hasMore, setHasMore] = useState(initialItems.length === 20);
+  const [error, setError] = useState("");
+  const page = useRef(0);
+  const request = useRef<AbortController | null>(null);
+  const busy = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const active = useRef({ filter: initialFilter, search: initialSearch, sort: initialSort });
 
-  const today = todayKST(); // UTC 사용 시 KST 자정~09시에 마감 공고 노출 (F10)
-
-  // 활성 분야 칩이 화면 밖이면 마운트 시 한 번만 가운데로 스크롤
-  useEffect(() => {
-    activeCategoryRef.current?.scrollIntoView({
-      inline: "center",
-      block: "nearest",
-    });
-  }, []);
-
-  // URL 쿼리 파라미터 동기화
-  const updateURL = useCallback(
-    (filter: string, search: string) => {
-      // 카테고리 랜딩은 slug 경로가 URL 정본(SEO) — 필터/검색은 쿼리로 반영하지 않는다.
-      if (lockedCategory) return;
-      const params = new URLSearchParams();
-      if (filter !== "전체") params.set("filter", filter);
-      if (search.trim()) params.set("q", search.trim());
-      const qs = params.toString();
-      // B3 버그 수정: 쿼리 빈 값이어도 /auditions 유지 (랜딩/홈 이탈 금지)
-      router.replace(qs ? `/auditions?${qs}` : "/auditions", { scroll: false });
-    },
-    [router, lockedCategory]
-  );
-
-  const fetchPage = useCallback(
-    async (page: number, filter: string, search: string) => {
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-
-      let query = supabase
-        .from("auditions")
-        .select(AUDITION_LIST_COLUMNS)
-        .eq("is_active", true)
-        .or(`deadline.gte.${today},deadline.is.null`);
-
-      // 카테고리 랜딩 고정 — category(007) 우선, 백필 누락 행은 genre로 폴백 (page.tsx와 동일 규칙)
-      if (lockedCategory) {
-        query = query.or(
-          `category.eq.${lockedCategory},and(category.is.null,genre.eq.${lockedCategory})`
-        );
-      }
-
-      // 필터를 DB 쿼리에 적용
-      if (filter === "원클릭지원") {
-        query = query.eq("apply_type", "email");
-      } else if (filter === "사이트지원") {
-        query = query.eq("apply_type", "external");
-      } else if (filter !== "전체") {
-        query = query.eq("genre", filter);
-      }
-
-      // 검색어 적용
-      if (search.trim()) {
-        const q = search.trim();
-        query = query.or(`title.ilike.%${q}%,company.ilike.%${q}%`);
-      }
-
-      const { data, error } = await query
-        .order("deadline", { ascending: true, nullsFirst: false })
-        .range(from, to);
-
-      if (error || !data) return [];
-      // AUDITION_LIST_COLUMNS는 apply_email을 select하지 않지만, 타입(Audition)은
-      // 해당 필드를 요구한다 — null로 명시해 SSR 첫 페이지(page.tsx)와 같은 모양을 맞춘다.
-      return data
-        .filter((a) => !a.deadline || a.deadline >= today)
-        .map((a) => ({ ...a, apply_email: null }));
-    },
-    [supabase, today, lockedCategory]
-  );
-
-  // 필터/검색 변경 시 데이터 초기화 후 첫 페이지만 로드
-  const resetAndFetch = useCallback(
-    async (filter: string, search: string) => {
-      setLoading(true);
-      setAuditions([]);
-      setHasMore(true);
-      pageRef.current = 0;
-
-      const data = await fetchPage(0, filter, search);
-      setAuditions(data);
-      setHasMore(data.length >= PAGE_SIZE);
-      setLoading(false);
-    },
-    [fetchPage]
-  );
-
-  // 필터 변경 핸들러 (전체/원클릭지원/사이트지원 — apply_type 토글, 분야 이동은 분야 칩이 담당)
-  const handleFilterChange = useCallback(
-    (filter: string) => {
-      setSelectedFilter(filter);
-      updateURL(filter, searchQuery);
-      resetAndFetch(filter, searchQuery);
-    },
-    [searchQuery, updateURL, resetAndFetch]
-  );
-
-  // 검색어 변경 핸들러 (디바운스)
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearchQuery(value);
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-      searchTimerRef.current = setTimeout(() => {
-        updateURL(selectedFilter, value);
-        resetAndFetch(selectedFilter, value);
-      }, 300);
-    },
-    [selectedFilter, updateURL, resetAndFetch]
-  );
-
-  // 추가 로드
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    const nextPage = pageRef.current + 1;
-    const data = await fetchPage(nextPage, selectedFilter, searchQuery);
-    if (data.length > 0) {
-      setAuditions((prev) => [...prev, ...data]);
-      pageRef.current = nextPage;
+  const load = useCallback(async (next: typeof active.current, append = false) => {
+    if (append && busy.current) return;
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    busy.current = true;
+    setLoading(true); setError("");
+    const nextPage = append ? page.current + 1 : 0;
+    try {
+      const data = await fetchAuditions(createClient(), { ...next, category: lockedCategory, page: nextPage, signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setItems((prev) => append ? [...prev, ...data.filter((a) => !prev.some((p) => p.id === a.id))] : data);
+      page.current = nextPage;
+      setHasMore(data.length === 20);
+    } catch {
+      if (!controller.signal.aborted) setError("공고를 불러오지 못했습니다. 다시 시도해주세요.");
+    } finally {
+      if (!controller.signal.aborted) { busy.current = false; setLoading(false); }
     }
-    if (data.length < PAGE_SIZE) {
-      setHasMore(false);
-    }
-    setLoadingMore(false);
-  }, [loadingMore, hasMore, fetchPage, selectedFilter, searchQuery]);
+  }, [lockedCategory]);
 
-  // IntersectionObserver로 무한스크롤
+  const change = useCallback((next: typeof active.current) => {
+    active.current = next;
+    setFilter(next.filter); setSearch(next.search); setSort(next.sort);
+    setItems([]);
+    const params = new URLSearchParams();
+    if (next.filter !== "전체") params.set("filter", next.filter);
+    if (next.search.trim()) params.set("q", next.search.trim());
+    if (next.sort !== "deadline") params.set("sort", next.sort);
+    window.history.replaceState(null, "", pathname + (params.size ? "?" + params.toString() : ""));
+    load(next);
+  }, [load, pathname]);
+
+  useEffect(() => () => { request.current?.abort(); if (timer.current) clearTimeout(timer.current); }, []);
   useEffect(() => {
-    const el = observerRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(el);
+    const pop = () => {
+      const params = new URLSearchParams(window.location.search);
+      const next = { filter: params.get("filter") || "전체", search: params.get("q") || "", sort: params.get("sort") === "latest" ? "latest" as const : "deadline" as const };
+      active.current = next; setFilter(next.filter); setSearch(next.search); setSort(next.sort);
+      load(next);
+    };
+    window.addEventListener("popstate", pop);
+    return () => window.removeEventListener("popstate", pop);
+  }, [load]);
+  useEffect(() => {
+    if (!sentinel.current || loading || !hasMore || error) return;
+    const observer = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) load(active.current, true); }, { rootMargin: "100px" });
+    observer.observe(sentinel.current);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loading, hasMore, error, load]);
 
-  return (
-    <div>
-      {/* 검색 바 */}
-      <div className="relative mb-4">
-        <Search
-          size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-        />
-        <input
-          type="text"
-          placeholder="오디션 검색 (제목, 주최사)"
-          value={searchQuery}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
-      </div>
-
-      {/* 분야 칩 — 누르면 해당 분야 SEO 랜딩(/auditions/[category])으로 이동 */}
-      <div className="flex gap-2 mb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <button
-          ref={!lockedCategory ? activeCategoryRef : undefined}
-          onClick={() => router.push("/auditions")}
-          className={cn(
-            "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            !lockedCategory
-              ? "bg-primary text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          )}
-        >
-          전체
-        </button>
-        {CATEGORIES.map((c) => {
-          const active = lockedCategory === c.genre;
-          return (
-            <button
-              key={c.slug}
-              ref={active ? activeCategoryRef : undefined}
-              onClick={() => router.push(`/auditions/${c.slug}`)}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                active
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              )}
-            >
-              {c.genre}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 지원방식 필터 */}
-      <AuditionFilter selected={selectedFilter} onSelect={handleFilterChange} />
-
-      {/* 로딩 */}
-      {loading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <AuditionCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : auditions.length > 0 ? (
-        <div className="space-y-4">
-          {auditions.map((audition) => (
-            <AuditionCard key={audition.id} audition={audition} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-          <Search size={40} className="mb-3 opacity-50" />
-          <p className="text-sm">검색 결과가 없습니다</p>
-          <p className="text-xs mt-1">다른 키워드로 검색해보세요</p>
-        </div>
-      )}
-
-      {/* 무한스크롤 감지 영역 */}
-      <div ref={observerRef} className="h-4" />
-
-      {/* 추가 로딩 스켈레톤 */}
-      {loadingMore && (
-        <div className="space-y-4 mt-4">
-          <AuditionCardSkeleton />
-          <AuditionCardSkeleton />
-        </div>
-      )}
-
-      {/* 리스트 하단 안내 */}
-      {!hasMore && auditions.length > 0 && (
-        <p className="mt-4 pb-4 text-center text-xs text-gray-300">
-          모든 오디션을 불러왔습니다
-        </p>
-      )}
+  return <div>
+    <div className="relative mb-4">
+      <Search size={18} aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <input aria-label="오디션 제목 또는 주최사 검색" type="search" maxLength={200} placeholder="오디션 검색 (제목, 주최사)" value={search}
+        onChange={(e) => {
+          const value = e.target.value;
+          setSearch(value);
+          if (timer.current) clearTimeout(timer.current);
+          // Invalidate the old response immediately, even during the debounce interval.
+          request.current?.abort(); busy.current = false;
+          setLoading(true);
+          timer.current = setTimeout(() => change({ ...active.current, search: value }), 300);
+        }} className="min-h-11 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-base focus:border-primary focus:outline-none" />
     </div>
-  );
+    <nav aria-label="지원 분야" className="mb-3 flex gap-2 overflow-x-auto pb-2">
+      <Link href="/auditions" aria-current={!lockedCategory ? "page" : undefined} className={"shrink-0 rounded-full px-4 py-3 text-sm " + (!lockedCategory ? "bg-primary text-white" : "bg-gray-100")}>전체</Link>
+      {CATEGORIES.map((c) => <Link key={c.slug} href={"/auditions/" + c.slug} aria-current={lockedCategory === c.genre ? "page" : undefined}
+        className={"shrink-0 rounded-full px-4 py-3 text-sm " + (lockedCategory === c.genre ? "bg-primary text-white" : "bg-gray-100")}>{c.genre}</Link>)}
+    </nav>
+    <AuditionFilter selected={filter} onSelect={(value) => { if (timer.current) clearTimeout(timer.current); change({ filter: value, search, sort }); }} />
+    <div className="mb-4 flex justify-end"><label className="flex items-center gap-2 text-sm text-gray-500">정렬<select aria-label="공고 정렬" value={sort} onChange={(e) => { if (timer.current) clearTimeout(timer.current); change({ filter, search, sort: e.target.value === "latest" ? "latest" : "deadline" }); }} className="min-h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700"><option value="deadline">마감 임박순</option><option value="latest">최신순</option></select></label></div>
+    <div className="space-y-3">{items.map((a) => <AuditionCard key={a.id} audition={a} />)}</div>
+    {loading && <div className="mt-3" role="status" aria-label="공고 불러오는 중"><AuditionCardSkeleton /></div>}
+    {error && <div role="alert" className="my-5 rounded-xl border border-red-200 p-4"><p className="text-sm">{error}</p><Button variant="ghost" onClick={() => load(active.current)}>다시 불러오기</Button></div>}
+    {!loading && !error && items.length === 0 && <p className="py-16 text-center text-sm text-gray-500">검색 결과가 없어요. 다른 검색어나 분야를 선택해보세요.</p>}
+    <div ref={sentinel} aria-hidden className="h-4" />
+    {!loading && hasMore && !error && <Button variant="outline" className="w-full" onClick={() => load(active.current, true)}>공고 더 보기</Button>}
+  </div>;
 }

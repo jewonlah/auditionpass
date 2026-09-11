@@ -12,11 +12,9 @@ export function todayKST(): string {
  */
 export function getDday(deadline: string | null): number | null {
   if (!deadline) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(deadline);
-  target.setHours(0, 0, 0, 0);
-  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const target = Date.parse(deadline.slice(0, 10) + "T00:00:00Z");
+  const today = Date.parse(todayKST() + "T00:00:00Z");
+  return Number.isFinite(target) ? Math.round((target - today) / 86400000) : null;
 }
 
 /**

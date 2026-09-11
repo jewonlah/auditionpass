@@ -25,6 +25,8 @@ function ProfilePageInner() {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
@@ -35,14 +37,18 @@ function ProfilePageInner() {
     }
 
     async function fetchProfile() {
-      const res = await fetch("/api/profile");
-      const data = await res.json();
-      setProfile(data.profile ?? null);
-      setLoading(false);
+      setLoading(true); setError(false);
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) throw Error();
+        const data = await res.json();
+        setProfile(data.profile ?? null);
+      } catch { setError(true); }
+      finally { setLoading(false); }
     }
 
     fetchProfile();
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, retry]);
 
   if (authLoading || loading) {
     return (
@@ -51,6 +57,7 @@ function ProfilePageInner() {
       </div>
     );
   }
+  if (error) return <div role="alert" className="py-10 text-center"><p className="text-sm text-gray-600">프로필을 불러오지 못했습니다. 저장된 정보는 변경되지 않았어요.</p><button type="button" onClick={() => setRetry((v) => v + 1)} className="mt-4 min-h-11 rounded-lg bg-primary px-5 text-white">다시 불러오기</button></div>;
 
   return (
     <div className="pb-4">

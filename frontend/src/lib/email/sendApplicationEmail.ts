@@ -3,6 +3,8 @@ import { resend, FROM_EMAIL } from "./resend";
 import { ApplicationEmail } from "./templates/application";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Profile, Audition } from "@/types";
+import type { EmailPayload } from "@/lib/apply/delivery";
+import { buildProfileDocument } from "@/lib/profile/document";
 
 interface SendApplicationEmailParams {
   audition: Pick<Audition, "title" | "apply_email" | "company">;
@@ -47,18 +49,16 @@ async function getSignedPhotoUrls(photoUrls: string[]): Promise<string[]> {
 }
 
 /**
- * 나이 표기 — birth_year 우선(만나이 + 년생 병기), 구 데이터는 age 폴백
- * 예: "만 22세 (2004년생)" / "27세"
+ * 출생연도로 정확한 만나이를 추정하지 않는다. 구 데이터만 age 폴백.
  */
 function formatAgeLabel(profile: Profile): string {
   if (profile.birth_year) {
-    const age = new Date().getFullYear() - profile.birth_year;
-    return `만 ${age}세 (${profile.birth_year}년생)`;
+    return `${profile.birth_year}년생`;
   }
   return profile.age ? `${profile.age}세` : "";
 }
 
-export async function sendApplicationEmail({
+export async function prepareApplicationEmail({
   audition,
   profile,
   replyToEmail,
@@ -67,13 +67,16 @@ export async function sendApplicationEmail({
     throw new Error("이 오디션은 이메일 지원이 불가능합니다.");
   }
 
+  const document = buildProfileDocument(profile);
+  profile = { ...profile, ...document.profile };
   const ageLabel = formatAgeLabel(profile);
 
   // 프로필 사진을 서명된 URL로 변환
-  const signedPhotoUrls = await getSignedPhotoUrls(profile.photo_urls);
+  const signedPhotoUrls = await getSignedPhotoUrls(profile.photo_urls ?? []);
 
   const emailHtml = await render(
     ApplicationEmail({
+      templateId: document.template,
       auditionTitle: audition.title,
       applicantName: profile.name,
       applicantAgeLabel: ageLabel,
@@ -83,7 +86,7 @@ export async function sendApplicationEmail({
       applicantBio: profile.bio,
       applicantPhone: profile.phone,
       applicantAgency: profile.agency,
-      applicantSpecialty: profile.specialty,
+      applicantSpecialty: profile.specialty ?? [],
       applicantCareer: profile.career,
       instagramUrl: profile.instagram_url,
       youtubeUrl: profile.youtube_url,
@@ -124,17 +127,26 @@ export async function sendApplicationEmail({
     finalSubject = `[TEST] ${subject}`;
   }
 
-  const { data, error } = await resend.emails.send({
+  return {
     from: `오디션패스 <${FROM_EMAIL}>`,
     to,
     ...(replyTo ? { replyTo } : {}),
     subject: finalSubject,
     html: emailHtml,
-  });
+  } satisfies EmailPayload;
+}
+
+export function deliveryMode(): "production" | "test" {
+  return process.env.VERCEL_ENV === "production" || process.env.ALLOW_REAL_EMAIL === "1" ? "production" : "test";
+}
+
+export async function sendPreparedEmail(payload: EmailPayload, idempotencyKey: string): Promise<string> {
+  const { data, error } = await resend.emails.send(payload, { idempotencyKey });
 
   if (error) {
     throw new Error(`이메일 발송 실패: ${error.message}`);
   }
 
-  return data;
+  if (!data?.id) throw new Error("발송 결과를 확인하지 못했습니다.");
+  return data.id;
 }

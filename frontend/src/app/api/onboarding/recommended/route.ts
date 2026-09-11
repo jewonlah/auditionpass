@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { todayKST } from "@/lib/utils";
+import { categoryFilter } from "@/lib/audition/filters";
 
 /**
  * GET /api/onboarding/recommended?genres=배우,모델
@@ -41,13 +42,14 @@ export async function GET(request: Request) {
   const activeFilter = `deadline.gte.${today},deadline.is.null`;
 
   let matched: RecommendedRow[] = [];
-  if (genres.length > 0) {
+  const matching = categoryFilter(genres);
+  if (matching) {
     const { data, error } = await supabase
       .from("auditions")
       .select(FIELDS)
       .eq("is_active", true)
       .or(activeFilter)
-      .in("genre", genres)
+      .or(matching)
       .order("deadline", { ascending: true, nullsFirst: false })
       .limit(LIMIT);
     if (error) {

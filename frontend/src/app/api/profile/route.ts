@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sanitizeProfileBody, validateAgeFields } from "@/lib/profile";
+import { profileWriteSchema } from "@/lib/profile/form";
+import { profilePhotoWriteError } from "@/lib/profile/photo-write";
 
 /**
  * 만 14세 미만 차단은 **서버에서** 해야 한다 — 온보딩·프로필 폼은 이 라우트로 직접
@@ -48,14 +50,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
 
   const invalid = birthYearGuard(body);
   if (invalid) return invalid;
 
+  const parsed = profileWriteSchema.safeParse(sanitizeProfileBody(body));
+  if (!body || !parsed.success) return NextResponse.json({ error: "프로필 입력값을 확인해주세요.", code: "INVALID_PROFILE" }, { status: 400 });
+  const photoError = profilePhotoWriteError(parsed.data, user.id, process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  if (photoError) return NextResponse.json(photoError, { status: 400 });
+  if (!parsed.data.name || !parsed.data.gender || !parsed.data.genre?.length || !(parsed.data.birth_year || parsed.data.age)) {
+    return NextResponse.json({ error: "이름·출생연도·성별·지원 분야를 입력해주세요.", code: "INCOMPLETE_PROFILE" }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("profiles")
-    .insert({ ...sanitizeProfileBody(body), id: user.id })
+    .insert({ ...parsed.data, id: user.id })
     .select()
     .single();
 
@@ -67,7 +77,7 @@ export async function POST(request: Request) {
       );
     }
     return NextResponse.json(
-      { error: "프로필 생성 실패: " + error.message },
+      { error: "프로필을 저장하지 못했습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 }
     );
   }
@@ -86,21 +96,27 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
 
   const invalid = birthYearGuard(body);
   if (invalid) return invalid;
 
+  const parsed = profileWriteSchema.safeParse(sanitizeProfileBody(body));
+  if (!body || !parsed.success) return NextResponse.json({ error: "프로필 입력값을 확인해주세요.", code: "INVALID_PROFILE" }, { status: 400 });
+
+  const photoError = profilePhotoWriteError(parsed.data, user.id, process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  if (photoError) return NextResponse.json(photoError, { status: 400 });
+
   const { data, error } = await supabase
     .from("profiles")
-    .update(sanitizeProfileBody(body))
+    .update(parsed.data)
     .eq("id", user.id)
     .select()
     .single();
 
   if (error) {
     return NextResponse.json(
-      { error: "프로필 수정 실패: " + error.message },
+      { error: "프로필을 수정하지 못했습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 }
     );
   }

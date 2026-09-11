@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/Badge";
 import { TrustBadge } from "@/components/audition/TrustBadge";
 import { formatDday, getDday } from "@/lib/utils";
 import type { Audition } from "@/types";
+import { BookmarkButton } from "./Bookmarks";
 
 interface AuditionCardProps {
   audition: Audition;
@@ -14,9 +15,10 @@ export function AuditionCard({ audition }: AuditionCardProps) {
     dday !== null && dday <= 3 ? "danger" : dday !== null && dday <= 7 ? "warning" : "default";
 
   return (
+    <article className="relative">
     <Link
       href={`/audition/${audition.id}`}
-      className="block rounded-xl bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+      className="block rounded-xl bg-white p-5 pr-14 shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -37,5 +39,7 @@ export function AuditionCard({ audition }: AuditionCardProps) {
         <TrustBadge audition={audition} />
       </div>
     </Link>
+    <div className="absolute right-1 top-1"><BookmarkButton auditionId={audition.id} /></div>
+    </article>
   );
 }

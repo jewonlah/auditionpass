@@ -6,6 +6,7 @@ import { CATEGORIES, getCategoryBySlug } from "@/lib/categories";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
 import { getInitialAuditions } from "../page";
 import { AuditionsClient } from "../AuditionsClient";
+import { parseAuditionsSearchParams } from "@/lib/audition/searchParams";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr";
@@ -13,7 +14,7 @@ const BASE_URL =
 // 클라이언트 다음 페이지 range가 초기 목록과 겹쳐 카드가 중복 노출된다.
 const CATEGORY_LIMIT = 20;
 
-// 카테고리별 대표 공고는 크롤 주기(하루 1회)에 맞춰 갱신하면 충분하다 (12_ia-userflows §1.2).
+// 검색·정렬 query를 읽으므로 이 페이지는 요청별 렌더링된다.
 export const revalidate = 3600;
 
 export function generateStaticParams() {
@@ -57,24 +58,30 @@ export function generateMetadata({
 
 export default async function CategoryLandingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ category: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { category } = await params;
   const found = getCategoryBySlug(category);
   if (!found) notFound();
 
-  // 쿠키 없는 anon 클라이언트 — cookies()를 쓰면 라우트가 Dynamic으로 굳어 revalidate/
-  // generateStaticParams가 무효해진다(D3, sitemap.ts와 동일 패턴).
+  // 공개 공고는 로그인 세션 없이 조회한다.
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+  const query = await searchParams;
+  const { filter, q } = parseAuditionsSearchParams(query);
+  const sort = query.sort === "latest" ? "latest" : "deadline";
   const items = await getInitialAuditions(
-    found.genre,
-    "",
+    filter,
+    q,
     CATEGORY_LIMIT,
-    supabase
+    supabase,
+    sort,
+    found.genre,
   );
 
   const jsonLd = {
@@ -109,9 +116,11 @@ export default async function CategoryLandingPage({
 
       <div className="mt-4">
         <AuditionsClient
+          key={`${found.genre}/${filter}/${q}/${sort}`}
           initialItems={items}
-          initialFilter="전체"
-          initialSearch=""
+          initialFilter={filter}
+          initialSearch={q}
+          initialSort={sort}
           lockedCategory={found.genre}
         />
       </div>

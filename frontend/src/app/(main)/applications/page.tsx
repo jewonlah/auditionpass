@@ -1,196 +1,132 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  CheckCircle,
-  XCircle,
-  Calendar,
-  Building2,
-  Loader2,
-  Inbox,
-} from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { Clock3, CheckCircle2, CircleAlert, Inbox } from "lucide-react";
+import { getDday, formatDday } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDday, getDday } from "@/lib/utils";
+import { useBookmarks } from "@/components/audition/Bookmarks";
+import { AuditionCard } from "@/components/audition/AuditionCard";
+import { AuditionCardSkeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
+import type { Audition, Application } from "@/types";
 
-interface ApplicationAudition {
-  id: string;
-  title: string;
-  company: string | null;
-  genre: string;
-  deadline: string | null;
-  is_active: boolean;
-}
-
-interface ApplicationRecord {
-  id: string;
-  email_sent: boolean;
-  sent_at: string | null;
-  created_at: string;
-  audition: ApplicationAudition;
-}
+type RecordRow = Pick<Application, "id" | "status" | "sent_at" | "created_at" | "profile_version_id"> & {
+  audition: Pick<Audition, "id" | "title" | "company" | "deadline" | "is_active"> | null;
+};
 
 export default function ApplicationsPage() {
-  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [applications, setApplications] = useState<ApplicationRecord[]>([]);
+  const [tab, setTab] = useState<"applications" | "bookmarks">("applications");
+  const [items, setItems] = useState<RecordRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const userId = user?.id;
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const res = await fetch("/api/history", { signal });
+      if (!res.ok) throw Error("지원 기록을 불러오지 못했습니다.");
+      const data = await res.json();
+      if (!signal?.aborted) { setItems(data.applications); setError(""); }
+    } catch {
+      if (!signal?.aborted) setError("지원 기록을 불러오지 못했습니다. 다시 시도해주세요.");
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, []);
   useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      router.push("/login?returnTo=%2Fapplications");
-      return;
-    }
-
-    async function fetchHistory() {
-      try {
-        const res = await fetch("/api/history");
-        if (res.ok) {
-          const data = await res.json();
-          setApplications(data.applications);
-        } else {
-          setError("지원 이력을 불러오는데 실패했습니다.");
-        }
-      } catch {
-        setError("네트워크 오류가 발생했습니다.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchHistory();
-  }, [user, authLoading, router]);
-
-  if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 size={32} className="animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <XCircle size={40} className="text-red-400 mb-3" />
-        <p className="text-sm text-gray-500">{error}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="pb-4">
-      <h1 className="text-lg font-bold mb-1">지원</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        지원한 오디션 {applications.length}건
-        {applications.length > 0 && (
-          <span className="mt-0.5 block text-xs text-gray-400">
-            회신은 회원님 메일로 직접 옵니다 — 받은편지함을 확인해주세요
-          </span>
-        )}
-      </p>
-
-      {applications.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="space-y-3">
-          {applications.map((app) => (
-            <ApplicationCard key={app.id} application={app} />
-          ))}
-        </div>
-      )}
+    if (!userId) return;
+    const controller = new AbortController();
+    refresh(controller.signal);
+    return () => controller.abort();
+  }, [userId, refresh]);
+  const hasPending = items.some((a) => a.status === "sending");
+  useEffect(() => {
+    if (!hasPending || !userId) return;
+    const controller = new AbortController();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") refresh(controller.signal); }, 10_000);
+    return () => { clearInterval(timer); controller.abort(); };
+  }, [hasPending, userId, refresh]);
+  return <div className="pb-4">
+    <h1 className="text-2xl font-bold">내 지원</h1>
+    <p className="mt-2 text-sm leading-relaxed text-gray-500">지원 기록과 찜한 공고를 모았어요.<br />담당자의 답장은 회원님 이메일로 직접 도착합니다.</p>
+    <div className="my-5 grid grid-cols-2 rounded-xl bg-gray-100 p-1" aria-label="지원 목록 선택">
+      {(["applications", "bookmarks"] as const).map((value) => <button key={value} type="button" aria-pressed={tab === value} onClick={() => setTab(value)}
+        className={"min-h-11 rounded-lg text-sm font-semibold " + (tab === value ? "bg-white shadow-sm" : "text-gray-500")}>{value === "applications" ? "지원함" : "찜"}</button>)}
     </div>
-  );
+    {tab === "bookmarks" ? <SavedAuditions /> : <>
+      {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 p-4 text-sm"><p>{error}</p><Button variant="ghost" onClick={() => refresh()}>다시 불러오기</Button></div>}
+      {authLoading || loading ? <AuditionCardSkeleton /> : !user ? <Link href="/login?returnTo=%2Fapplications">로그인하고 확인하기</Link> :
+        items.length === 0 && !error ? <Empty text="아직 지원한 오디션이 없어요" /> :
+        <div className="space-y-3">{items.map((item) => <ApplicationCard key={item.id} item={item} refresh={refresh} />)}</div>}
+    </>}
+  </div>;
 }
 
-/** 랜딩의 약속 "보낸 시각까지 남습니다" — 분 단위로 남긴다 */
-function formatSentAt(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${hh}:${mm}`;
+function ApplicationCard({ item, refresh }: { item: RecordRow; refresh: () => Promise<void> }) {
+  const [checking, setChecking] = useState(false);
+  const [message, setMessage] = useState("");
+  const pending = item.status === "sending";
+  const failed = item.status === "failed";
+  const audition = item.audition;
+  const Icon = pending ? Clock3 : failed ? CircleAlert : CheckCircle2;
+  async function recover() {
+    setChecking(true); setMessage("");
+    try {
+      const res = await fetch("/api/apply/recover", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ applicationId: item.id }) });
+      const data = await res.json();
+      if (!res.ok || data.pending) setMessage(data.error || "잠시 후 다시 확인해주세요.");
+      await refresh();
+    } catch { setMessage("연결이 끊겼습니다. 잠시 후 다시 시도해주세요."); }
+    finally { setChecking(false); }
+  }
+  return <article className="rounded-2xl border border-gray-200 bg-white p-4">
+    {audition ? <Link href={"/audition/" + audition.id} className="block">
+      <h2 className="font-semibold leading-snug">{audition.title}</h2>
+      <p className="mt-1 text-sm text-gray-500">{audition.company} · {!audition.is_active ? "게시 종료" : formatDday(audition.deadline)}</p>
+    </Link> : <h2 className="font-semibold">게시가 종료된 공고</h2>}
+    <p className={"mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 text-sm " + (failed ? "text-red-600" : "text-gray-600")}>
+      <Icon size={16} />{pending ? "발송 결과 확인 중" : failed ? "발송 준비 실패" : "발송 요청 완료"}
+      {item.sent_at && <time className="ml-auto text-xs" dateTime={item.sent_at}>{new Date(item.sent_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>}
+    </p>
+    {pending && <><p className="mt-2 text-sm text-gray-500">처리가 지연되면 5분 후 결과를 다시 확인할 수 있어요.</p><Button variant="outline" className="mt-3 w-full" onClick={recover} disabled={checking}>{checking ? "확인 중…" : "발송 결과 다시 확인"}</Button></>}
+    {failed && audition && <Link className="mt-3 block text-sm font-semibold text-primary" href={"/audition/" + audition.id}>공고에서 다시 지원하기</Link>}
+    {item.profile_version_id && <Link className="mt-3 block py-2 text-sm font-semibold text-primary" href={`/profile/versions?id=${item.profile_version_id}`}>이 지원에 사용한 프로필 보기</Link>}
+    {message && <p role="status" className="mt-2 text-sm text-gray-600">{message}</p>}
+  </article>;
 }
 
-function ApplicationCard({ application }: { application: ApplicationRecord }) {
-  const { audition } = application;
-  const dday = getDday(audition.deadline);
-  const isExpired = dday !== null && dday < 0;
-  const sentAt = formatSentAt(application.sent_at ?? application.created_at);
-
-  return (
-    <Link
-      href={`/audition/${audition.id}`}
-      className={`block rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md ${
-        isExpired ? "opacity-60" : ""
-      }`}
-    >
-      {/* 상단: 제목 + 메타 */}
-      <div className="mb-1.5 flex items-start justify-between gap-2">
-        <h3 className="min-w-0 flex-1 truncate text-sm leading-snug font-semibold">
-          {audition.title}
-        </h3>
-        {audition.deadline && (
-          <span className="flex shrink-0 items-center gap-1 text-xs text-gray-400">
-            <Calendar size={12} />
-            {isExpired ? "마감됨" : formatDday(audition.deadline)}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-        {audition.company && (
-          <span className="flex items-center gap-1">
-            <Building2 size={12} />
-            {audition.company}
-          </span>
-        )}
-        <Badge>{audition.genre}</Badge>
-      </div>
-
-      {/* 타임라인 — 우리가 실제로 아는 것만 표시한다. 회신은 우리를 거치지 않는다. */}
-      {application.email_sent ? (
-        <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-900">
-            <CheckCircle size={13} className="text-primary" />
-            프로필 발송
-            <span className="font-medium text-gray-500 tabular-nums">{sentAt}</span>
-          </span>
-          <span className="h-px w-4 bg-gray-200" aria-hidden />
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-900">
-            <CheckCircle size={13} className="text-primary" />
-            담당자 메일함 접수
-          </span>
-        </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
-            <XCircle size={13} />
-            발송 실패
-          </span>
-          <span className="text-xs text-gray-400">공고 상세에서 다시 시도해주세요</span>
-        </div>
-      )}
-    </Link>
-  );
+function SavedAuditions() {
+  const { ids, loading: idsLoading } = useBookmarks();
+  const [items, setItems] = useState<Audition[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/bookmarks?page=" + page, { signal: controller.signal }).then(async (res) => {
+      if (!res.ok) throw Error();
+      return res.json();
+    }).then((data) => {
+      if (controller.signal.aborted) return;
+      const rows = (data.bookmarks as { audition: Audition | null }[]).flatMap((b) => b.audition ? [{ ...b.audition, apply_email: null }] : []);
+      setItems((prev) => page === 0 ? rows : [...prev, ...rows.filter((row) => !prev.some((p) => p.id === row.id))]);
+      setHasMore(data.hasMore); setError("");
+    }).catch(() => { if (!controller.signal.aborted) setError("찜한 공고를 불러오지 못했습니다."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [page, retry]);
+  const visible = items.filter((a) => ids.has(a.id));
+  return <div className="space-y-3">
+    {visible.map((a) => <div key={a.id}><AuditionCard audition={a} />{(!a.is_active || (getDday(a.deadline) ?? 0) < 0) && <Link href={"/auditions?filter=" + encodeURIComponent(a.category ?? a.genre)} className="block px-4 py-2 text-sm text-primary">마감된 공고예요 · 같은 분야 더 보기</Link>}</div>)}
+    {(loading || idsLoading) && <AuditionCardSkeleton />}
+    {!loading && !idsLoading && !visible.length && !error && <Empty text="마음에 드는 공고를 찜해보세요" />}
+    {error && <div role="alert"><p className="text-sm">{error}</p><Button variant="outline" onClick={() => { setLoading(true); setRetry((v) => v + 1); }}>다시 불러오기</Button></div>}
+    {!loading && hasMore && <Button variant="outline" className="w-full" onClick={() => { setLoading(true); setPage((p) => p + 1); }}>더 보기</Button>}
+  </div>;
 }
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-      <Inbox size={48} className="mb-3 opacity-50" />
-      <p className="text-sm font-medium mb-1">아직 지원한 오디션이 없습니다</p>
-      <p className="text-xs mb-4">탐색 탭에서 오디션을 찾아 첫 지원을 시작해보세요</p>
-      <Link
-        href="/auditions"
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
-      >
-        오디션 둘러보기
-      </Link>
-    </div>
-  );
+function Empty({ text }: { text: string }) {
+  return <div className="py-14 text-center"><Inbox size={36} className="mx-auto text-gray-300" /><p className="mt-3 text-sm text-gray-500">{text}</p><Link className="mt-4 inline-block py-2 font-semibold text-primary" href="/auditions">오디션 둘러보기</Link></div>;
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { buildDeletionPlan, type DeletionStep } from "@/lib/account/deletion-plan";
+import { beginAccountFileDeletion } from "@/lib/account/file-lifecycle";
 
 /**
  * POST /api/account/delete — 회원 탈퇴 (자기서비스).
@@ -46,6 +47,21 @@ export async function POST() {
     );
   }
 
+  try {
+    if (!(await beginAccountFileDeletion(admin, userId))) {
+      return NextResponse.json(
+        { code: "FILE_OPERATIONS_PENDING", error: "파일 처리가 끝난 뒤 탈퇴를 다시 시도해주세요. 계속 실패하면 support@auditionpass.co.kr로 문의해주세요." },
+        { status: 409 }
+      );
+    }
+  } catch {
+    console.error("[account/delete] 파일 처리 상태 확인 실패");
+    return NextResponse.json(
+      { error: "탈퇴 처리를 시작할 수 없습니다. 잠시 후 다시 시도해주세요." },
+      { status: 503 }
+    );
+  }
+
   const plan = buildDeletionPlan();
 
   for (const step of plan) {
@@ -78,7 +94,7 @@ async function runStep(
 ): Promise<string | null> {
   switch (step.mode) {
     case "storage":
-      return removeProfilePhotos(admin, userId);
+      return removeProfilePhotos(admin, userId, step.target.replace("storage:", ""));
 
     case "delete": {
       const { error } = await admin
@@ -115,28 +131,26 @@ const LIST_PAGE = 100;
 /** 무한 루프 방지 상한 (프로필 사진은 5장 제한이지만 과거 잔여물까지 넉넉히) */
 const MAX_PAGES = 20;
 
-async function removeProfilePhotos(admin: Admin, userId: string): Promise<string | null> {
-  const paths: string[] = [];
-
+async function removeProfilePhotos(admin: Admin, userId: string, bucket: string): Promise<string | null> {
   for (let page = 0; page < MAX_PAGES; page++) {
     const { data, error } = await admin.storage
-      .from("profiles")
-      .list(userId, { limit: LIST_PAGE, offset: page * LIST_PAGE });
+      .from(bucket)
+      .list(userId, { limit: LIST_PAGE, offset: 0 });
 
     if (error) return `list: ${error.message}`;
-    if (!data || data.length === 0) break;
+    if (!data || data.length === 0) return null;
+    const paths: string[] = [];
 
     for (const entry of data) {
       // 폴더(하위 prefix)는 name 만 있고 id 가 null 로 온다 — 현재 경로 규칙엔 없지만 방어.
-      if (!entry.id) continue;
+      if (!entry.id) return "예상하지 못한 하위 폴더가 있습니다. 고객센터에 문의해주세요.";
       paths.push(`${userId}/${entry.name}`);
     }
 
-    if (data.length < LIST_PAGE) break;
+    const removed = await admin.storage.from(bucket).remove(paths);
+    if (removed.error) return `remove: ${removed.error.message}`;
+    if (data.length < LIST_PAGE) return null;
   }
 
-  if (paths.length === 0) return null;
-
-  const { error } = await admin.storage.from("profiles").remove(paths);
-  return error ? `remove: ${error.message}` : null;
+  return "파일 정리를 계속하려면 탈퇴를 다시 시도해주세요.";
 }

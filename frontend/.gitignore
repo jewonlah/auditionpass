@@ -43,3 +43,7 @@ next-env.d.ts
 .vercel
 .env*
 !.env*.example
+
+# Browser verification artifacts
+/test-results/
+/playwright-report/

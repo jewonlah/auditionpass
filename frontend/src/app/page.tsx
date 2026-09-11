@@ -589,9 +589,9 @@ export default async function LandingPage() {
                 <p className="text-[15.5px] font-black">내 지원 내역</p>
                 <div className="mt-3.5">
                   {[
-                    { t: "뮤지컬 배우 모집", s: "보냄 09:12 · 회신 도착 14:05", hot: true },
-                    { t: "연극 배역 오디션", s: "보냄 10:04 · 접수됨", hot: false },
-                    { t: "독립영화 주연", s: "보냄 14:50 · 접수됨", hot: false },
+                    { t: "뮤지컬 배우 모집", s: "발송 요청 완료 · 09:12", hot: true },
+                    { t: "연극 배역 오디션", s: "발송 요청 완료 · 10:04", hot: false },
+                    { t: "독립영화 주연", s: "발송 결과 확인 중", hot: false },
                   ].map((r, i, arr) => (
                     <div
                       key={r.t}
@@ -712,7 +712,7 @@ export default async function LandingPage() {
               },
               {
                 q: "지원했는데 연락이 없으면요?",
-                a: "보낸 시각과 접수 여부는 지원 내역에 그대로 남습니다. 다만 회신 여부는 공고를 낸 쪽의 몫이라 오디션패스가 약속드릴 수 없습니다.",
+                a: "발송 요청 시각과 처리 결과는 지원 내역에서 확인할 수 있습니다. 담당자의 수신·열람 여부는 확인되지 않으며, 답장은 회원님 이메일로 직접 도착합니다.",
               },
               {
                 q: "참가비를 요구하는 공고는요?",

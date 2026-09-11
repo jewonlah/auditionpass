@@ -3,6 +3,8 @@
 // ============================================
 
 export interface Profile {
+  template_id?: 'casting' | 'portfolio' | 'career';
+  document_version?: number;
   id: string;
   name: string;
   /** 출생연도 (12_ia-userflows 정본 — age를 대체, 009 마이그레이션) */
@@ -53,13 +55,14 @@ export interface Audition {
 }
 
 export interface Application {
+  profile_version_id?: string | null;
   id: string;
   user_id: string;
   audition_id: string;
   email_sent: boolean;
   sent_at: string | null;
   /** F6 상태 모델 — R1: sent/failed, R1.2+: replied (열람은 R3 프리미엄) */
-  status: 'sent' | 'failed' | 'replied';
+  status: 'sending' | 'sent' | 'failed' | 'replied';
   created_at: string;
   audition?: Audition;
 }
