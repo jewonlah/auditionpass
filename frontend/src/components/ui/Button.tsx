@@ -32,6 +32,7 @@ export function Button({
         className
       )}
       disabled={disabled}
+      data-variant={variant}
       {...props}
     >
       {children}

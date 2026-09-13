@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { metaDescription } from "@/lib/audition/description";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
+import { todayKST } from "@/lib/utils";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://auditionpass.co.kr";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const { data: audition } = await supabase
       .from("auditions")
-      .select("title, company, genre, deadline, description")
+      .select("title, company, genre, deadline, description, is_active, review_status")
       .eq("id", id)
       .single();
 
@@ -42,6 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title,
       description,
+      robots: { index: audition.is_active && !["pending", "quarantine"].includes(audition.review_status) && (!audition.deadline || audition.deadline >= todayKST()), follow: true },
       openGraph: {
         title,
         description,
@@ -79,41 +81,23 @@ export default async function AuditionDetailLayout({ params, children }: Props) 
 
     const { data: audition } = await supabase
       .from("auditions")
-      .select("title, company, genre, deadline, description, requirements, apply_type, created_at")
+      .select("title, company, genre, deadline, description, requirements, apply_type, created_at, is_active, review_status")
       .eq("id", id)
       .single();
 
-    if (audition) {
+    if (audition && audition.is_active && !["pending", "quarantine"].includes(audition.review_status) && (!audition.deadline || audition.deadline >= todayKST())) {
       // description 에는 수집기가 붙인 "요약만 수집 — 원문 링크 확인" 꼬리표를 넣지 않는다.
       // 활성 공고의 93%에 그 문구가 있었고, 구조화 데이터에 그대로 나가면
       // 검색엔진·AI 에게 "여긴 정보가 없다"고 선언하는 셈이라 인용에서 스스로 빠진다.
       jsonLd = {
         "@context": "https://schema.org",
-        "@type": "JobPosting",
+        "@type": "WebPage",
         identifier: { "@type": "PropertyValue", name: "오디션패스", value: id },
-        title: audition.title,
+        name: audition.title,
+        url: `${BASE_URL}/audition/${id}`,
         description: metaDescription(audition.description, audition.title, 600),
-        datePosted: audition.created_at,
-        ...(audition.deadline ? { validThrough: audition.deadline } : {}),
-        // Google for Jobs 는 hiringOrganization 을 요구한다. 모집 주체가 비면
-        // 수집 출처가 아니라 플랫폼을 적는다(출처는 화면의 source_name 배지로 밝힌다).
-        hiringOrganization: {
-          "@type": "Organization",
-          name: audition.company || "오디션패스 수집 공고",
-        },
-        industry: "Entertainment",
-        occupationalCategory: audition.genre,
-        employmentType: "CONTRACTOR",
-        // 대부분 촬영·공연 단위라 근무지가 고정되지 않는다. 국가만 명시하고
-        // 지역이 확인된 공고에 한해 addressRegion 을 채우는 것은 후속 과제.
-        jobLocation: {
-          "@type": "Place",
-          address: { "@type": "PostalAddress", addressCountry: "KR" },
-        },
-        applicantLocationRequirements: { "@type": "Country", name: "KR" },
-        // 원클릭 지원이 가능한 공고만 directApply=true. 사이트 이동은 false 가 정확하다.
-        directApply: audition.apply_type === "email",
-        ...(audition.requirements ? { experienceRequirements: audition.requirements } : {}),
+        datePublished: audition.created_at,
+        // The source data does not establish employment type/location. Do not invent JobPosting fields.
       };
     }
   } catch {

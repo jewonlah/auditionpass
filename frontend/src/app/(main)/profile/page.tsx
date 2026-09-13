@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import type { Profile } from "@/types";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export default function ProfilePage() {
   // useSearchParams 는 Suspense 경계 없이는 정적 프리렌더를 깨뜨린다
@@ -22,6 +23,7 @@ function ProfilePageInner() {
   // P3 온보딩 (2026-08-31): 가입 직후 /home 게이트가 여기로 보낸다.
   // 같은 폼이지만 인사가 다르다 — 설정 화면이 아니라 매니저 계약의 첫 장면.
   const isWelcome = searchParams.get("welcome") === "1";
+  const isPortfolio = searchParams.get("returnTo") === "/portfolio";
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,7 @@ function ProfilePageInner() {
 
   return (
     <div className="pb-4">
+      {isPortfolio && <Link href="/portfolio" className="mb-3 inline-flex min-h-11 items-center font-semibold text-primary">포트폴리오로 돌아가기</Link>}
       {isWelcome ? (
         <div className="relative mb-6 overflow-hidden rounded-2xl bg-[#141110] px-5 py-6 text-[#F7F4EF]">
           {/* 랜딩과 같은 온도 — 동틀 녘 */}
@@ -87,7 +90,7 @@ function ProfilePageInner() {
       ) : (
         <>
           <h1 className="text-lg font-bold mb-1">
-            {profile ? "프로필 수정" : "프로필 등록"}
+            {isPortfolio ? "포트폴리오 편집" : profile ? "프로필 수정" : "프로필 등록"}
           </h1>
           <p className="text-sm text-gray-500 mb-6">
             {profile

@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { unwrapOnboardingReturnTo } from "@/lib/utils";
 
 // Next.js 16: middleware 컨벤션이 proxy로 개명됨 (기능 동일)
-const PROTECTED_ROUTES = ["/home", "/applications", "/profile", "/my", "/admin", "/onboarding"];
+const PROTECTED_ROUTES = ["/home", "/applications", "/profile", "/portfolio", "/my", "/admin", "/onboarding"];
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
@@ -56,6 +56,7 @@ export const config = {
     "/home/:path*",
     "/applications/:path*",
     "/profile/:path*",
+    "/portfolio/:path*",
     "/my/:path*",
     "/admin/:path*",
     "/admin",

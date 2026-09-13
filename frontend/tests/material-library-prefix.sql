@@ -1,0 +1,15 @@
+create role anon;
+create role authenticated;
+create role service_role bypassrls;
+create schema auth;
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+create table auth.users(id uuid primary key);
+insert into auth.users values ('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222');
+grant usage on schema public,auth to authenticated,service_role;
+create schema storage;
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid primary key,bucket_id text);
+alter table storage.objects enable row level security;
+grant usage on schema storage to anon,authenticated,service_role;
+grant all on storage.objects to anon,authenticated,service_role;
+create policy existing_broad_policy on storage.objects for all to anon,authenticated using(true) with check(true);

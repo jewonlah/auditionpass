@@ -2,6 +2,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const http = require('node:http');
 const files = new Map();
+const materials = new Map();
 const lifecycle = { deleting: false, active: new Set() };
 const user = { id: '11111111-1111-4111-8111-111111111111', email: 'local@example.invalid', aud: 'authenticated', role: 'authenticated', created_at: '2026-01-01T00:00:00Z', app_metadata: { provider: 'email' }, user_metadata: {} };
 const profile = { id: user.id, name: 'Test Actor', birth_year: 2000, gender: '여성', genre: ['성우'], activity_field: [], specialty: [], photo_urls: [], height: null, weight: null, bio: '', career: '', created_at: user.created_at };
@@ -15,6 +16,33 @@ http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/health') return res.end('{}');
   if (url.pathname === '/auth/v1/user') return res.end(JSON.stringify(user));
+  if (url.pathname === '/rest/v1/materials') {
+    const matching = () => [...materials.values()].filter((row) => ['id', 'user_id'].every((field) => !url.searchParams.has(field) || url.searchParams.get(field) === `eq.${row[field]}`));
+    if (req.method === 'GET') {
+      const rows = matching().reverse();
+      const singular = (req.headers.accept || '').includes('application/vnd.pgrst.object+json');
+      return res.end(JSON.stringify(singular ? rows[0] ?? null : rows));
+    }
+    if (req.method === 'DELETE') { matching().forEach((row) => materials.delete(row.id)); return res.end('null'); }
+    if (req.method === 'POST') {
+      const chunks = []; req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', () => {
+        const row = JSON.parse(Buffer.concat(chunks).toString());
+        if (row.user_id !== user.id) { res.statusCode = 403; return res.end('{}'); }
+        row.created_at = new Date().toISOString(); materials.set(row.id, row);
+        res.statusCode = 201; res.end(JSON.stringify(row));
+      }); return;
+    }
+  }
+  if (url.pathname.startsWith('/storage/v1/object/sign/materials/') && req.method === 'POST') {
+    const key = url.pathname.slice('/storage/v1/object/sign/'.length);
+    if (!files.has(key)) { res.statusCode = 404; return res.end('{}'); }
+    return res.end(JSON.stringify({ signedURL: `/object/${key}?download=test` }));
+  }
+  if (url.pathname === '/storage/v1/object/materials' && req.method === 'DELETE') {
+    const chunks = []; req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => { const body = JSON.parse(Buffer.concat(chunks).toString()); body.prefixes.forEach((path) => files.delete(`materials/${path}`)); res.end('[]'); }); return;
+  }
   if (req.method === 'POST' && url.pathname.startsWith('/rest/v1/rpc/')) {
     const rpc = url.pathname.split('/').pop();
     if (!['begin_account_file_operation', 'finish_account_file_operation', 'begin_account_file_deletion'].includes(rpc)) {
@@ -45,7 +73,7 @@ http.createServer((req, res) => {
   }
   if (url.pathname.startsWith('/storage/v1/object/')) {
     const key = url.pathname.slice('/storage/v1/object/'.length).replace(/^public\//, '');
-    if (!new RegExp(`^(profiles|profile-documents)/${user.id}/[a-zA-Z0-9_.-]+$`).test(key)) { res.statusCode = 403; return res.end('{}'); }
+    if (!new RegExp(`^(profiles|profile-documents|materials)/${user.id}/[a-zA-Z0-9_.-]+$`).test(key)) { res.statusCode = 403; return res.end('{}'); }
     if (req.method === 'POST') {
       if (files.has(key)) { res.statusCode = 409; return res.end(JSON.stringify({ message: 'Already exists' })); }
       const chunks = [];
@@ -56,6 +84,7 @@ http.createServer((req, res) => {
     if (req.method === 'GET') {
       const file = files.get(key);
       if (!file) { res.statusCode = 404; return res.end(JSON.stringify({ message: 'Object not found' })); }
+      if (key.startsWith('materials/') && url.searchParams.has('download')) res.setHeader('Content-Disposition', 'attachment; filename="material.pdf"');
       res.setHeader('Content-Type', file.type); return res.end(file.bytes);
     }
   }
@@ -73,4 +102,4 @@ http.createServer((req, res) => {
   const singular = (req.headers.accept || '').includes('application/vnd.pgrst.object+json');
   res.setHeader('Content-Range', '0-' + Math.max(0, rows.length - 1) + '/' + rows.length);
   res.end(JSON.stringify(singular ? rows[0] ?? null : rows));
-}).listen(55439, '127.0.0.1');
+}).listen(15439, '127.0.0.1');

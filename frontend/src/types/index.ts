@@ -24,6 +24,10 @@ export interface Profile {
   agency: string | null;
   specialty: string[];
   career: string | null;
+  training?: string | null;
+  introduction_url?: string | null;
+  performance_url?: string | null;
+  audio_url?: string | null;
   phone: string | null;
   created_at: string;
   updated_at: string;

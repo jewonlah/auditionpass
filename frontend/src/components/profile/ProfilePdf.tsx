@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { PdfPages } from "@/components/profile/PdfPages";
 
 export function ProfilePdf({ versionId }: { versionId: string }) {
+  return <VersionPdf key={versionId} versionId={versionId} />;
+}
+
+function VersionPdf({ versionId }: { versionId: string }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +29,7 @@ export function ProfilePdf({ versionId }: { versionId: string }) {
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     {url && <>
       <div className="flex flex-wrap gap-4 text-sm font-semibold text-primary"><a href={url} target="_blank" rel="noopener noreferrer">PDF 크게 보기</a><a href={url} download="profile.pdf">PDF 다운로드</a></div>
-      <iframe src={url} title="지원에 첨부되는 프로필 PDF" className="h-96 w-full rounded-lg border border-gray-200" />
+      <PdfPages url={url} />
     </>}
   </div>;
 }

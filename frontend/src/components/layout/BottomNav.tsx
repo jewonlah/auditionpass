@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, Send, MessagesSquare, CircleUser } from "lucide-react";
+import { House, Search, Send, MessagesSquare, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -43,10 +43,10 @@ const NAV_ITEMS: NavItem[] = [
     activePrefixes: ["/community"],
   },
   {
-    href: "/my",
-    icon: CircleUser,
-    label: "MY",
-    activePrefixes: ["/my", "/profile"],
+    href: "/portfolio",
+    icon: FileText,
+    label: "포트폴리오",
+    activePrefixes: ["/profile", "/portfolio"],
   },
 ];
 
@@ -64,7 +64,7 @@ export function BottomNav() {
   if (pathname?.startsWith("/onboarding")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav aria-label="주 메뉴" className="app-glass app-bottom-nav relative z-50 mx-3 mt-2 mb-[calc(12px+env(safe-area-inset-bottom))] shrink-0 rounded-3xl border border-gray-200 p-1.5">
       <div className="mx-auto flex max-w-md items-center justify-around">
         {NAV_ITEMS.map((item) => {
           const { href, icon: Icon, label } = item;
@@ -75,8 +75,8 @@ export function BottomNav() {
               href={href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex min-h-[48px] flex-1 flex-col items-center gap-0.5 pt-2 pb-1 text-[11px] transition-colors",
-                isActive ? "text-primary font-semibold" : "text-gray-400"
+                "flex min-h-[48px] min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[11px] transition-colors",
+                isActive ? "bg-[var(--action-soft)] text-primary font-semibold" : "text-gray-500"
               )}
             >
               <Icon size={22} strokeWidth={isActive ? 2.2 : 1.75} />

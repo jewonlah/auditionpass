@@ -28,6 +28,8 @@ export function buildProfileDocument(input: Partial<Profile>): ProfileDocument {
       gender: input.gender, height: number(input.height), weight: number(input.weight),
       genre: list(input.genre), specialty: list(input.specialty), bio: text(input.bio),
       career: text(input.career), agency: text(input.agency), phone: text(input.phone),
+      training: text(input.training), introduction_url: url(input.introduction_url),
+      performance_url: url(input.performance_url), audio_url: url(input.audio_url),
       photo_urls: list(input.photo_urls).filter((v) => !!url(v)).slice(0, 5),
       instagram_url: url(input.instagram_url), youtube_url: url(input.youtube_url), other_url: url(input.other_url),
     },

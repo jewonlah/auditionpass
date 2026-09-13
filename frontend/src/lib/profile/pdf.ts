@@ -68,9 +68,10 @@ export async function renderProfilePdf(profile: Partial<Profile>, photos: Buffer
     section("소개", p.bio);
     section("특기", p.specialty?.join(" · "));
     if (document.template !== "career") section("활동 이력", p.career);
+    section("교육·트레이닝", p.training);
     gallery(photos.slice(1));
     section("연락처", p.phone);
-    for (const [label, url] of [["인스타그램", p.instagram_url], ["유튜브", p.youtube_url], ["포트폴리오", p.other_url]]) {
+    for (const [label, url] of [["자기소개 영상", p.introduction_url], ["연기·노래·댄스 영상", p.performance_url], ["음성·보컬 샘플", p.audio_url], ["인스타그램", p.instagram_url], ["유튜브", p.youtube_url], ["포트폴리오", p.other_url]]) {
       if (!url) continue;
       room(60); text(label, 10, "#a54124");
       pdf.fillColor("#51433a").fontSize(10).text(url, left, y, { width, link: url, underline: true });

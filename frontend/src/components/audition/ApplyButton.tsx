@@ -24,6 +24,7 @@ import { withReturnTo } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import type { Audition } from "@/types";
 import { ProfilePdf } from "@/components/profile/ProfilePdf";
+import { MaterialAttachmentPicker } from "./MaterialAttachmentPicker";
 
 interface ProfileSummary {
   profileVersionId?: string | null;
@@ -522,6 +523,7 @@ function ConfirmStep({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState(false);
+  const [materialIds, setMaterialIds] = useState<string[]>([]);
 
   async function handleSend() {
     setError("");
@@ -531,7 +533,7 @@ function ConfirmStep({
       const res = await fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ auditionId: audition.id, expectedProfileVersion: summary?.documentVersion ?? undefined }),
+        body: JSON.stringify({ auditionId: audition.id, expectedProfileVersion: summary?.documentVersion ?? undefined, materialIds }),
       });
       const data = await res.json();
 
@@ -612,6 +614,7 @@ function ConfirmStep({
         </div>
       )}
 
+      <MaterialAttachmentPicker selected={materialIds} onChange={setMaterialIds} disabled={submitting || pending} />
       <Button
         variant="accent"
         size="lg"
