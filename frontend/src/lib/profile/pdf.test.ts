@@ -10,7 +10,8 @@ test("세 템플릿 PDF: 한글·마지막 경력·사진 5장·링크·페이�
   const photos = await Promise.all([0,1,2,3,4].map((i) => sharp({ create: { width: i % 2 ? 1000 : 600, height: 800, channels: 3, background: ["#eed8c1", "#bdcaca", "#ddcec4", "#b8c5d1", "#e0cfaf"][i] } }).jpeg().toBuffer()));
   for (const template of ["casting", "portfolio", "career"] as const) {
     const pdf = await renderProfilePdf({ name: "김하늘 테스트", birth_year: 2000, gender: "여성", genre: ["배우", "성우"],
-      template_id: template, bio: "차분한 목소리로 이야기를 전합니다.", career: "2025년 단편영화 주연\n".repeat(20) + "마지막 경력 확인", other_url: "https://example.com/portfolio" }, photos, "2026-09-11T00:00:00Z");
+      template_id: template, bio: "차분한 목소리로 이야기를 전합니다.", career: "2025년 단편영화 주연\n".repeat(20) + "마지막 경력 확인", other_url: "https://example.com/portfolio",
+      training: "2025년 발성 훈련 6개월", introduction_url: "https://example.com/intro", performance_url: "https://example.com/acting", audio_url: "https://example.com/voice" }, photos, "2026-09-11T00:00:00Z");
     const task = getDocument({ data: new Uint8Array(pdf), useSystemFonts: false });
     const parsed = await task.promise;
     let text = "", images = 0, links = 0;
@@ -38,7 +39,8 @@ test("세 템플릿 PDF: 한글·마지막 경력·사진 5장·링크·페이�
     assert.ok(text.replace(/\s/g, "").includes("김하늘테스트"));
     assert.ok(text.replace(/\s/g, "").includes("마지막경력확인"));
     assert.equal(images, 5);
-    assert.ok(links > 0);
+    assert.ok(text.replace(/\s/g, "").includes("2025년발성훈련6개월"));
+    assert.ok(links >= 4);
     await task.destroy();
   }
 });

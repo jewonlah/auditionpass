@@ -32,6 +32,10 @@ export const profileFormSchema = z.object({
   agency: z.string().max(50).nullable().optional(),
   specialty: z.array(z.string().max(30)).max(3, "특기는 최대 3개까지 입력 가능합니다"),
   career: z.string().max(500, "500자 이내로 입력해주세요").nullable().optional(),
+  training: z.string().trim().max(500, "500자 이내로 입력해주세요").nullable().optional(),
+  introduction_url: optionalUrl,
+  performance_url: optionalUrl,
+  audio_url: optionalUrl,
 });
 
 export type ProfileFormData = z.output<typeof profileFormSchema>;

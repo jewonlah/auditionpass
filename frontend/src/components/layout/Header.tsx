@@ -13,7 +13,7 @@ export function Header() {
   if (pathname?.startsWith("/onboarding")) return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+    <header className="app-glass relative z-40 shrink-0 border-b border-gray-200">
       <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
         {/* F2: 로고 = 로그인 시 앱 홈, 비로그인 시 랜딩 (앱을 나가는 문 B2 해소) */}
         <Link
@@ -24,6 +24,9 @@ export function Header() {
         </Link>
 
         {/* 로그아웃은 MY 페이지로 일원화 (F2) — 헤더에는 비로그인 로그인 진입만 */}
+        {!loading && user && (
+          <Link href="/my" className="flex min-h-11 items-center px-2 text-sm font-semibold text-primary">내 정보</Link>
+        )}
         {!loading && !user && (
           <Link
             href="/login"

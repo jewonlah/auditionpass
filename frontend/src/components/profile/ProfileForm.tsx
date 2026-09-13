@@ -77,6 +77,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       agency: initialData?.agency ?? "",
       specialty: initialData?.specialty ?? [],
       career: initialData?.career ?? "",
+      training: initialData?.training ?? "",
+      introduction_url: initialData?.introduction_url ?? "",
+      performance_url: initialData?.performance_url ?? "",
+      audio_url: initialData?.audio_url ?? "",
     },
   });
 
@@ -129,6 +133,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       phone: data.phone || null,
       agency: data.agency || null,
       career: data.career || null,
+      training: data.training || null,
+      introduction_url: data.introduction_url || null,
+      performance_url: data.performance_url || null,
+      audio_url: data.audio_url || null,
       photo_urls: photos,
     };
 
@@ -184,6 +192,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
       {/* 사진 업로드 */}
       <PhotoUpload photos={photos} onChange={setPhotos} onUploadingChange={setUploadingPhoto} />
+      <p className="text-sm leading-relaxed text-gray-600">공고에서 요구하는 정면·상반신·전신·측면 사진을 확인해 주세요. 사진 장수와 용량, 보정 허용 여부는 공고마다 달라요.</p>
 
       {/* 기본 정보 */}
       <div className="space-y-4">
@@ -445,6 +454,22 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           <p className="text-xs text-gray-400 ml-auto">{careerValue.length}/500</p>
         </div>
       </div>
+
+      <section className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4" aria-labelledby="submission-materials">
+        <h3 id="submission-materials" className="text-lg font-semibold">교육·오디션 자료 <span className="text-sm font-normal text-gray-500">선택</span></h3>
+        <p className="text-sm leading-relaxed text-gray-600">입력한 내용은 저장한 포트폴리오와 지원 메일에 포함돼요. 지원할 공고에서 필요한 자료를 준비해 주세요.</p>
+        <div>
+          <label htmlFor="profile-training" className="mb-2 block text-sm font-medium">교육·트레이닝 이력</label>
+          <textarea id="profile-training" rows={4} maxLength={500} {...register("training")} aria-invalid={!!errors.training} aria-describedby={errors.training ? "training-error" : undefined}
+            placeholder="예: 2025년 연기 기초 수업 6개월 / 2026년 보컬 레슨 3개월"
+            className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-base" />
+          {errors.training && <p id="training-error" role="alert" className="text-sm text-red-600">{errors.training.message}</p>}
+        </div>
+        <Input label="자기소개 영상 링크" placeholder="https://…" error={errors.introduction_url?.message} {...register("introduction_url")} />
+        <Input label="연기·노래·댄스 영상 링크" placeholder="https://…" error={errors.performance_url?.message} {...register("performance_url")} />
+        <Input label="음성·보컬 샘플 링크" placeholder="https://…" error={errors.audio_url?.message} {...register("audio_url")} />
+        <p className="text-sm leading-relaxed text-gray-600">담당자가 로그인 없이 열 수 있는 링크를 넣어 주세요. 원본 파일이나 지정 양식을 요구하는 공고는 링크만으로 제출 조건을 충족하지 않을 수 있어요.</p>
+      </section>
 
       {/* 외부 링크 */}
       <div className="space-y-4">

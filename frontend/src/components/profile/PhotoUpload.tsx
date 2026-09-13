@@ -74,24 +74,28 @@ export function PhotoUpload({
         {photos.map((url, index) => (
           <div
             key={url}
-            className="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-100"
+            className="overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
           >
+            <div className="relative aspect-[3/4]">
             <Image
               src={url}
               alt={index === 0 ? "대표 프로필 사진" : "프로필 사진 " + (index + 1)}
               fill unoptimized sizes="130px"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
             />
+            </div>
+            <div className="flex items-center border-t border-gray-200 bg-white">
+            <button type="button" disabled={uploading || index === 0} onClick={() => onChange([url, ...photos.filter((p) => p !== url)])} className="min-h-11 min-w-0 flex-1 px-1 text-xs font-semibold text-gray-700">{index === 0 ? "대표 사진" : "대표로 선택"}</button>
             <button
               type="button"
               onClick={() => handleRemove(url)}
               aria-label={"사진 " + (index + 1) + " 제외"}
               disabled={uploading}
-              className="absolute top-0 right-0 grid size-11 place-items-center rounded-full bg-black/50 text-white transition-colors"
+              className="grid size-11 shrink-0 place-items-center text-gray-600 transition-colors"
             >
               <X size={14} />
             </button>
-            <button type="button" disabled={uploading || index === 0} onClick={() => onChange([url, ...photos.filter((p) => p !== url)])} className="absolute right-0 bottom-0 left-0 min-h-11 bg-black/60 px-1 text-xs font-semibold text-white">{index === 0 ? "대표 사진" : "대표로 선택"}</button>
+            </div>
           </div>
         ))}
 

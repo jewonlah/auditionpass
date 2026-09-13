@@ -11,6 +11,7 @@ import type { DeliveryJob } from "@/lib/apply/delivery";
 import type { Profile } from "@/types";
 import { getOrCreateProfilePdf, type SavedProfile } from "@/lib/profile/pdf-storage";
 import type { EmailPayload } from "@/lib/apply/delivery";
+import { loadMaterialAttachments } from "@/lib/materials/attachments";
 
 export const maxDuration = 60;
 
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-    const parsed = z.object({ auditionId: z.string().uuid(), expectedProfileVersion: z.number().int().positive().optional() }).safeParse(await req.json().catch(() => null));
+    const parsed = z.object({ auditionId: z.string().uuid(), expectedProfileVersion: z.number().int().positive().optional(), materialIds: z.array(z.string().uuid()).max(3).default([]) }).safeParse(await req.json().catch(() => null));
     if (!parsed.success) return NextResponse.json({ error: "공고 정보를 확인해주세요." }, { status: 400 });
     const { auditionId } = parsed.data;
     // Personal data is read with the user's session. Only outcome writes use service_role.
@@ -66,7 +67,10 @@ export async function POST(req: Request) {
     let pdf: Buffer;
     try { pdf = await getOrCreateProfilePdf(db, version as SavedProfile, user.id); }
     catch { return NextResponse.json({ error: "첨부할 PDF를 만들지 못했습니다. 저장한 프로필에서 사진과 PDF를 확인해주세요.", code: "PDF_NOT_READY" }, { status: 503 }); }
-    const payload: EmailPayload = { ...prepared, attachments: [{ filename: "profile.pdf", content: pdf.toString("base64") }] };
+    let materialAttachments;
+    try { materialAttachments = await loadMaterialAttachments(db, user.id, parsed.data.materialIds); }
+    catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "첨부 자료를 확인해주세요.", code: "MATERIAL_NOT_READY" }, { status: 409 }); }
+    const payload: EmailPayload = { ...prepared, attachments: [{ filename: "profile.pdf", content: pdf.toString("base64") }, ...materialAttachments] };
     // Recheck the date after profile rendering/signing, immediately before claiming a send.
     if (audition.deadline && audition.deadline < todayKST()) return NextResponse.json({ error: "마감된 공고입니다.", code: "NOT_ACTIVE" }, { status: 409 });
     const row = { ...buildReservationRow({ userId: user.id, auditionId }), profile_version_id: version.id };

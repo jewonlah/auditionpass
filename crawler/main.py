@@ -4,6 +4,7 @@
 """
 
 import sys
+import os
 import time
 import logging
 from datetime import date
@@ -25,6 +26,7 @@ from sns_sources.naver_cafe import NaverCafeScraper
 from sns_sources.naver_web import NaverWebScraper
 from utils import crawl_log
 from utils.alerts import notify_dead_sources
+from utils.run_groups import select_group
 from utils.supabase_client import (
     upsert_auditions,
     expire_auditions,
@@ -93,6 +95,13 @@ def main():
         scrapers.append(BacktraceScraper())            # 애그리게이터 링크 역추적 (플랜 E-7, 저장은 원글만)
     else:
         logger.info("[네이버카페] 비활성 (NAVER_CAFE_ENABLED≠1 또는 키 없음) — 건너뜀")
+
+    group = os.environ.get("CRAWLER_GROUP", "all")
+    scrapers = select_group(scrapers, group)
+    logger.info("Crawler group=%s, sources=%s", group, len(scrapers))
+    if not scrapers:
+        logger.warning("No enabled sources in this group")
+        return
 
     total_collected = 0
     total_saved = 0

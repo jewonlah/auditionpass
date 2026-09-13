@@ -79,10 +79,10 @@ export default function MyPage() {
 
   const accountMenus: MenuItem[] = [
     {
-      href: "/profile",
-      icon: User,
-      label: "프로필 관리",
-      desc: profile ? "프로필 수정" : "프로필 등록하기",
+      href: "/portfolio",
+      icon: FileText,
+      label: "내 포트폴리오",
+      desc: "지원용 자료 편집 · 제출 PDF 확인",
     },
     // 지원 이력은 바텀 탭(/applications)으로 1급 승격 — 메뉴 제거 (F6)
     { href: "/my/updates", icon: Bell, label: "맞춤 소식", desc: "찜한 공고 마감 · 내 분야 새 공고" },
@@ -135,6 +135,7 @@ export default function MyPage() {
 
   return (
     <div className="pb-4">
+      <h1 className="mb-4 text-3xl font-bold tracking-tight">내 정보</h1>
       {/* 프로필 헤더 */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(99,102,241,0.06)] mb-4">
         <div className="flex items-center gap-4">
@@ -143,7 +144,7 @@ export default function MyPage() {
               <img
                 src={profile.photo_urls[0]}
                 alt="프로필"
-                className="w-14 h-14 rounded-full object-cover"
+                className="w-14 h-14 rounded-lg bg-gray-100 object-contain"
               />
             ) : (
               <User size={24} className="text-primary" />

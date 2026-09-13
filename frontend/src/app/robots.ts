@@ -20,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
     "/auth/",
     "/admin", // 운영자 전용 — 게이트가 있지만 크롤 대상도 아니다
     "/profile",
+    "/portfolio",
     "/home", // 로그인 후 개인화 피드
     "/onboarding", // 가입 직후 1회성 게이트 — 색인 대상 아님
     "/applications",
@@ -28,7 +29,7 @@ export default function robots(): MetadataRoute.Robots {
 
   // 답변엔진 크롤러. 인용되려면 본문을 읽어갈 수 있어야 한다.
   const aiBots = [
-    "GPTBot", // OpenAI 학습·검색
+    "GPTBot", // 학습용 크롤러. 검색용 OAI-SearchBot과 구분.
     "OAI-SearchBot", // ChatGPT 검색 인용
     "ChatGPT-User", // 사용자가 링크를 열 때
     "ClaudeBot",

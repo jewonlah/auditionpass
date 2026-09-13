@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [
+    { url: `${BASE_URL}/start`, changeFrequency: "monthly", priority: 0.8 },
     {
       url: BASE_URL,
       lastModified: new Date(),

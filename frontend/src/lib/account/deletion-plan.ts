@@ -47,6 +47,7 @@ export interface DeletionStep {
  */
 export function buildDeletionPlan(): DeletionStep[] {
   return [
+    { key: "storage_materials", target: "storage:materials", mode: "storage", label: "보관 자료 삭제", executed: true, note: "개인 자료 파일을 먼저 삭제하고 자료 목록은 auth.users CASCADE로 정리한다." },
     { key: "storage_profile_documents", target: "storage:profile-documents", mode: "storage", label: "프로필 PDF 삭제", executed: true, note: "저장 버전 PDF는 Storage에 있어 계정 삭제 전에 제거한다." },
     {
       key: "storage_profiles",

@@ -27,6 +27,10 @@ interface ApplicationEmailProps {
   applicantAgency?: string | null;
   applicantSpecialty?: string[];
   applicantCareer?: string | null;
+  applicantTraining?: string | null;
+  introductionUrl?: string | null;
+  performanceUrl?: string | null;
+  audioUrl?: string | null;
   instagramUrl?: string | null;
   youtubeUrl?: string | null;
   otherUrl?: string | null;
@@ -46,6 +50,10 @@ export function ApplicationEmail({
   applicantAgency,
   applicantSpecialty = [],
   applicantCareer,
+  applicantTraining,
+  introductionUrl,
+  performanceUrl,
+  audioUrl,
   instagramUrl,
   youtubeUrl,
   otherUrl,
@@ -139,6 +147,11 @@ export function ApplicationEmail({
           )}
 
           {/* 특기 */}
+          {applicantTraining && <Section><Heading as="h3" style={sectionTitle}>교육·트레이닝</Heading><Text style={{ ...bodyText, whiteSpace: "pre-line" }}>{applicantTraining}</Text></Section>}
+          {(introductionUrl || performanceUrl || audioUrl) && <Section>
+            <Heading as="h3" style={sectionTitle}>오디션 자료</Heading>
+            {[["자기소개 영상", introductionUrl], ["연기·노래·댄스 영상", performanceUrl], ["음성·보컬 샘플", audioUrl]].map(([label, url]) => url ? <Text key={label}><Link href={url}>{label}</Link></Text> : null)}
+          </Section>}
           {applicantSpecialty.length > 0 && (
             <Section>
               <Heading as="h3" style={sectionTitle}>
@@ -267,7 +280,7 @@ const heroPhoto: React.CSSProperties = {
   maxWidth: "536px",
   height: "auto",
   borderRadius: "8px",
-  objectFit: "cover",
+  objectFit: "contain",
   display: "block",
 };
 
@@ -282,7 +295,7 @@ const gridPhoto: React.CSSProperties = {
   maxWidth: "260px",
   height: "auto",
   borderRadius: "8px",
-  objectFit: "cover",
+  objectFit: "contain",
   display: "block",
 };
 

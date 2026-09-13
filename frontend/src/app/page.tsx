@@ -784,6 +784,7 @@ export default async function LandingPage() {
               </p>
             </div>
             <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] font-medium text-[#918A82] sm:ml-auto">
+              <Link href="/start" className="transition-colors hover:text-[#F7F4EF]">시작 가이드</Link>
               <Link href="/auditions" className="transition-colors hover:text-[#F7F4EF]">
                 공고
               </Link>
