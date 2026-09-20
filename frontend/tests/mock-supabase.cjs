@@ -4,6 +4,7 @@ const http = require('node:http');
 const files = new Map();
 const materials = new Map();
 const lifecycle = { deleting: false, active: new Set() };
+let signupClaimed = false;
 const user = { id: '11111111-1111-4111-8111-111111111111', email: 'local@example.invalid', aud: 'authenticated', role: 'authenticated', created_at: '2026-01-01T00:00:00Z', app_metadata: { provider: 'email' }, user_metadata: {} };
 const profile = { id: user.id, name: 'Test Actor', birth_year: 2000, gender: '여성', genre: ['성우'], activity_field: [], specialty: [], photo_urls: [], height: null, weight: null, bio: '', career: '', created_at: user.created_at };
 const audition = { id: '22222222-2222-4222-8222-222222222222', title: '테스트 성우 오디션', company: '테스트 제작사', genre: '기타', category: '성우', deadline: '2099-12-31', is_active: true, apply_type: 'email', apply_email: 'nobody@example.invalid', oneclick_blocked: false, review_status: 'approved', reports_count: 0, source_url: 'https://example.invalid/audition', source_name: '테스트 출처', description: '성우 지원자를 모집합니다.', created_at: user.created_at, crawled_at: user.created_at };
@@ -45,6 +46,11 @@ http.createServer((req, res) => {
   }
   if (req.method === 'POST' && url.pathname.startsWith('/rest/v1/rpc/')) {
     const rpc = url.pathname.split('/').pop();
+    if (rpc === 'claim_signup_analytics') {
+      const rows = signupClaimed ? [] : [{ method: 'email' }];
+      signupClaimed = true;
+      return res.end(JSON.stringify(rows));
+    }
     if (!['begin_account_file_operation', 'finish_account_file_operation', 'begin_account_file_deletion'].includes(rpc)) {
       res.statusCode = 503; return res.end(JSON.stringify({ message: 'Unsupported test RPC' }));
     }

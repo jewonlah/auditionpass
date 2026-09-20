@@ -5,9 +5,9 @@ import { CATEGORIES } from "@/lib/categories";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.auditionpass.co.kr";
 
-// 빌드 시점 DB 쿼리가 실패하면 오디션 URL 0건으로 굳는 문제(2026-08-25 배포 실측) →
-// 1시간 ISR로 런타임 재생성. 실패해도 다음 주기에 회복된다.
-export const revalidate = 3600;
+// 2026-09-20: 운영 응답이 9/13 빌드 산출물에 고정됨(Age > 7일).
+// 검색엔진 요청 시 현재 공개 공고를 조회한다. 실패를 빈/부분 사이트맵 200으로 숨기지 않는다.
+export const dynamic = "force-dynamic";
 
 const PAGE = 1000;              // Supabase 한 번에 가져올 행 수
 const MAX_SITEMAP_URLS = 50000; // sitemaps.org 상한
@@ -93,10 +93,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from("auditions")
         .select("id, created_at, genre, category")
         .eq("is_active", true)
+        .in("review_status", ["auto", "approved"])
         .or(`deadline.gte.${today},deadline.is.null`)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(from, from + PAGE - 1);
-      if (error || !data?.length) break;
+      if (error) throw new Error("Sitemap audition query failed");
+      if (!data?.length) break;
       rows.push(...data);
       if (data.length < PAGE) break;
     }
@@ -114,8 +117,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       rows.map((a) => a.category ?? a.genre).filter((g): g is string => !!g)
     );
   } catch (e) {
-    // DB 접속 실패 시 정적 페이지만 반환 — 단, 조용히 삼키면 재발을 못 알아챈다 (F9 수용 기준)
     console.error("[sitemap] 생성 실패", e);
+    throw e;
   }
 
   // 동적 페이지: 활성 커뮤니티 글 상세 (F9 — 커뮤니티 상세 SSR·메타 전환과 짝)
@@ -135,8 +138,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select("id, updated_at")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(from, from + PAGE - 1);
-      if (error || !data?.length) break;
+      if (error) throw new Error("Sitemap community query failed");
+      if (!data?.length) break;
       rows.push(...data);
       if (data.length < PAGE) break;
     }
@@ -149,6 +154,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   } catch (e) {
     console.error("[sitemap] 커뮤니티 URL 생성 실패", e);
+    throw e;
   }
 
   // 카테고리 SEO 랜딩 — 활성 공고가 1건 이상인 slug만 (D7, D4; 12_ia-userflows §1.2)
