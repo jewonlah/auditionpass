@@ -24,21 +24,17 @@ export async function GET() {
         id,
         email_sent,
         status,
+        delivery_status,
+        send_stopped,
+        submission_snapshot,
         profile_version_id,
         sent_at,
         created_at,
-        audition:auditions (
-          id,
-          title,
-          company,
-          genre,
-          deadline,
-          is_active
-        )
+        audition_id
       `
       )
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }).limit(1000);
 
     if (error) {
       return NextResponse.json(
@@ -47,7 +43,10 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ applications: data ?? [] });
+    const { data: refs, error: refError } = await supabase.rpc("owned_audition_references", { p_ids: (data ?? []).map(a => a.audition_id) });
+    if (refError) throw refError;
+    const byId = new Map((refs ?? []).map((a: { id: string }) => [a.id, a]));
+    return NextResponse.json({ applications: (data ?? []).map(a => ({ ...a, audition: byId.get(a.audition_id) ?? null })) });
   } catch {
     return NextResponse.json(
       { error: "처리 중 오류가 발생했습니다." },

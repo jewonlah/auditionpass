@@ -40,7 +40,7 @@ export default async function PortfolioPage() {
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-500">현재 지원에 사용하는 저장본</p>
           <h2 id="saved-portfolio" className="mt-1 break-words text-xl font-bold">{savedProfile.name}의 포트폴리오</h2>
-          <p className="mt-2 text-sm text-gray-600">버전 {version.version} · {PROFILE_TEMPLATES.find((template) => template.id === savedProfile.template_id)?.name ?? "캐스팅"}</p>
+          <p className="mt-2 text-sm text-gray-600">버전 {version.version} · {PROFILE_TEMPLATES.find((template) => template.id === savedProfile.template_id)?.name ?? "알 수 없는 서식"}</p>
           <time dateTime={version.created_at} className="mt-1 block text-sm text-gray-500">{new Date(version.created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })} 저장</time>
         </div>
       </div>

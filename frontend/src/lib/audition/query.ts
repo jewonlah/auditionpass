@@ -8,11 +8,11 @@ export async function fetchAuditions(db: SupabaseClient, options: {
   filter: string; search: string; category?: string; sort?: "deadline" | "latest"; page?: number; limit?: number; signal?: AbortSignal;
 }): Promise<Audition[]> {
   const { filter, search, category, sort = "deadline", page = 0, limit = 20, signal } = options;
-  let query = db.from("auditions").select(AUDITION_LIST_COLUMNS).eq("is_active", true)
+  let query = db.from("public_auditions").select(AUDITION_LIST_COLUMNS).eq("is_active", true)
     .or(`deadline.gte.${todayKST()},deadline.is.null`);
   const matching = categoryFilter(category ? [category] : [filter]);
   if (matching) query = query.or(matching);
-  if (filter === "원클릭지원") query = query.eq("apply_type", "email").eq("oneclick_blocked", false);
+  if (filter === "원클릭지원") query = query.eq("application_ready", true);
   if (filter === "사이트지원") query = query.eq("apply_type", "external");
   const searchMatch = searchFilter(search);
   if (searchMatch) query = query.or(searchMatch);

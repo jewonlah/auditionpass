@@ -3,7 +3,13 @@
 // ============================================
 
 export interface Profile {
-  template_id?: 'casting' | 'portfolio' | 'career';
+  template_id?: import('@/lib/profile/templates').TemplateId;
+  template_variant?: 'actor' | 'model';
+  renderer_version?: 'legacy-v1' | 'compcard-v1';
+  education?: string | null;
+  awards?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
   document_version?: number;
   id: string;
   name: string;
@@ -34,6 +40,8 @@ export interface Profile {
 }
 
 export interface Audition {
+  application_ready?: boolean;
+  is_public?: boolean;
   id: string;
   title: string;
   company: string | null;

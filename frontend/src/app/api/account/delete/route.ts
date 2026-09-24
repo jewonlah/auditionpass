@@ -50,7 +50,7 @@ export async function POST() {
   try {
     if (!(await beginAccountFileDeletion(admin, userId))) {
       return NextResponse.json(
-        { code: "FILE_OPERATIONS_PENDING", error: "파일 처리가 끝난 뒤 탈퇴를 다시 시도해주세요. 계속 실패하면 support@auditionpass.co.kr로 문의해주세요." },
+          { code: "FILE_OPERATIONS_PENDING", error: "파일 처리 또는 지원 메일 발송 결과를 확인한 뒤 탈퇴를 다시 시도해주세요. 계속 실패하면 support@auditionpass.co.kr로 문의해주세요." },
         { status: 409 }
       );
     }

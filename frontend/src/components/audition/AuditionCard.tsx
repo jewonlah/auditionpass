@@ -14,10 +14,9 @@ export function AuditionCard({ audition }: AuditionCardProps) {
   const ddayVariant =
     dday !== null && dday <= 3 ? "danger" : dday !== null && dday <= 7 ? "warning" : "default";
 
-  return (
-    <article className="relative">
-    <Link
-      href={`/audition/${audition.id}`}
+  const isPublic = audition.is_public ?? (audition.is_active && (!audition.review_status || ["auto", "approved"].includes(audition.review_status)));
+  const content = (
+    <div
       className="block rounded-xl bg-white p-5 pr-14 shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-2">
@@ -31,15 +30,17 @@ export function AuditionCard({ audition }: AuditionCardProps) {
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge>{audition.category ?? audition.genre}</Badge>
-        {audition.apply_type === "email" ? (
+        {audition.application_ready === true ? (
           <Badge>원클릭 지원</Badge>
         ) : (
-          <Badge className="bg-gray-100 text-gray-500">사이트 지원</Badge>
+          <Badge className="bg-gray-100 text-gray-500">원문 접수 확인</Badge>
         )}
-        <TrustBadge audition={audition} />
+        {isPublic ? <TrustBadge audition={audition} /> : <Badge>게시 종료</Badge>}
       </div>
-    </Link>
-    <div className="absolute right-1 top-1"><BookmarkButton auditionId={audition.id} /></div>
-    </article>
+    </div>
   );
+  return <article className="relative">
+    {isPublic ? <Link href={`/audition/${audition.id}`} className="block">{content}</Link> : content}
+    <div className="absolute right-1 top-1"><BookmarkButton auditionId={audition.id} /></div>
+    </article>;
 }

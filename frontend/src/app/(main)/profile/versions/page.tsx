@@ -29,7 +29,7 @@ export default async function ProfileVersionsPage({ searchParams }: {
     {error ? <div role="alert" className="rounded-xl border p-4"><p>저장한 프로필을 불러오지 못했습니다.</p><Link href="/profile/versions" className="mt-3 inline-block text-primary">다시 불러오기</Link></div> : !versions?.length ? <p className="rounded-xl border p-5 text-sm text-gray-500">확인할 수 있는 저장 버전이 없습니다.</p> : versions.map((row) => {
       const profile = row.profile as Profile;
       return <section key={row.id} className="space-y-3">
-        <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">버전 {row.version} · {PROFILE_TEMPLATES.find((t) => t.id === profile.template_id)?.name ?? "캐스팅"}</h2><time className="text-xs text-gray-500" dateTime={row.created_at}>{new Date(row.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "short" })}</time></div>
+        <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">버전 {row.version} · {PROFILE_TEMPLATES.find((t) => t.id === profile.template_id)?.name ?? "알 수 없는 서식"}</h2><time className="text-xs text-gray-500" dateTime={row.created_at}>{new Date(row.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "short" })}</time></div>
         <ProfilePreview profile={profile} photos={profile.photo_urls ?? []} />
         <ProfilePdf versionId={row.id} />
       </section>;

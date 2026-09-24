@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
-import { AUDITION_LIST_COLUMNS } from "@/lib/audition/columns";
+
 
 export async function GET(req: Request) {
   const db = await createServerClient();
@@ -10,11 +10,14 @@ export async function GET(req: Request) {
   const pageParam = new URL(req.url).searchParams.get("page");
   if (pageParam !== null) {
     const page = Math.max(0, Math.min(10000, Number(pageParam) || 0));
-    const { data, error } = await db.from("bookmarks").select(`id,audition:auditions(${AUDITION_LIST_COLUMNS})`)
-      .eq("user_id", user.id).order("audition(deadline)", { ascending: true, nullsFirst: false })
+    const { data, error } = await db.from("bookmarks").select("id,audition_id")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false }).range(page * 20, page * 20 + 19);
     if (error) return NextResponse.json({ error: "찜한 공고를 불러오지 못했습니다." }, { status: 503 });
-    return NextResponse.json({ bookmarks: data ?? [], hasMore: data?.length === 20 });
+    const { data: refs, error: refError } = await db.rpc("owned_audition_references", { p_ids: (data ?? []).map(a => a.audition_id) });
+    if (refError) return NextResponse.json({ error: "찜한 공고를 불러오지 못했습니다." }, { status: 503 });
+    const byId = new Map((refs ?? []).map((a: { id: string }) => [a.id, a]));
+    return NextResponse.json({ bookmarks: (data ?? []).map(a => ({ ...a, audition: byId.get(a.audition_id) ?? null })), hasMore: data?.length === 20 });
   }
   const ids: string[] = [];
   for (let offset = 0; ; offset += 500) {

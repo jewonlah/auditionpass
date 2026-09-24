@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const id = new URL(request.url).searchParams.get("versionId");
   if (!z.string().uuid().safeParse(id).success) return NextResponse.json({ error: "저장한 프로필을 선택해주세요." }, { status: 400 });
-  const { data: version, error } = await db.from("profile_versions").select("id,user_id,profile,created_at")
+  const { data: version, error } = await db.from("profile_versions").select("id,user_id,profile,created_at,renderer_version")
     .eq("id", id).eq("user_id", user.id).maybeSingle();
   if (error) return NextResponse.json({ error: "프로필 조회에 실패했습니다." }, { status: 503 });
   if (!version) return NextResponse.json({ error: "프로필을 찾을 수 없습니다." }, { status: 404 });

@@ -35,6 +35,8 @@ export async function POST(req: Request) {
     if (!body.auditionId || !reason) {
       return NextResponse.json({ error: "신고 사유를 선택해 주세요." }, { status: 400 });
     }
+    const { data: visible } = await supabase.from("public_auditions").select("id").eq("id", body.auditionId).maybeSingle();
+    if (!visible) return NextResponse.json({ error: "공개된 공고를 확인해주세요." }, { status: 404 });
     const detail = (body.detail ?? "").trim().slice(0, 1000) || null;
 
     // 남용 방지: 계정당 24시간 신고 건수 제한.

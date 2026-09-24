@@ -16,11 +16,15 @@ test("문서는 입력 배열을 복제하고 소유자 메타데이터를 제�
 });
 
 test("이전 데이터는 기본 스타일, 빈 신체 정보는 null, 위험 링크는 제외", () => {
-  const doc = buildProfileDocument({ height: "", template_id: "unknown", other_url: "javascript:alert(1)", photo_urls: ["data:image/svg+xml,test"] } as unknown as Profile);
+  const doc = buildProfileDocument({ height: "", other_url: "javascript:alert(1)", photo_urls: ["data:image/svg+xml,test"] } as unknown as Profile);
   assert.equal(doc.template, "casting");
   assert.equal(doc.profile.height, null);
   assert.equal(doc.profile.other_url, "");
   assert.deepEqual(doc.profile.photo_urls, []);
+});
+
+test("알 수 없는 서식은 임의 서식으로 바꾸지 않는다", () => {
+  assert.throws(() => buildProfileDocument({ template_id: "unknown" } as unknown as Profile), /알 수 없는/);
 });
 
 test("세 템플릿 모두 같은 사실 정보를 유지한다", () => {

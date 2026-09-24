@@ -1,12 +1,27 @@
+import { renderCompcardPdf } from "./pdf-compcard";
+import { renderLegacyProfilePdf } from "./pdf-legacy";
+import { isCompcard } from "./templates";
 import PDFDocument from "pdfkit";
 import path from "node:path";
+import sharp from "sharp";
 import { buildProfileDocument } from "./document";
 import { photoRows } from "./photos";
 import type { Profile } from "@/types";
 
-export async function renderProfilePdf(profile: Partial<Profile>, photos: Buffer[], savedAt: string): Promise<Buffer> {
+export async function renderProfilePdf(profile: Partial<Profile>, photos: Buffer[], savedAt: string, renderer = isCompcard(profile.template_id ?? "casting") ? "compcard-v1" : "legacy-v1"): Promise<Buffer> {
+  if (renderer === "compcard-v1" && isCompcard(profile.template_id ?? "")) return renderCompcardPdf(profile, photos, savedAt);
+  if (renderer === "legacy-v1" && !isCompcard(profile.template_id ?? "casting")) return renderLegacyProfilePdf(profile, photos, savedAt);
+  throw new Error("지원하지 않는 문서 렌더러입니다.");
+}
+
+// Prior session improvement retained separately; saved legacy revisions use the deployed renderer.
+export async function renderEnhancedLegacyPdf(profile: Partial<Profile>, photos: Buffer[], savedAt: string): Promise<Buffer> {
   const document = buildProfileDocument(profile);
   const p = document.profile;
+  const photoSizes = new Map(await Promise.all(photos.map(async (photo) => {
+    const size = await sharp(photo).metadata();
+    return [photo, { width: size.width || 1, height: size.height || 1 }] as const;
+  })));
   const font = path.join(process.cwd(), "assets/fonts/NanumGothic-Regular.ttf");
   const pdf = new PDFDocument({ size: "A4", margins: { top: 42, left: 42, right: 42, bottom: 62 }, font, bufferPages: true,
     info: { Title: `${p.name} 프로필`, Author: p.name, CreationDate: new Date(savedAt), ModDate: new Date(savedAt) } });
@@ -32,16 +47,31 @@ export async function renderProfilePdf(profile: Partial<Profile>, photos: Buffer
     room(70); text(label, 10, "#a54124"); text(value);
   }
   function gallery(items: Buffer[]) {
+    let titled = false;
     for (const row of photoRows(items)) {
-      const h = row.length === 1 ? 280 : 300;
-      room(h + 16);
+      // A lone full-length image should use a real portfolio page, not a small
+      // thumbnail followed by half an empty sheet. Keep the original framing.
+      const reserve = titled ? 16 : 52;
+      const remaining = bottom - y - reserve;
+      const size = photoSizes.get(row[0])!;
+      const singleHeight = Math.min(600, width * size.height / size.width);
+      const h = row.length === 1 ? (remaining >= 360 ? Math.min(singleHeight, remaining) : singleHeight) : 300;
+      room(h + reserve);
+      if (!titled) { text("프로필 사진", 10, "#a54124"); titled = true; }
       const w = row.length === 1 ? width : (width - 12) / 2;
-      row.forEach((photo, i) => pdf.image(photo, left + i * (w + 12), y, { fit: [w, h], align: "center", valign: "center" }));
+      row.forEach((photo, i) => {
+        const dimensions = photoSizes.get(photo)!;
+        const ratio = dimensions.width / dimensions.height;
+        const drawWidth = Math.min(w, h * ratio);
+        const drawHeight = drawWidth / ratio;
+        pdf.image(photo, left + i * (w + 12) + (w - drawWidth) / 2, y + (h - drawHeight) / 2,
+          { width: drawWidth, height: drawHeight });
+      });
       y += h + 16;
     }
   }
   try {
-    text("CASTING PROFILE", 10, "#bd4728");
+    text(({ casting: "CASTING PROFILE", career: "CAREER PROFILE", portfolio: "PORTFOLIO" } as Record<string, string>)[document.template], 10, "#bd4728");
     const facts = [p.birth_year ? `${p.birth_year}년생` : p.age ? `${p.age}세` : null, p.gender,
       p.height ? `${p.height}cm` : null, p.weight ? `${p.weight}kg` : null, p.agency].filter(Boolean).join(" · ");
     if (photos[0] && document.template !== "portfolio") {
@@ -82,6 +112,7 @@ export async function renderProfilePdf(profile: Partial<Profile>, photos: Buffer
       pdf.switchToPage(page);
       const previousMargin = pdf.page.margins.bottom;
       pdf.page.margins.bottom = 0;
+      pdf.save().strokeColor("#e6e0da").lineWidth(0.5).moveTo(left, 783).lineTo(left + width, 783).stroke().restore();
       pdf.fontSize(8).fillColor("#877e76").text(`${p.name} · ${page + 1} / ${count}`, left, 795, { width, align: "right", lineBreak: false, lineGap: 0 });
       pdf.page.margins.bottom = previousMargin;
     }

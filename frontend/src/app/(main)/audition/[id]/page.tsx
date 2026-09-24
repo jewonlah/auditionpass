@@ -31,9 +31,9 @@ async function getAudition(id: string): Promise<Audition | null> {
   // 읽되, 노출하는 필드는 화면에 쓰는 것으로 한정한다(apply_email 은 절대 내보내지 않는다 — 36 §4).
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase
-    .from("auditions")
+    .from("public_auditions")
     .select(
-      "id,title,company,genre,deadline,description,requirements,source_url,source_name,apply_type,oneclick_blocked,is_active,quality_score,review_status,created_at"
+      "id,title,company,genre,deadline,description,requirements,source_url,source_name,apply_type,application_ready,oneclick_blocked,is_active,quality_score,review_status,created_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -73,7 +73,7 @@ export default async function AuditionDetailPage({
             >
               {audition.genre}
             </span>
-            {audition.apply_type === "email" ? (
+            {audition.application_ready === true ? (
               <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-200">
                 원클릭 지원
               </span>

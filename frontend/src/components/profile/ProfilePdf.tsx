@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { PdfPages } from "@/components/profile/PdfPages";
 
-export function ProfilePdf({ versionId }: { versionId: string }) {
-  return <VersionPdf key={versionId} versionId={versionId} />;
+export function ProfilePdf({ versionId, onReady }: { versionId: string; onReady?: () => void }) {
+  return <VersionPdf key={versionId} versionId={versionId} onReady={onReady} />;
 }
 
-function VersionPdf({ versionId }: { versionId: string }) {
+function VersionPdf({ versionId, onReady }: { versionId: string; onReady?: () => void }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ function VersionPdf({ versionId }: { versionId: string }) {
     setLoading(true); setError("");
     try {
       const res = await fetch(`/api/profile/pdf?versionId=${versionId}`);
-      if (!res.ok) { const data = await res.json(); throw Error(data.error); }
+      if (!res.ok) { const data = await res.json().catch(() => ({})); throw Error(data.error || "PDF를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."); }
       const blob = await res.blob();
       setUrl(URL.createObjectURL(blob));
     } catch (error) { setError(error instanceof Error ? error.message : "PDF를 준비하지 못했습니다."); }
@@ -29,7 +29,7 @@ function VersionPdf({ versionId }: { versionId: string }) {
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     {url && <>
       <div className="flex flex-wrap gap-4 text-sm font-semibold text-primary"><a href={url} target="_blank" rel="noopener noreferrer">PDF 크게 보기</a><a href={url} download="profile.pdf">PDF 다운로드</a></div>
-      <PdfPages url={url} />
+      <PdfPages url={url} onReady={onReady} />
     </>}
   </div>;
 }

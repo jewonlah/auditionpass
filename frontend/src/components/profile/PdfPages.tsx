@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask } from "pdfjs-dist";
 
-export function PdfPages({ url }: { url: string }) {
+export function PdfPages({ url, onReady }: { url: string; onReady?: () => void }) {
   const container = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState("PDF 페이지를 불러오는 중…");
   const [failed, setFailed] = useState(false);
@@ -43,7 +43,7 @@ export function PdfPages({ url }: { url: string }) {
           host.append(figure);
           page.cleanup();
         }
-        if (!cancelled) setStatus(`PDF ${pdf.numPages}페이지를 표시했어요.`);
+        if (!cancelled) { setStatus(`PDF ${pdf.numPages}페이지를 표시했어요.`); onReady?.(); }
       } catch {
         if (!cancelled) {
           setFailed(true);
@@ -57,7 +57,7 @@ export function PdfPages({ url }: { url: string }) {
       void task?.destroy();
       host.replaceChildren();
     };
-  }, [url, attempt]);
+  }, [url, attempt, onReady]);
 
   return <div className="space-y-3">
     <p role="status" className="text-sm leading-relaxed text-gray-600">{status}</p>

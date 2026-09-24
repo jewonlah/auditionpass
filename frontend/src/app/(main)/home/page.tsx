@@ -41,16 +41,16 @@ export default async function HomePage() {
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       // ① 원클릭 오디션 — 이메일 지원 가능 공고 (핵심 기능, 항상 최상단)
       supabase
-        .from("auditions")
+        .from("public_auditions")
         .select(AUDITION_LIST_COLUMNS)
         .eq("is_active", true)
-        .eq("apply_type", "email")
+        .eq("application_ready", true)
         .or(activeFilter)
         .order("deadline", { ascending: true, nullsFirst: false })
         .limit(5),
       // ③ 마감 임박 TOP
       supabase
-        .from("auditions")
+        .from("public_auditions")
         .select(AUDITION_LIST_COLUMNS)
         .eq("is_active", true)
         .not("deadline", "is", null)
@@ -80,7 +80,7 @@ export default async function HomePage() {
   // ④ 내 분야 신규 공고 — 프로필 분야 기반, 없으면 전체 신규
   const myGenres = profile?.genre?.filter(Boolean) ?? [];
   let newQuery = supabase
-    .from("auditions")
+    .from("public_auditions")
     .select(AUDITION_LIST_COLUMNS)
     .eq("is_active", true)
     .or(activeFilter)
