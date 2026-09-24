@@ -26,6 +26,7 @@ function ProfilePageInner() {
   const isPortfolio = searchParams.get("returnTo") === "/portfolio";
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -45,6 +46,7 @@ function ProfilePageInner() {
         if (!res.ok) throw Error();
         const data = await res.json();
         setProfile(data.profile ?? null);
+        setAvailableTemplates(data.availableTemplates ?? []);
       } catch { setError(true); }
       finally { setLoading(false); }
     }
@@ -83,7 +85,7 @@ function ProfilePageInner() {
             <br />딱 네 가지만 알려주세요
           </h1>
           <p className="relative mt-2.5 text-[13px] leading-relaxed text-[#B8B1A8]">
-            이름, 출생연도, 성별, 분야 — 여기까지만 채우면 원클릭 지원이 열립니다.
+            이름, 출생연도, 성별, 분야로 시작하세요. 지원 전에는 사진과 연락처, 공고 조건을 함께 확인합니다.
             소개는 AI가 써 드리고, 나머지는 나중에 채워도 됩니다.
           </p>
         </div>
@@ -100,7 +102,7 @@ function ProfilePageInner() {
         </>
       )}
       <Suspense fallback={null}>
-        <ProfileForm initialData={profile} />
+        <ProfileForm initialData={profile} availableTemplates={availableTemplates} />
       </Suspense>
     </div>
   );

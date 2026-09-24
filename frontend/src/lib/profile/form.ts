@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { maxBirthYear, PROFILE_GENRES } from "@/lib/profile";
+import { TEMPLATE_IDS } from "./templates";
 
 /** HTML number inputs return strings; normalize before validation, including cleared inputs. */
 export function optionalNumber(value: unknown): unknown {
@@ -15,7 +16,12 @@ const webUrl = z.string().url("올바른 URL을 입력해주세요").refine((url
 const optionalUrl = webUrl.nullable().optional().or(z.literal(""));
 
 export const profileFormSchema = z.object({
-  template_id: z.enum(["casting", "portfolio", "career"]).default("casting"),
+  template_id: z.enum(TEMPLATE_IDS).default("classic"),
+  template_variant: z.enum(["actor", "model"]).default("actor"),
+  education: z.string().trim().max(500).nullable().optional(),
+  awards: z.string().trim().max(500).nullable().optional(),
+  guardian_name: z.string().trim().max(50).nullable().optional(),
+  guardian_phone: z.string().trim().max(20).nullable().optional(),
   name: z.string().trim().min(1, "이름을 입력해주세요").max(20, "20자 이내로 입력해주세요"),
   birth_year: z.coerce.number().int().min(1940, "출생연도를 확인해주세요").max(maxBirthYear(), "만 14세 이상만 가입할 수 있습니다"),
   gender: z.enum(["남성", "여성", "기타"], { error: "성별을 선택해주세요" }),
@@ -43,7 +49,8 @@ export type ProfileFormData = z.output<typeof profileFormSchema>;
 /** Partial updates share field validation with the form; unknown/ownership fields are stripped. */
 export const profileWriteSchema = profileFormSchema.partial().extend({
   // Form defaults are useful on creation, but must not overwrite omitted PUT fields.
-  template_id: z.enum(["casting", "portfolio", "career"]).optional(),
+  template_id: z.enum(TEMPLATE_IDS).optional(),
+  template_variant: z.enum(["actor", "model"]).optional(),
   activity_field: z.array(z.string()).optional(),
   age: z.number().int().min(14).max(120).nullable().optional(),
   photo_urls: z.array(webUrl).max(5, "사진은 최대 5장까지 등록할 수 있어요").optional(),

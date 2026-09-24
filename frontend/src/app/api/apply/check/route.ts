@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { getMissingFields } from "@/lib/profile";
+import { getApplicationReadiness } from "@/lib/apply/gate";
 import type { Profile } from "@/types";
 
 export async function GET(req: Request) {
@@ -30,17 +32,19 @@ export async function GET(req: Request) {
 
     let hasApplied = false;
     let isSending = false;
+    let isStopped = false;
     if (auditionId) {
       // 발송 실패(status:'failed') 이력은 "지원함"이 아니다 — 재시도 버튼이 계속 눌려야 한다.
       const { data: application, error: applicationError } = await supabase
         .from("applications")
-        .select("id, status")
+        .select("id, status, send_stopped")
         .eq("user_id", user.id)
         .eq("audition_id", auditionId)
         .maybeSingle();
       if (applicationError) throw applicationError;
       hasApplied = application?.status === "sent" || application?.status === "replied";
       isSending = application?.status === "sending";
+      isStopped = application?.send_stopped === true;
     }
 
     const typedProfile = (profile as Profile | null) ?? null;
@@ -53,9 +57,12 @@ export async function GET(req: Request) {
       profileVersionId = version.id;
     }
 
+    const readiness = auditionId ? await getApplicationReadiness(createServiceRoleClient(), auditionId, typedProfile) : null;
     return NextResponse.json({
+      readiness: readiness ? { issues: readiness.issues, subjectRules: readiness.subjectRules } : null,
       hasApplied,
       isSending,
+      isStopped,
       missingFields,
       // 시트 ⓒ 확인 화면용 프로필 요약 (발송 메일 스냅샷)
       profileSummary: typedProfile

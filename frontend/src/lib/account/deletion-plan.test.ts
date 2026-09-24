@@ -14,6 +14,7 @@ test("삭제 순서가 정본과 일치한다", () => {
       "storage_profile_documents",
       "storage_profiles",
       "bookmarks",
+      "submission_preparations",
       "applications",
       "community_likes",
       "community_comments",

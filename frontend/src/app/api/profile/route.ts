@@ -36,7 +36,8 @@ export async function GET() {
     return NextResponse.json({ error: "프로필 조회 실패" }, { status: 500 });
   }
 
-  return NextResponse.json({ profile: data });
+  const { data: available } = await supabase.rpc("available_profile_templates");
+    return NextResponse.json({ availableTemplates: (available ?? []).map((t: { template_id: string }) => t.template_id), profile: data });
 }
 
 // POST /api/profile — 프로필 생성
@@ -63,13 +64,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "이름·출생연도·성별·지원 분야를 입력해주세요.", code: "INCOMPLETE_PROFILE" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .insert({ ...parsed.data, id: user.id })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc("save_profile_document", { p_fields: parsed.data, p_create: true });
 
   if (error) {
+    if (error.message?.includes("TEMPLATE_NOT_READY")) return NextResponse.json({ error: "이 서식은 준비 중이에요. 다른 서식을 선택해주세요.", code: "TEMPLATE_NOT_READY" }, { status: 409 });
     if (error.code === "23505") {
       return NextResponse.json(
         { error: "이미 프로필이 존재합니다. 수정을 이용해주세요." },
@@ -107,14 +105,10 @@ export async function PUT(request: Request) {
   const photoError = profilePhotoWriteError(parsed.data, user.id, process.env.NEXT_PUBLIC_SUPABASE_URL!);
   if (photoError) return NextResponse.json(photoError, { status: 400 });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(parsed.data)
-    .eq("id", user.id)
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc("save_profile_document", { p_fields: parsed.data, p_create: false });
 
   if (error) {
+    if (error.message.includes("TEMPLATE_NOT_READY")) return NextResponse.json({ error: "아직 사용할 수 없는 디자인이에요. 사용 가능한 디자인을 선택해주세요.", code: "TEMPLATE_NOT_READY" }, { status: 409 });
     return NextResponse.json(
       { error: "프로필을 수정하지 못했습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 }

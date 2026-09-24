@@ -5,7 +5,7 @@ import { renderProfilePdf } from "./pdf";
 import { ownedPhotoPath } from "./photos";
 import { withAccountFileOperation } from "../account/file-lifecycle";
 
-export type SavedProfile = { id: string; user_id: string; profile: Profile; created_at: string };
+export type SavedProfile = { id: string; user_id: string; profile: Profile; created_at: string; renderer_version?: string };
 export const PDF_BUCKET = "profile-documents";
 export const MAX_PDF_BYTES = 3 * 1024 * 1024;
 
@@ -27,7 +27,7 @@ export async function getOrCreateProfilePdf(db: SupabaseClient, version: SavedPr
       photos.push(await sharp(Buffer.from(await data.arrayBuffer()), { limitInputPixels: 40_000_000 })
         .rotate().resize({ width: 1400, height: 1800, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 82 }).toBuffer());
     }
-    const bytes = await renderProfilePdf(version.profile, photos, version.created_at);
+    const bytes = await renderProfilePdf(version.profile, photos, version.created_at, version.renderer_version ?? "legacy-v1");
     if (bytes.length > MAX_PDF_BYTES) throw Error("PDF 용량이 큽니다. 사진 수를 줄여 새 버전으로 저장해주세요.");
     write.startWrite();
     const uploaded = await bucket.upload(objectPath, bytes, { contentType: "application/pdf", upsert: false });

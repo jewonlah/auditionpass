@@ -51,13 +51,16 @@ export default function MyReportsPage() {
       const supabase = createClient();
       const { data, error: queryError } = await supabase
         .from("reports")
-        .select("id, audition_id, reason, status, created_at, auditions(title)")
-        .order("created_at", { ascending: false });
+        .select("id, audition_id, reason, status, created_at")
+        .order("created_at", { ascending: false }).limit(1000);
 
       if (queryError) {
         setError("신고 내역을 불러오지 못했습니다.");
       } else {
-        setReports((data ?? []) as unknown as MyReport[]);
+        const { data: refs, error: refError } = await supabase.rpc("owned_audition_references", { p_ids: (data ?? []).map(a => a.audition_id) });
+        if (refError) setError("신고 내역을 불러오지 못했습니다.");
+        else { const byId = new Map((refs ?? []).map((a: { id: string; title: string }) => [a.id, a]));
+          setReports((data ?? []).map(a => ({ ...a, auditions: byId.get(a.audition_id) ?? null })) as MyReport[]); }
       }
       setLoading(false);
     }

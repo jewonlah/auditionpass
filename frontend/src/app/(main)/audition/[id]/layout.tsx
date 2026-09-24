@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     );
 
     const { data: audition } = await supabase
-      .from("auditions")
+      .from("public_auditions")
       .select("title, company, genre, deadline, description, is_active, review_status")
       .eq("id", id)
       .single();
@@ -80,7 +80,7 @@ export default async function AuditionDetailLayout({ params, children }: Props) 
     );
 
     const { data: audition } = await supabase
-      .from("auditions")
+      .from("public_auditions")
       .select("title, company, genre, deadline, description, requirements, apply_type, created_at, is_active, review_status")
       .eq("id", id)
       .single();

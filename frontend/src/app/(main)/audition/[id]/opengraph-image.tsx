@@ -41,7 +41,7 @@ export default async function Image({ params }: Props) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     const { data } = await supabase
-      .from("auditions")
+      .from("public_auditions")
       .select("title, company, genre, deadline")
       .eq("id", id)
       .single();

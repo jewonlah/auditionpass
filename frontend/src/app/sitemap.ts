@@ -90,7 +90,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }[] = [];
     for (let from = 0; from < MAX_SITEMAP_URLS; from += PAGE) {
       const { data, error } = await supabase
-        .from("auditions")
+        .from("public_auditions")
         .select("id, created_at, genre, category")
         .eq("is_active", true)
         .in("review_status", ["auto", "approved"])

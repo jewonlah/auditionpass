@@ -12,7 +12,10 @@ import { Button } from "@/components/ui/Button";
 import type { Audition, Application } from "@/types";
 
 type RecordRow = Pick<Application, "id" | "status" | "sent_at" | "created_at" | "profile_version_id"> & {
-  audition: Pick<Audition, "id" | "title" | "company" | "deadline" | "is_active"> | null;
+  delivery_status?: "unknown" | "accepted" | "delivered" | "bounced";
+  send_stopped?: boolean;
+  submission_snapshot?: { title?: string; company?: string } | null;
+  audition: Pick<Audition, "id" | "title" | "company" | "deadline" | "is_active" | "is_public"> | null;
 };
 
 export default function ApplicationsPage() {
@@ -81,16 +84,18 @@ function ApplicationCard({ item, refresh }: { item: RecordRow; refresh: () => Pr
     finally { setChecking(false); }
   }
   return <article className="rounded-2xl border border-gray-200 bg-white p-4">
-    {audition ? <Link href={"/audition/" + audition.id} className="block">
+    {audition?.is_active && audition.is_public !== false ? <Link href={"/audition/" + audition.id} className="block">
       <h2 className="font-semibold leading-snug">{audition.title}</h2>
       <p className="mt-1 text-sm text-gray-500">{audition.company} · {!audition.is_active ? "게시 종료" : formatDday(audition.deadline)}</p>
-    </Link> : <h2 className="font-semibold">게시가 종료된 공고</h2>}
+    </Link> : <div><h2 className="font-semibold">{item.submission_snapshot?.title || audition?.title || "게시가 종료된 공고"}</h2><p className="mt-1 text-sm text-gray-500">{item.submission_snapshot?.company || audition?.company} · 게시 종료</p></div>}
     <p className={"mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 text-sm " + (failed ? "text-red-600" : "text-gray-600")}>
-      <Icon size={16} />{pending ? "발송 결과 확인 중" : failed ? "발송 준비 실패" : "발송 요청 완료"}
+      <Icon size={16} />{item.send_stopped ? "추가 발송 중지" : pending ? "발송 결과 확인 중" : failed ? "발송 준비 실패" : item.delivery_status === "bounced" ? "메일 반송" : item.delivery_status === "delivered" ? "수신 서버 전달 완료" : "발송 요청 접수"}
       {item.sent_at && <time className="ml-auto text-xs" dateTime={item.sent_at}>{new Date(item.sent_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>}
     </p>
+    {item.delivery_status === "delivered" && <p className="mt-2 text-sm text-gray-500">담당자의 열람·답장 여부는 확인되지 않았어요.</p>}
     {pending && <><p className="mt-2 text-sm text-gray-500">처리가 지연되면 5분 후 결과를 다시 확인할 수 있어요.</p><Button variant="outline" className="mt-3 w-full" onClick={recover} disabled={checking}>{checking ? "확인 중…" : "발송 결과 다시 확인"}</Button></>}
-    {failed && audition && <Link className="mt-3 block text-sm font-semibold text-primary" href={"/audition/" + audition.id}>공고에서 다시 지원하기</Link>}
+    {failed && !item.send_stopped && audition?.is_active && audition.is_public !== false && <Link className="mt-3 block text-sm font-semibold text-primary" href={"/audition/" + audition.id}>공고에서 다시 지원하기</Link>}
+    {(item.send_stopped || item.delivery_status === "bounced") && <p className="mt-2 text-sm text-gray-500">추가 발송하지 않습니다. 문의: <a className="underline" href="mailto:support@auditionpass.co.kr">support@auditionpass.co.kr</a></p>}
     {item.profile_version_id && <Link className="mt-3 block py-2 text-sm font-semibold text-primary" href={`/profile/versions?id=${item.profile_version_id}`}>이 지원에 사용한 프로필 보기</Link>}
     {message && <p role="status" className="mt-2 text-sm text-gray-600">{message}</p>}
   </article>;

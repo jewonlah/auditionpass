@@ -10,10 +10,11 @@ import { categoryFilter } from "@/lib/audition/filters";
  * 매치가 3건 미만이면 전체 활성 공고로 채운다(데드엔드 금지, 12_ia-userflows §5 공통 규칙).
  */
 const FIELDS =
-  "id,title,company,genre,deadline,apply_type";
+  "id,title,company,genre,deadline,apply_type,application_ready";
 const LIMIT = 3;
 
 interface RecommendedRow {
+  application_ready?: boolean;
   id: string;
   title: string;
   company: string | null;
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
   const matching = categoryFilter(genres);
   if (matching) {
     const { data, error } = await supabase
-      .from("auditions")
+      .from("public_auditions")
       .select(FIELDS)
       .eq("is_active", true)
       .or(activeFilter)
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
 
   if (matched.length < LIMIT) {
     const { data: fallback, error } = await supabase
-      .from("auditions")
+      .from("public_auditions")
       .select(FIELDS)
       .eq("is_active", true)
       .or(activeFilter)

@@ -19,6 +19,7 @@ interface RecommendedAudition {
   genre: string;
   deadline: string | null;
   apply_type: "email" | "external";
+  application_ready?: boolean;
 }
 
 const GENDERS = ["남성", "여성", "기타"] as const;
@@ -420,7 +421,7 @@ function StepRecommend({
                           </span>
                         )}
                         <Badge className="bg-gray-100 text-gray-500">{a.genre}</Badge>
-                        {a.apply_type === "email" && <Badge>원클릭 지원</Badge>}
+                        {a.application_ready === true && <Badge>원클릭 지원</Badge>}
                       </div>
                     </div>
                     <span className={cn("shrink-0 text-[13px] font-semibold tabular-nums", ddayColor)}>

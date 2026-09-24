@@ -48,6 +48,7 @@ const ORGANIZATION_JSON_LD = {
 export const revalidate = 900;
 
 interface Card {
+  application_ready?: boolean;
   id: string;
   title: string;
   company: string | null;
@@ -74,23 +75,23 @@ async function getData(): Promise<{ cards: Card[]; stats: Stats; cats: Cat[] }> 
 
   // 첫 화면 공고: 마감이 남아 있고 원클릭 되는 것 우선, 최신순.
   const { data: rows } = await sb
-    .from("auditions")
-    .select("id,title,company,category,genre,deadline,apply_type")
+    .from("public_auditions")
+    .select("id,title,company,category,genre,deadline,apply_type,application_ready")
     .eq("is_active", true)
     .or(`deadline.gte.${today},deadline.is.null`)
     .order("apply_type", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(12);
 
-  const head = () => sb.from("auditions").select("id", { count: "exact", head: true });
+  const head = () => sb.from("public_auditions").select("id", { count: "exact", head: true });
   const dayAgo = new Date(Date.now() - 86400000).toISOString();
 
   const [activeR, todayR, oneclickR, catR] = await Promise.all([
     head().eq("is_active", true),
     head().eq("is_active", true).gte("created_at", dayAgo),
-    head().eq("is_active", true).eq("apply_type", "email"),
+    head().eq("is_active", true).eq("application_ready", true),
     sb
-      .from("auditions")
+      .from("public_auditions")
       .select("category")
       .eq("is_active", true)
       .not("category", "is", null)
@@ -159,7 +160,7 @@ function FlameCta({ href, children }: { href: string; children: React.ReactNode 
 /** 공고 카드 — 목록·그리드 공용. 원클릭 여부와 마감이 한눈에. */
 function AuditionCard({ a }: { a: Card }) {
   const d = dday(a.deadline);
-  const oneclick = a.apply_type === "email";
+  const oneclick = a.application_ready === true;
   return (
     <Link
       href={`/audition/${a.id}`}
@@ -387,7 +388,7 @@ export default async function LandingPage() {
                         <span className="text-[10.5px] font-bold tracking-[0.12em] text-[#736C5F]">
                           {a.category || a.genre}
                         </span>
-                        {front && a.apply_type === "email" && (
+                        {front && a.application_ready === true && (
                           <span className="rounded-full bg-[#FFE7E0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#F0330F]">
                             원클릭 지원
                           </span>

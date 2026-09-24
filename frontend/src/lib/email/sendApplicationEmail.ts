@@ -17,6 +17,8 @@ interface SendApplicationEmailParams {
    * (36 §M2 "발신 서브도메인·via 표기" 요건의 최소 구현. 중계 주소 방식은 R2에서.)
    */
   replyToEmail?: string | null;
+  /** Server-validated reviewed format; never an arbitrary request subject. */
+  reviewedSubject?: string;
 }
 
 /**
@@ -62,6 +64,7 @@ export async function prepareApplicationEmail({
   audition,
   profile,
   replyToEmail,
+  reviewedSubject,
 }: SendApplicationEmailParams) {
   if (!audition.apply_email) {
     throw new Error("이 오디션은 이메일 지원이 불가능합니다.");
@@ -76,7 +79,7 @@ export async function prepareApplicationEmail({
 
   const emailHtml = await render(
     ApplicationEmail({
-      templateId: document.template,
+      templateId: "casting", // Common email summary; the chosen design lives in the attached PDF.
       auditionTitle: audition.title,
       applicantName: profile.name,
       applicantAgeLabel: ageLabel,
@@ -106,7 +109,7 @@ export async function prepareApplicationEmail({
     ...(ageLabel ? [ageLabel] : []),
     ...(genreLabel ? [genreLabel] : []),
   ].join("/");
-  const subject = `[오디션 지원] ${profile.name} (${descriptor})`;
+  const subject = reviewedSubject ?? `[오디션 지원] ${profile.name} (${descriptor})`;
 
   // 담당자가 "답장"을 누르면 지원자에게 바로 가야 한다. 없으면 noreply@ 로 떨어져 사라진다.
   const replyTo = replyToEmail?.trim();

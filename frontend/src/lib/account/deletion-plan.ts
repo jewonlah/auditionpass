@@ -68,6 +68,7 @@ export function buildDeletionPlan(): DeletionStep[] {
       executed: true,
       note: "009a. CASCADE 대상이지만 명시 삭제해 실패 지점을 특정한다.",
     },
+    { key: "submission_preparations", target: "submission_preparations", mode: "delete", column: "user_id", label: "제출 준비 자료 삭제", executed: true, note: "미발송 PDF·첨부 묶음을 삭제한다. 발송 중에는 begin_account_file_deletion이 전체 삭제를 보류한다." },
     {
       key: "applications",
       target: "applications",
@@ -75,7 +76,7 @@ export function buildDeletionPlan(): DeletionStep[] {
       column: "user_id",
       label: "지원 이력 삭제",
       executed: true,
-      note: "001. 지원 메일에 실린 개인정보의 로컬 사본 — 즉시 파기 대상.",
+      note: "001. 지원 스냅샷, jobs·consents·resolutions CASCADE와 035 events 삭제 트리거까지 함께 정리한다.",
     },
     {
       key: "community_likes",

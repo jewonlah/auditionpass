@@ -7,9 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhotoUpload } from "@/components/profile/PhotoUpload";
-import { ProfilePreview } from "@/components/profile/ProfilePreview";
+import { DraftProfilePdf } from "@/components/profile/DraftProfilePdf";
+import { TemplatePicker } from "@/components/profile/TemplatePicker";
 import Link from "next/link";
-import { PROFILE_TEMPLATES } from "@/lib/profile/document";
 import { cn, resolveReturnTo } from "@/lib/utils";
 import { getProfileCompleteness, PROFILE_GENRES } from "@/lib/profile";
 import { profileFormSchema, buildPolishRequest, type ProfileFormData } from "@/lib/profile/form";
@@ -29,9 +29,10 @@ const GENRES = PROFILE_GENRES;
 
 interface ProfileFormProps {
   initialData: Profile | null;
+  availableTemplates?: string[];
 }
 
-export function ProfileForm({ initialData }: ProfileFormProps) {
+export function ProfileForm({ initialData, availableTemplates = [] }: ProfileFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [photos, setPhotos] = useState<string[]>(initialData?.photo_urls ?? []);
@@ -56,7 +57,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema) as Resolver<ProfileFormData>,
     defaultValues: {
-      template_id: initialData?.template_id ?? "casting",
+      template_id: initialData?.template_id ?? (availableTemplates.includes("classic") ? "classic" : "casting"),
+      template_variant: initialData?.template_variant ?? "actor",
+      education: initialData?.education ?? "", awards: initialData?.awards ?? "",
+      guardian_name: initialData?.guardian_name ?? "", guardian_phone: initialData?.guardian_phone ?? "",
       name: initialData?.name ?? "",
       // 구 데이터(age만 보유)는 출생연도로 환산해 프리필 (009 마이그레이션과 동일 규칙)
       birth_year:
@@ -160,7 +164,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
     // F3: 저장 후 원래 맥락으로 복귀 (랜딩 추방 버그 A6 해소), 폴백 /my
     // 온보딩(welcome)에서 왔으면 저장 즉시 홈 피드로 — 게이트를 방금 통과했다
-    const fallback = searchParams.get("welcome") === "1" ? "/home" : "/my";
+    const fallback = searchParams.get("welcome") === "1" ? "/home" : "/portfolio";
     router.push(resolveReturnTo(searchParams.get("returnTo"), fallback));
     router.refresh();
     } catch {
@@ -171,19 +175,13 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-4">
-        <p className="font-semibold">사진과 정보가 한 장의 프로필로</p>
-        <p className="mt-1 text-sm leading-relaxed text-gray-500">입력한 정보에 맞춰 구성을 정돈해요. 소개는 AI 초안을 확인한 뒤 선택할 수 있어요.</p>
-        <fieldset className="mt-4">
-          <legend className="text-sm font-semibold">프로필 스타일</legend>
-          <div className="mt-2 grid grid-cols-3 gap-2">{PROFILE_TEMPLATES.map((template) => <label key={template.id} className={cn("cursor-pointer rounded-xl border p-2 text-center text-sm", previewValues.template_id === template.id ? "border-primary bg-orange-50" : "border-gray-200")}>
-            <input type="radio" value={template.id} {...register("template_id")} className="mb-2 accent-primary" onClick={() => setShowPreview(true)} />
-            <span className="block font-semibold">{template.name}</span><span className="mt-1 block text-xs leading-relaxed text-gray-500">{template.description}</span>
-          </label>)}</div>
-        </fieldset>
+        <TemplatePicker available={availableTemplates} value={previewValues.template_id} variant={previewValues.template_variant} onChange={(id) => { setValue("template_id", id, { shouldDirty: true }); setShowPreview(true); }} onVariant={(v) => setValue("template_variant", v, { shouldDirty: true })} />
         <Button type="button" variant="outline" className="mt-3 w-full" aria-expanded={showPreview} onClick={() => setShowPreview((v) => !v)}>{showPreview ? "미리보기 접기" : "내 프로필 미리보기"}</Button>
         {isEdit && <Link href="/profile/versions" className="mt-3 block py-2 text-center text-sm font-semibold text-primary">저장한 프로필 보기</Link>}
       </section>
-      {showPreview && <div><ProfilePreview profile={previewValues} photos={photos} /><p className="mt-2 text-xs leading-relaxed text-gray-500">현재 편집 내용의 구성 예시예요. 저장한 정보가 지원 메일에 사용되며, 메일 화면은 수신 환경에 따라 달라질 수 있어요.</p></div>}
+      {showPreview && <DraftProfilePdf profile={{ ...previewValues, photo_urls: photos }} />}
+      {searchParams.get("returnTo")?.startsWith("/audition/") && <p role="status" className="rounded-xl bg-gray-50 p-4 text-base">지원 준비 중이에요. 저장하면 보던 공고의 제출 확인으로 돌아갑니다.</p>}
+
       {serverError && (
         <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
           {serverError}
@@ -194,6 +192,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       <PhotoUpload photos={photos} onChange={setPhotos} onUploadingChange={setUploadingPhoto} />
       <p className="text-sm leading-relaxed text-gray-600">공고에서 요구하는 정면·상반신·전신·측면 사진을 확인해 주세요. 사진 장수와 용량, 보정 허용 여부는 공고마다 달라요.</p>
 
+      <section className="space-y-4">
+        <h3 className="text-base font-semibold">교육·수상</h3>
+        <Input label="학교·전공 (선택)" {...register("education")} error={errors.education?.message} />
+        <Input label="수상·선정 이력 (선택)" {...register("awards")} error={errors.awards?.message} />
+        {previewValues.template_id === "cozy" && <><Input label="보호자 이름 (선택)" {...register("guardian_name")} /><Input label="보호자 연락처 (선택)" {...register("guardian_phone")} /><p className="text-sm text-gray-500">입력한 연락처만 문서에 담겨요. 보호자 동의 완료를 의미하지 않으며 미성년 원클릭 지원은 제공하지 않아요.</p></>}
+      </section>
       {/* 기본 정보 */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
