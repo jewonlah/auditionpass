@@ -24,6 +24,7 @@ import { withReturnTo } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import type { Audition } from "@/types";
 import type { ReadinessIssue } from "@/lib/apply/readiness";
+import type { ApplicationRequirements } from "@/lib/apply/requirements";
 import type { SubjectRules } from "@/lib/apply/subject";
 import { ProfilePdf } from "@/components/profile/ProfilePdf";
 import { MaterialAttachmentPicker } from "./MaterialAttachmentPicker";
@@ -41,7 +42,7 @@ interface ProfileSummary {
 }
 
 interface ApplyCheck {
-  readiness: { issues: ReadinessIssue[]; subjectRules?: SubjectRules | null } | null;
+  readiness: { issues: ReadinessIssue[]; subjectRules?: SubjectRules | null; requirements?: ApplicationRequirements | null } | null;
   loading: boolean;
   hasApplied: boolean;
   isSending: boolean;
@@ -237,7 +238,7 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
         {step === "prepare" && <div className="space-y-4 pb-3">
           <p className="text-base font-semibold">{audition.title}</p>
           <ul className="space-y-3">{check.readiness?.issues.map((issue, i) => <li key={`${issue.code}-${i}`} className="rounded-xl bg-gray-50 p-3 text-base">{issue.message}</li>)}</ul>
-          {check.readiness?.issues.some(i => i.target === "profile") && <Link href={withReturnTo("/profile", `${pathname}?apply=1`)} className="app-primary flex min-h-11 items-center justify-center bg-primary p-3 font-semibold text-white">사진·연락처 보완하기</Link>}
+          {check.readiness?.issues.some(i => i.target === "profile") && <Link href={withReturnTo("/profile", `${pathname}?apply=1`)} className="app-primary flex min-h-11 items-center justify-center bg-primary p-3 font-semibold text-white">프로필 보완하기</Link>}
           {audition.source_url && <a href={audition.source_url} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center font-semibold text-primary">원문 접수 방법 확인</a>}
           <Button variant="outline" className="w-full" onClick={handleProfileSaved}>준비 상태 다시 확인</Button>
         </div>}
@@ -246,6 +247,7 @@ export function ApplyButton({ audition, isLoggedIn, authLoading }: ApplyButtonPr
             audition={audition}
             summary={check.profileSummary}
             subjectRules={check.readiness?.subjectRules ?? null}
+            requirements={check.readiness?.requirements ?? null}
             onSent={handleSent}
           />
         )}
@@ -534,6 +536,7 @@ function ConfirmStep({
   audition,
   summary,
   subjectRules,
+  requirements,
   onSent,
 }: {
   audition: Pick<Audition, "id" | "title" | "company"> & {
@@ -542,6 +545,7 @@ function ConfirmStep({
   };
   summary: ProfileSummary | null;
   subjectRules: SubjectRules | null;
+  requirements: ApplicationRequirements | null;
   onSent: () => void;
 }) {
   const [error, setError] = useState("");
@@ -551,6 +555,9 @@ function ConfirmStep({
   const [pdfReady, setPdfReady] = useState(false);
   const onPdfReady = useCallback(() => setPdfReady(true), []);
   const [materialIds, setMaterialIds] = useState<string[]>([]);
+  const [accepted, setAccepted] = useState<string[]>([]);
+  const acknowledgements = requirements?.acknowledgements ?? [];
+  const conditionsComplete = requirements !== null && acknowledgements.every(v => accepted.includes(v));
   const [role, setRole] = useState("");
   const [declaredAge, setDeclaredAge] = useState("");
   const customSubject = subjectRules?.format === "role_name_age_phone_v1";
@@ -558,12 +565,12 @@ function ConfirmStep({
   const subjectComplete = !customSubject || (subjectRules.roles.includes(role) && /^\d{2,3}$/.test(declaredAge) && Number(declaredAge) >= 19 && Number(declaredAge) <= 120);
   function resetPreparation() { setPreparation(null); setConsent(false); setError(""); }
 
-  const [preparation, setPreparation] = useState<{ preparationId: string; recipient: string; replyTo?: string; subject: string; attachments: string[]; role?: string; declaredAge?: number } | null>(null);
+  const [preparation, setPreparation] = useState<{ preparationId: string; recipient: string; replyTo?: string; subject: string; attachments: string[]; acceptedAcknowledgements: string[]; role?: string; declaredAge?: number } | null>(null);
   async function handlePrepare() {
     setSubmitting(true); setError(""); setConsent(false); setPreparation(null);
     try {
       const res = await fetch("/api/apply/prepare", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ auditionId: audition.id, expectedProfileVersion: summary?.documentVersion, materialIds, ...(customSubject ? { role, declaredAge: Number(declaredAge) } : {}) }) });
+        body: JSON.stringify({ auditionId: audition.id, expectedProfileVersion: summary?.documentVersion, materialIds, acceptedAcknowledgements: acknowledgements.filter(v => accepted.includes(v)), ...(customSubject ? { role, declaredAge: Number(declaredAge) } : {}) }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "제출 자료를 준비하지 못했어요.");
       setPreparation(data);
@@ -660,6 +667,15 @@ function ConfirmStep({
         </div>
       )}
 
+      <section className="space-y-3 rounded-xl border border-gray-200 p-4" aria-label="공고 필수 조건">
+        <p className="text-base font-semibold">공고 필수 조건</p>
+        {requirements?.requiredGender && <p>배역 성별: {requirements.requiredGender}</p>}
+        {requirements?.requireCareer && <p>프로필 이력 제출이 필요해요.</p>}
+        {requirements?.ageScope === "pilot" && <p>현재 원클릭 제공 범위: {requirements.minAge}~{requirements.maxAge}세. 원문 모집 범위와 다를 수 있어요.</p>}
+        <p className="text-base text-gray-600">배역 이미지와 촬영 조건은 원문에서 확인해주세요. 원클릭 표시는 제출 기능 제공 여부이며, 배역 적합성을 보장하지 않아요.</p>
+        {audition.source_url && <a href={audition.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-primary">원문 모집 조건 확인</a>}
+        {acknowledgements.map(item => <label key={item} className="flex items-start gap-3 text-base leading-relaxed"><input type="checkbox" className="mt-1 size-5 shrink-0 accent-primary" disabled={submitting || pending} checked={accepted.includes(item)} onChange={e => { setAccepted(prev => e.target.checked ? [...prev, item] : prev.filter(v => v !== item)); resetPreparation(); }} /><span>{item}</span></label>)}
+      </section>
       {customSubject && <fieldset className="space-y-3 rounded-xl border border-gray-200 p-4" disabled={submitting || pending}>
         <legend className="px-1 text-sm font-semibold">공고에서 요청한 메일 제목</legend>
         <div>
@@ -674,14 +690,14 @@ function ConfirmStep({
       </fieldset>}
       <label className="flex items-start gap-3 text-base leading-relaxed"><input type="checkbox" className="mt-1 size-5 shrink-0 accent-primary" disabled={!preparation || submitting || pending} checked={consent} onChange={e => setConsent(e.target.checked)} /><span>이 공고의 접수처로 프로필의 이름·연락처·사진·이력과 선택한 자료를 보내는 데 동의합니다.{customSubject && preparation && ` 지원 배역 ‘${preparation.role}’과 본인이 확인한 만 ${preparation.declaredAge}세를 제목에 포함합니다.`}</span></label>
       <MaterialAttachmentPicker selected={materialIds} onChange={ids => { setMaterialIds(ids); setPreparation(null); setConsent(false); }} disabled={submitting || pending} />
-      {!preparation && <Button className="w-full" variant="outline" onClick={handlePrepare} disabled={!pdfReady || !subjectComplete || submitting || pending}>{submitting ? "제출 자료 확인 중…" : "수신처와 첨부파일 확인하기"}</Button>}
-      {preparation && <div className="rounded-xl bg-gray-50 p-4 text-sm space-y-2"><p>받는 곳: {preparation.recipient}</p><p>답장받을 주소: {preparation.replyTo || "확인 필요"}</p><p>메일 제목: {preparation.subject}</p><p>첨부: {preparation.attachments.join(", ")}</p><p>위 자료를 확인한 뒤 정보 전달에 동의해주세요.</p></div>}
+      {!preparation && <Button className="w-full" variant="outline" onClick={handlePrepare} disabled={!pdfReady || !subjectComplete || !conditionsComplete || submitting || pending}>{submitting ? "제출 자료 확인 중…" : "수신처와 첨부파일 확인하기"}</Button>}
+      {preparation && <div className="rounded-xl bg-gray-50 p-4 text-sm space-y-2"><p>받는 곳: {preparation.recipient}</p><p>답장받을 주소: {preparation.replyTo || "확인 필요"}</p><p>메일 제목: {preparation.subject}</p><p>첨부: {preparation.attachments.join(", ")}</p>{preparation.acceptedAcknowledgements?.map(item => <p key={item}>확인한 조건: {item}</p>)}<p>위 자료를 확인한 뒤 정보 전달에 동의해주세요.</p></div>}
       <Button
         variant="accent"
         size="lg"
         className="w-full gap-2"
         onClick={handleSend}
-        disabled={submitting || pending || !consent || !pdfReady || !preparation}
+        disabled={submitting || pending || !consent || !pdfReady || !preparation || !conditionsComplete}
       >
         <Send size={17} />
         {submitting ? "발송 중…" : !pdfReady ? "제출 PDF를 먼저 확인해주세요" : "이 내용으로 지원 보내기"}

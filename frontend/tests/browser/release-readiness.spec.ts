@@ -13,7 +13,7 @@ test("실제 API: 검증값 비공개, 삭제된 자료와 발송 전 조회 오
   await request.post("http://127.0.0.1:15439/__qa/scenario?name=missing-material");
   const check=await context.request.get("/api/apply/check?auditionId=22222222-2222-4222-8222-222222222222");
   expect(check.status()).toBe(200);
-  expect((await check.json()).readiness).toEqual({issues:[],subjectRules:{format:"standard",roles:[]}});
+  expect((await check.json()).readiness).toEqual({issues:[],requirements:{minAge:null,maxAge:null,minorRole:false,requiredMaterials:[],requiredGender:null,requireCareer:false,acknowledgements:[],ageScope:"source"},subjectRules:{format:"standard",roles:[]}});
   expect(await check.text()).not.toContain("server-only-fingerprint");
   const body={preparationId:"55555555-5555-4555-8555-555555555555",consent:true};
   const missing=await context.request.post("/api/apply",{data:body});

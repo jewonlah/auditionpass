@@ -2,6 +2,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const http = require('node:http');
 const files = new Map();
+const fixturePixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64');
 const materials = new Map();
 const lifecycle = { deleting: false, active: new Set() };
 let signupClaimed = false;
@@ -66,13 +67,13 @@ http.createServer((req, res) => {
     if (rpc === 'claim_submission_preparation') claimCalls++;
     if (rpc === 'claim_submission_preparation' && releaseScenario === 'dispatch-expired') return res.end(JSON.stringify({ id:'77777777-7777-4777-8777-777777777777', mode:'test', created_at:new Date().toISOString() }));
     if (rpc === 'acquire_application_dispatch' && releaseScenario === 'dispatch-expired') { res.statusCode=400; return res.end(JSON.stringify({message:'MANUAL_REVIEW:AUDITION_CHANGED'})); }
-    if (rpc === 'private_application_destination' && releaseScenario === 'subject') return res.end(JSON.stringify('subject@example.invalid'));
-    if (rpc === 'store_submission_preparation' && releaseScenario === 'subject') {
+    if (rpc === 'private_application_destination' && (releaseScenario === 'subject' || releaseScenario.startsWith('requirements'))) return res.end(JSON.stringify('subject@example.invalid'));
+    if (rpc === 'store_submission_preparation' && (releaseScenario === 'subject' || releaseScenario.startsWith('requirements'))) {
       const chunks=[]; req.on('data', c=>chunks.push(c)); req.on('end',()=>{ prepared=JSON.parse(Buffer.concat(chunks).toString()).p_data; res.end(JSON.stringify('55555555-5555-4555-8555-555555555555')); }); return;
     }
     if (rpc === 'private_application_audition_gate' && releaseScenario) {
       if (req.headers.apikey !== 'local-test-service-key') { res.statusCode=403; return res.end('{}'); }
-      return res.end(JSON.stringify({ ready: true, code: 'READY', fingerprint: 'server-only-fingerprint', subjectRules: releaseScenario==='subject' ? {format:'role_name_age_phone_v1',roles:['지안','민수']} : {format:'standard',roles:[]} }));
+      return res.end(JSON.stringify({ ready: true, code: 'READY', fingerprint: 'server-only-fingerprint', requirements: {minAge:null,maxAge:null,minorRole:false,requiredMaterials:[],requiredGender:releaseScenario.startsWith('requirements')?'남성':null,requireCareer:releaseScenario.startsWith('requirements'),acknowledgements:releaseScenario.startsWith('requirements')?['10/1 도착','10/2~5 참석']:[],ageScope:'source'}, subjectRules: releaseScenario==='subject' ? {format:'role_name_age_phone_v1',roles:['지안','민수']} : {format:'standard',roles:[]} }));
     }
     if (rpc === 'available_profile_templates' && releaseScenario === 'rollback') return res.end(JSON.stringify(['casting','portfolio','career'].map(template_id => ({ template_id }))));
     if (rpc === 'available_profile_templates') return res.end(JSON.stringify(['casting','portfolio','career','classic','cinema','magazine','cozy','dignity'].map(template_id => ({ template_id }))));
@@ -119,7 +120,7 @@ http.createServer((req, res) => {
       return;
     }
     if (req.method === 'GET') {
-      const file = files.get(key);
+      const file = files.get(key) || (key === `profiles/${user.id}/fixture.jpg` ? {bytes:fixturePixel,type:'image/png'} : null);
       if (!file) { res.statusCode = 404; return res.end(JSON.stringify({ message: 'Object not found' })); }
       if (key.startsWith('materials/') && url.searchParams.has('download')) res.setHeader('Content-Disposition', 'attachment; filename="material.pdf"');
       res.setHeader('Content-Type', file.type); return res.end(file.bytes);
@@ -127,9 +128,9 @@ http.createServer((req, res) => {
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.statusCode = 503; return res.end(JSON.stringify({ message: 'Read-only test backend: mutation blocked' })); }
   const table = url.pathname.split('/').pop();
-  const releaseProfile = releaseScenario ? { ...profile, template_id: 'classic', renderer_version: 'compcard-v1', document_version: 1, phone: '01000000000', photo_urls: [`http://127.0.0.1:15439/storage/v1/object/public/profiles/${user.id}/fixture.jpg`] } : profile;
+  const releaseProfile = releaseScenario ? { ...profile, template_id: 'classic', renderer_version: 'compcard-v1', document_version: 1, phone: '01000000000', career:'가상 경력', gender:releaseScenario.startsWith('requirements')?'남성':profile.gender, photo_urls: [`http://127.0.0.1:15439/storage/v1/object/public/profiles/${user.id}/fixture.jpg`] } : profile;
   let rows = table === 'profiles' ? [releaseProfile] : table === 'auditions' || table === 'public_auditions' ? [audition] : table === 'profile_versions' ? [
-    { id: '44444444-4444-4444-8444-444444444444', user_id: user.id, version: 1, profile: { ...profile, ...(releaseScenario==='subject' ? {phone:'010-1234-5678'} : {}), name: '이전 지원자', bio: '저장 당시 소개입니다.', template_id: 'career', document_version: 1 }, created_at: user.created_at, renderer_version:'legacy-v1' },
+    { id: '44444444-4444-4444-8444-444444444444', user_id: user.id, version: 1, profile: { ...releaseProfile, ...(releaseScenario==='subject' ? {phone:'010-1234-5678'} : {}), ...(releaseScenario==='requirements-career'?{career:''}:{}), ...(releaseScenario==='requirements-gender'?{gender:'여성'}:{}), name: '이전 지원자', bio: '저장 당시 소개입니다.', template_id: 'career', document_version: 1 }, created_at: user.created_at, renderer_version:'legacy-v1' },
   ] : [];
   if (table === 'profile_versions') {
     for (const field of ['id', 'user_id', 'version']) {

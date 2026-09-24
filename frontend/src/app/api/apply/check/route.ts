@@ -47,19 +47,20 @@ export async function GET(req: Request) {
       isStopped = application?.send_stopped === true;
     }
 
-    const typedProfile = (profile as Profile | null) ?? null;
+    let typedProfile = (profile as Profile | null) ?? null;
     const missingFields = getMissingFields(typedProfile);
     let profileVersionId: string | null = null;
     if (typedProfile?.document_version) {
-      const { data: version, error: versionError } = await supabase.from("profile_versions").select("id")
+      const { data: version, error: versionError } = await supabase.from("profile_versions").select("id,profile")
         .eq("user_id", user.id).eq("version", typedProfile.document_version).single();
       if (versionError) throw versionError;
       profileVersionId = version.id;
+      typedProfile = version.profile as Profile;
     }
 
     const readiness = auditionId ? await getApplicationReadiness(createServiceRoleClient(), auditionId, typedProfile) : null;
     return NextResponse.json({
-      readiness: readiness ? { issues: readiness.issues, subjectRules: readiness.subjectRules } : null,
+      readiness: readiness ? { issues: readiness.issues, subjectRules: readiness.subjectRules, requirements: readiness.requirements } : null,
       hasApplied,
       isSending,
       isStopped,

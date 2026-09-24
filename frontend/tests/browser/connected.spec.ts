@@ -10,7 +10,7 @@ test("제출: PDF 확인과 묶음 확인·동의 전에는 발송하지 않는�
   await page.route("https://www.googletagmanager.com/**", route => route.abort());
   await page.route(/https:\/\/[^/]*google-analytics\.com\//, route => route.abort());
   await page.route("**/api/apply/check?*", route => route.fulfill({ json: { hasApplied: false, isSending: false, missingFields: [],
-    readiness: { issues: [] },
+    readiness: { issues: [], requirements:{minAge:null,maxAge:null,minorRole:false,requiredMaterials:[],requiredGender:null,requireCareer:false,acknowledgements:[],ageScope:"source"} },
     profileSummary: { name: "서지안", documentVersion: 1, profileVersionId: "44444444-4444-4444-8444-444444444444", birthYear: 1998, gender: "여성", genre: ["배우"], photoCount: 3 },
   } }));
   const pdf = await readFile("../output/pdf/compcards/classic-actor.pdf");

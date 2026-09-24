@@ -47,7 +47,7 @@ test("모바일: 배역과 만 나이 선택→정확한 제목→수정 시 동
   await login(context);
   await page.route("https://www.googletagmanager.com/**",r=>r.abort());
   await page.route(/https:\/\/[^/]*google-analytics\.com\//,r=>r.abort());
-  await page.route("**/api/apply/check?*",r=>r.fulfill({json:{hasApplied:false,isSending:false,missingFields:[],readiness:{issues:[],subjectRules:{format:"role_name_age_phone_v1",roles:["지안","민수"]}},profileSummary:{name:"서지안",documentVersion:1,profileVersionId:"44444444-4444-4444-8444-444444444444",birthYear:2000,gender:"여성",genre:["배우"],photoCount:3}}}));
+  await page.route("**/api/apply/check?*",r=>r.fulfill({json:{hasApplied:false,isSending:false,missingFields:[],readiness:{issues:[],requirements:{minAge:null,maxAge:null,minorRole:false,requiredMaterials:[],requiredGender:null,requireCareer:false,acknowledgements:[],ageScope:"source"},subjectRules:{format:"role_name_age_phone_v1",roles:["지안","민수"]}},profileSummary:{name:"서지안",documentVersion:1,profileVersionId:"44444444-4444-4444-8444-444444444444",birthYear:2000,gender:"여성",genre:["배우"],photoCount:3}}}));
   const pdf=await readFile("../output/pdf/compcards/classic-actor.pdf");
   await page.route("**/api/profile/pdf?*",r=>r.fulfill({body:pdf,contentType:"application/pdf"}));
   await page.route("**/api/apply/prepare",r=>{
