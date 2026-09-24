@@ -7,6 +7,18 @@ import { unwrapOnboardingReturnTo } from "@/lib/utils";
 const PROTECTED_ROUTES = ["/home", "/applications", "/profile", "/portfolio", "/my", "/admin", "/onboarding"];
 
 export async function proxy(request: NextRequest) {
+  // Deploy this gate on the old app BEFORE 034 removes its job upsert key.
+  // API handlers retain their own authentication when the gate is open.
+  const path = request.nextUrl.pathname;
+  if (path === "/api/apply" || path.startsWith("/api/apply/")) {
+    if (process.env.APPLICATION_SUBMISSIONS_PAUSED === "1") {
+      return NextResponse.json(
+        { code: "APPLICATION_PAUSED", error: "지원 기능을 점검 중이에요. 잠시 후 다시 시도해주세요." },
+        { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "300" } },
+      );
+    }
+    return NextResponse.next();
+  }
   const response = NextResponse.next();
 
   const supabase = createServerClient(
@@ -53,6 +65,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/api/apply/:path*",
     "/home/:path*",
     "/applications/:path*",
     "/profile/:path*",
